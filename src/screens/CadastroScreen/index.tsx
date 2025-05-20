@@ -1,4 +1,5 @@
 import styles from './styles';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable react-native/no-inline-styles */
@@ -9,7 +10,6 @@ import {
     TextInput,
     TouchableOpacity,
     Alert,
-    ScrollView,
     KeyboardAvoidingView,
     Platform,
     Image,
@@ -22,6 +22,7 @@ export default function CadastroScreen({ navigation }: { navigation: any }) {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [emailFocado, setEmailFocado] = useState(false);
+    const [senhaFocada, setSenhaFocada] = useState(false); // NOVO: controla exibição das dicas
     const [confirmarSenha, setConfirmarSenha] = useState('');
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
@@ -33,6 +34,14 @@ export default function CadastroScreen({ navigation }: { navigation: any }) {
         email: '',
         senha: '',
         confirmarSenha: '',
+    });
+
+    // Novos estados para requisitos da senha
+    const [senhaRequisitos, setSenhaRequisitos] = useState({
+        tamanho: false,
+        letra: false,
+        numero: false,
+        simbolo: false,
     });
 
     const nomeRef = useRef<TextInput>(null);
@@ -49,7 +58,7 @@ export default function CadastroScreen({ navigation }: { navigation: any }) {
         if (!s) {
             return '';
         }
-        if (s.length < 6) {
+        if (s.length < 8) {
             return 'fraca';
         }
         const temLetra = /[a-zA-Z]/.test(s);
@@ -84,8 +93,8 @@ export default function CadastroScreen({ navigation }: { navigation: any }) {
         } else if (!validateEmail(trimmedEmail)) {
             newErrors.email = 'E-mail inválido.';
             emailRef.current?.focus();
-        } else if (trimmedSenha.length < 6) {
-            newErrors.senha = 'Senha deve ter pelo menos 6 caracteres.';
+        } else if (trimmedSenha.length < 8) {
+            newErrors.senha = 'Senha deve ter pelo menos 8 caracteres.';
             senhaRef.current?.focus();
         } else if (trimmedSenha !== trimmedConfirmarSenha) {
             newErrors.confirmarSenha = 'As senhas não coincidem.';
@@ -116,38 +125,50 @@ export default function CadastroScreen({ navigation }: { navigation: any }) {
     }, [email]);
 
     useEffect(() => {
-        if (senha.length >= 6) {
+        if (senha.length >= 8) {
             setErrors(prevErrors => ({ ...prevErrors, senha: '' }));
             setSenhaMensagem('');
         }
     }, [senha]);
 
     useEffect(() => {
-        if (confirmarSenha === senha && senha.length >= 6) {
+        if (confirmarSenha === senha && senha.length >= 8) {
             setErrors(prevErrors => ({ ...prevErrors, confirmarSenha: '' }));
         } else if (confirmarSenha !== senha) {
             setErrors(prevErrors => ({
                 ...prevErrors,
                 confirmarSenha: 'As senhas não coincidem.',
             }));
-        } else if (senha.length < 6 && confirmarSenha.length > 0) {
+        } else if (senha.length < 8 && confirmarSenha.length > 0) {
             setErrors(prevErrors => ({
                 ...prevErrors,
-                confirmarSenha: 'A senha deve ter pelo menos 6 caracteres.',
+                confirmarSenha: 'A senha deve ter pelo menos 8 caracteres.',
             }));
         } else if (confirmarSenha.length > 0 && senha.length === 0) {
             setErrors(prevErrors => ({ ...prevErrors, confirmarSenha: '' }));
         }
     }, [confirmarSenha, senha]);
 
+    // Atualiza requisitos da senha em tempo real
+    useEffect(() => {
+        setSenhaRequisitos({
+            tamanho: senha.length >= 8,
+            letra: /[a-zA-Z]/.test(senha),
+            numero: /\d/.test(senha),
+            simbolo: /[^a-zA-Z0-9]/.test(senha),
+        });
+    }, [senha]);
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={{ flex: 1 }}
         >
-            <ScrollView
+            <KeyboardAwareScrollView
                 contentContainerStyle={[styles.scrollContainer, { flexGrow: 1 }]}
                 keyboardShouldPersistTaps="handled"
+                enableOnAndroid
+                extraScrollHeight={150}
             >
                 <View style={styles.container}>
                     <Image
@@ -220,15 +241,11 @@ export default function CadastroScreen({ navigation }: { navigation: any }) {
                             onChangeText={text => {
                                 setSenha(text);
                                 setSenhaForca(avaliarForcaSenha(text));
-
-                                if (text.length > 0 && text.length < 6) {
-                                    setSenhaMensagem('A senha deve ter pelo menos 6 caracteres');
-                                } else {
-                                    setSenhaMensagem('');
-                                }
                             }}
                             secureTextEntry={!mostrarSenha}
                             returnKeyType="next"
+                            onFocus={() => setSenhaFocada(true)}
+                            onBlur={() => setSenhaFocada(false)}
                             onSubmitEditing={() => confirmarSenhaRef.current?.focus()}
                         />
                         <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
@@ -239,6 +256,28 @@ export default function CadastroScreen({ navigation }: { navigation: any }) {
                             />
                         </TouchableOpacity>
                     </View>
+                    {/* Dica só aparece se senhaFocada for true */}
+                    {senhaFocada && (
+                        <View style={{ width: '100%', marginBottom: 8 }}>
+                            <Text style={{ fontSize: 14, color: '#666', marginBottom: 4 }}>
+                                Para uma senha forte, use:
+                            </Text>
+                            <View>
+                                <Text style={{ color: senhaRequisitos.tamanho ? 'green' : 'red' }}>
+                                    • Pelo menos 8 caracteres
+                                </Text>
+                                <Text style={{ color: senhaRequisitos.letra ? 'green' : 'red' }}>
+                                    • Letras (a-z, A-Z)
+                                </Text>
+                                <Text style={{ color: senhaRequisitos.numero ? 'green' : 'red' }}>
+                                    • Números (0-9)
+                                </Text>
+                                <Text style={{ color: senhaRequisitos.simbolo ? 'green' : 'red' }}>
+                                    • Símbolos (@, #, $, etc)
+                                </Text>
+                            </View>
+                        </View>
+                    )}
                     {senhaMensagem && (
                         <Text style={styles.errorText}>{senhaMensagem}</Text>
                     )}
@@ -279,13 +318,12 @@ export default function CadastroScreen({ navigation }: { navigation: any }) {
                             </Text>
                             {senhaForca === 'fraca' && (
                                 <Text style={styles.dicaSenha}>
-                                    Adicione mais caracteres (mínimo 6).
+                                    Adicione mais caracteres, letras, números e símbolos.
                                 </Text>
                             )}
                             {senhaForca === 'média' && (
                                 <Text style={styles.dicaSenha}>
-                                    Tente adicionar números e/ou símbolos para torná-la mais
-                                    forte.
+                                    Tente adicionar símbolos para torná-la mais forte.
                                 </Text>
                             )}
                         </View>
@@ -330,7 +368,7 @@ export default function CadastroScreen({ navigation }: { navigation: any }) {
                         </Text>
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
+            </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
     );
 }
