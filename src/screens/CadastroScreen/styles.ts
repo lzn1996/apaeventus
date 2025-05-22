@@ -1,24 +1,21 @@
 import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
-    keyboardAvoidingContainer: {
-        flex: 1,
-        backgroundColor: '#f6fafd',
-    },
     scrollContainer: {
         flexGrow: 1,
-        justifyContent: 'center',
         padding: 24,
         backgroundColor: '#f6fafd',
     },
     container: {
+        flex: 1, // Isso fará com que o container interno ocupe todo o espaço disponível
         alignItems: 'center',
         width: '100%',
+        justifyContent: 'center',
     },
     logo: {
-        height: 160,
-        marginBottom: 24, // aumentado
-        alignSelf: 'center',
+        maxHeight: 180, // altura máxima dinâmica
+        height: undefined, // garante que não há altura fixa
+        aspectRatio: 1.5, // mantém proporção visual agradável
     },
     title: {
         fontSize: 32, // maior
@@ -133,6 +130,43 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         marginBottom: 8,
         marginTop: -8,
+    },
+    flex1: {
+        flex: 1,
+    },
+    dicaSenhaContainer: {
+        width: '100%',
+        marginBottom: 8,
+    },
+    dicaSenhaTitulo: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 4,
+    },
+    dicaSenhaItem: {},
+    dicaSenhaCorOk: {
+        color: 'green',
+    },
+    dicaSenhaCorErro: {
+        color: 'red',
+    },
+    barraForcaContainer: {
+        width: '100%',
+        marginBottom: 8,
+    },
+    barraForca: {
+        height: 6,
+        borderRadius: 3,
+        marginBottom: 2,
+    },
+    senhaForcaCorFraca: {
+        color: 'red',
+    },
+    senhaForcaCorMedia: {
+        color: '#e6b800',
+    },
+    senhaForcaCorForte: {
+        color: 'green',
     },
 });
 
