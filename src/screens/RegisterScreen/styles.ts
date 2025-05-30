@@ -13,20 +13,26 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     logo: {
-        maxHeight: 180, // altura máxima dinâmica
+        maxHeight: 160, // altura máxima dinâmica
         height: undefined, // garante que não há altura fixa
         aspectRatio: 1.5, // mantém proporção visual agradável
     },
     title: {
-        fontSize: 32, // maior
+        fontSize: 28,
         fontWeight: 'bold',
-        marginBottom: 36, // aumentado
+        marginBottom: 26,
         color: '#007bff',
         alignSelf: 'center',
         letterSpacing: 1,
     },
     inputError: {
         borderColor: '#e53935',
+    },
+    inputSuccess: {
+        borderColor: '#2ecc40',
+    },
+    inputWarning: {
+        borderColor: '#e6b800',
     },
     button: {
         width: '100%',
@@ -75,7 +81,7 @@ const styles = StyleSheet.create({
     inputField: {
         flex: 1,
         height: 50,
-        fontSize: 18,
+        fontSize: 16,
         color: '#000',
         width: '100%', // garante largura total
     },
@@ -84,7 +90,7 @@ const styles = StyleSheet.create({
         height: 50,
         fontSize: 18,
         color: '#000',
-        width: '100%', // garante largura total
+        width: '100%',
     },
     errorText: {
         color: '#e53935',

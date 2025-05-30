@@ -21,6 +21,9 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
     const [nome, setNome] = useState('');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
+    const [cpf, setCpf] = useState('');
+    const [rg, setRg] = useState('');
+    const [telefone, setTelefone] = useState('');
     const [emailFocado, setEmailFocado] = useState(false);
     const [senhaFocada, setSenhaFocada] = useState(false); // NOVO: controla exibição das dicas
     const [confirmarSenha, setConfirmarSenha] = useState('');
@@ -34,6 +37,9 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
         email: '',
         senha: '',
         confirmarSenha: '',
+        cpf: '',
+        rg: '',
+        telefone: '',
     });
     const [logoVisivel, setLogoVisivel] = useState(true);
     const scrollViewRef = useRef<ScrollView>(null);
@@ -45,11 +51,16 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
         numero: false,
         simbolo: false,
     });
+    const [cpfFocado, setCpfFocado] = useState(false);
+    const [rgFocado, setRgFocado] = useState(false);
 
     const nomeRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
     const emailRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
     const senhaRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
     const confirmarSenhaRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
+    const cpfRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
+    const rgRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
+    const telefoneRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
 
     const validateEmail = (emailToValidate: string) => {
         const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -75,18 +86,24 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
         return 'fraca';
     };
 
-    const handleCadastro = () => {
+    const handleCadastro = async () => {
         const newErrors = {
             nome: '',
             email: '',
             senha: '',
             confirmarSenha: '',
+            cpf: '',
+            rg: '',
+            telefone: '',
         };
 
         const trimmedNome = nome.trim();
         const trimmedEmail = email.trim();
         const trimmedSenha = senha.trim();
         const trimmedConfirmarSenha = confirmarSenha.trim();
+        const trimmedCpf = cpf.trim();
+        const trimmedRg = rg.trim();
+        const trimmedTelefone = telefone.trim();
 
         if (!trimmedNome || trimmedNome.length < 3) {
             newErrors.nome = 'Nome deve ter ao menos 3 caracteres.';
@@ -101,6 +118,18 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
         } else if (trimmedSenha !== trimmedConfirmarSenha) {
             newErrors.confirmarSenha = 'As senhas não coincidem.';
             confirmarSenhaRef.current?.focus();
+        } else if (trimmedCpf.length !== 11) {
+            newErrors.cpf = 'CPF deve ter 11 dígitos.';
+            cpfRef.current?.focus();
+        } else if (!/^\d+$/.test(trimmedCpf)) {
+            newErrors.cpf = 'CPF deve conter apenas números.';
+            cpfRef.current?.focus();
+        } else if (trimmedRg.length === 0) {
+            newErrors.rg = 'RG é obrigatório.';
+            rgRef.current?.focus();
+        } else if (trimmedTelefone.length < 10) {
+            newErrors.telefone = 'Telefone deve ter pelo menos 10 dígitos.';
+            telefoneRef.current?.focus();
         }
         setErrors(newErrors);
 
@@ -109,16 +138,58 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
             return;
         }
 
-        console.log('Dados do Cadastro:', { nome, email, senha });
-        Alert.alert('Sucesso', 'Usuário cadastrado com sucesso!');
-        setNome('');
-        setEmail('');
-        setSenha('');
-        setConfirmarSenha('');
-        setSenhaForca('');
-        setSenhaMensagem('');
-        setNomeInvalido(false);
-        setErrors({ nome: '', email: '', senha: '', confirmarSenha: '' });
+        // INTEGRAÇÃO COM BACKEND
+        // Aplica máscara ao RG antes de enviar
+        const rgFormatado = rg.length === 9 ? `${rg.slice(0,8)}-${rg.slice(8)}` : rg;
+        const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3333' : 'http://localhost:3333';
+        try {
+            const response = await fetch(`${baseUrl}/user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: nome,
+                    email: email,
+                    password: senha,
+                    rg: rgFormatado,
+                    cpf: cpf,
+                    cellphone: telefone,
+                }),
+            });
+            if (response.ok) {
+                Alert.alert('Sucesso', 'Usuário cadastrado com sucesso!');
+                setNome('');
+                setEmail('');
+                setSenha('');
+                setConfirmarSenha('');
+                setCpf('');
+                setRg('');
+                setTelefone('');
+                setSenhaForca('');
+                setSenhaMensagem('');
+                setNomeInvalido(false);
+                setErrors({ nome: '', email: '', senha: '', confirmarSenha: '', cpf: '', rg: '', telefone: '' });
+            } else {
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (e) {}
+                let mensagem = 'Erro ao cadastrar usuário.';
+                if (data) {
+                    if ('message' in data && typeof (data as any).message === 'string') {
+                        mensagem = (data as any).message;
+                    } else if ('message' in data && Array.isArray((data as any).message)) {
+                        mensagem = (data as any).message.join('\n');
+                    } else if (Array.isArray(data)) {
+                        mensagem = data.map((item: any) => item.message || JSON.stringify(item)).join('\n');
+                    }
+                }
+                Alert.alert('Erro', mensagem);
+            }
+        } catch (error) {
+            Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
+        }
     };
 
     useEffect(() => {
@@ -257,7 +328,15 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                                 setEmailFocado(false);
                                 setSenhaFocada(false);
                             }}
-                            style={errors.nome || nomeInvalido ? styles.inputError : undefined}
+                            style={
+                                errors.nome || nomeInvalido
+                                    ? styles.inputError
+                                    : nome.trim().length >= 3
+                                    ? styles.inputSuccess
+                                    : nome.trim().length > 0
+                                    ? styles.inputWarning
+                                    : undefined
+                            }
                         />
                         {nomeInvalido && (
                             <Text style={styles.avisoNome}>O nome está muito curto</Text>
@@ -279,8 +358,16 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                                 setSenhaFocada(false);
                             }}
                             onBlur={() => setEmailFocado(false)}
-                            onSubmitEditing={() => senhaRef.current?.focus()}
-                            style={errors.email ? styles.inputError : undefined}
+                            onSubmitEditing={() => cpfRef.current?.focus()}
+                            style={
+                                errors.email
+                                    ? styles.inputError
+                                    : validateEmail(email)
+                                    ? styles.inputSuccess
+                                    : email.trim().length > 0
+                                    ? styles.inputWarning
+                                    : undefined
+                            }
                         />
                         {emailFocado && (
                             <Text style={styles.dicaEmail}>
@@ -288,6 +375,105 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             </Text>
                         )}
                         {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+
+                        {/* Input de CPF */}
+                        <InputComIcone
+                            iconName="card"
+                            inputRef={cpfRef}
+                            value={cpf}
+                            onChangeText={text => setCpf(text.replace(/\D/g, ''))}
+                            placeholder="CPF"
+                            keyboardType="numeric"
+                            maxLength={11}
+                            returnKeyType="next"
+                            onFocus={() => setCpfFocado(true)}
+                            onBlur={() => setCpfFocado(false)}
+                            onSubmitEditing={() => rgRef.current?.focus()}
+                            style={
+                                errors.cpf
+                                    ? styles.inputError
+                                    : cpf.length === 11 && /^\d{11}$/.test(cpf)
+                                    ? styles.inputSuccess
+                                    : cpf.length > 0
+                                    ? styles.inputWarning
+                                    : undefined
+                            }
+                        />
+                        {cpfFocado && (
+                            <Text style={styles.dicaEmail}>
+                                Apenas números, sem pontos ou traço
+                            </Text>
+                        )}
+                        {errors.cpf && <Text style={styles.errorText}>{errors.cpf}</Text>}
+
+                        {/* Input de RG */}
+                        <InputComIcone
+                            iconName="id-card"
+                            inputRef={rgRef}
+                            value={rg.length <= 8 ? rg : `${rg.slice(0,8)}-${rg.slice(8,9)}`}
+                            onChangeText={text => {
+                                // Aceita apenas números e limita a 9 dígitos
+                                const numeros = text.replace(/\D/g, '').slice(0, 9);
+                                setRg(numeros);
+                            }}
+                            placeholder="RG"
+                            keyboardType="numeric"
+                            maxLength={10} // 9 números + 1 traço visual
+                            returnKeyType="next"
+                            onFocus={() => setRgFocado(true)}
+                            onBlur={() => setRgFocado(false)}
+                            onSubmitEditing={() => telefoneRef.current?.focus()}
+                            style={
+                                errors.rg
+                                    ? styles.inputError
+                                    : rg.length > 0 && /^\d+$/.test(rg)
+                                    ? styles.inputSuccess
+                                    : rg.length > 0
+                                    ? styles.inputWarning
+                                    : undefined
+                            }
+                        />
+                        {rgFocado && (
+                            <Text style={styles.dicaEmail}>
+                                Apenas números, sem pontos ou traço
+                            </Text>
+                        )}
+                        {errors.rg && (
+                            <Text style={styles.errorText}>{errors.rg}</Text>
+                        )}
+
+                        {/* Input de Telefone */}
+                        <InputComIcone
+                            iconName="call"
+                            inputRef={telefoneRef}
+                            value={
+                                telefone.length === 0 ? '' :
+                                telefone.length <= 2 ? `(${telefone}` :
+                                telefone.length <= 7 ? `(${telefone.slice(0,2)}) ${telefone.slice(2)}` :
+                                telefone.length <= 11 ? `(${telefone.slice(0,2)}) ${telefone.slice(2,7)}-${telefone.slice(7)}` :
+                                telefone
+                            }
+                            onChangeText={text => {
+                                // Aceita apenas números e limita a 11 dígitos
+                                const numeros = text.replace(/\D/g, '').slice(0, 11);
+                                setTelefone(numeros);
+                            }}
+                            placeholder="Telefone"
+                            keyboardType="phone-pad"
+                            maxLength={15} // (99) 99999-9999
+                            returnKeyType="next"
+                            onSubmitEditing={() => senhaRef.current?.focus()}
+                            style={
+                                errors.telefone
+                                    ? styles.inputError
+                                    : telefone.length >= 10
+                                    ? styles.inputSuccess
+                                    : telefone.length > 0
+                                    ? styles.inputWarning
+                                    : undefined
+                            }
+                        />
+                        {errors.telefone && <Text style={styles.errorText}>{errors.telefone}</Text>}
 
                         <InputComIcone
                             iconName="key"
