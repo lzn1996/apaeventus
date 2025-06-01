@@ -14,8 +14,11 @@ import {
     Image,
     Dimensions,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import InputComIcone from '../../components/InputComIcone';
+import { formatRG, formatTelefone } from '../../utils/format';
+import { baseUrl } from '../../config/api'; // Importa a baseUrl configurada
 
 export default function RegisterScreen({ navigation }: { navigation: any }) {
     const [nome, setNome] = useState('');
@@ -25,7 +28,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
     const [rg, setRg] = useState('');
     const [telefone, setTelefone] = useState('');
     const [emailFocado, setEmailFocado] = useState(false);
-    const [senhaFocada, setSenhaFocada] = useState(false); // NOVO: controla exibição das dicas
+    const [senhaFocada, setSenhaFocada] = useState(false);
     const [confirmarSenha, setConfirmarSenha] = useState('');
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
@@ -42,6 +45,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
         telefone: '',
     });
     const [logoVisivel, setLogoVisivel] = useState(true);
+    const [loading, setLoading] = useState(false);
     const scrollViewRef = useRef<ScrollView>(null);
 
     // Novos estados para requisitos da senha
@@ -141,7 +145,8 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
         // INTEGRAÇÃO COM BACKEND
         // Aplica máscara ao RG antes de enviar
         const rgFormatado = rg.length === 9 ? `${rg.slice(0,8)}-${rg.slice(8)}` : rg;
-        const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3333' : 'http://localhost:3333';
+        // const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3333' : 'http://localhost:3333';
+        setLoading(true);
         try {
             const response = await fetch(`${baseUrl}/user`, {
                 method: 'POST',
@@ -189,6 +194,8 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
             }
         } catch (error) {
             Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -279,6 +286,20 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
         };
     }, []);
 
+    // Função para centralizar o reset de foco dos campos
+    const handleAnyInputFocus = (campo: 'nome' | 'email' | 'senha' | 'cpf' | 'rg' | 'telefone' | 'confirmarSenha') => {
+        setEmailFocado(false);
+        setSenhaFocada(false);
+        setCpfFocado(false);
+        setRgFocado(false);
+        // Ativa apenas o campo desejado
+        if (campo === 'email') { setEmailFocado(true); }
+        if (campo === 'senha') { setSenhaFocada(true); }
+        if (campo === 'cpf') { setCpfFocado(true); }
+        if (campo === 'rg') { setRgFocado(true); }
+        // Se quiser adicionar outros campos focados, basta seguir o padrão
+    };
+
     return (
         <KeyboardAvoidingView
             style={{ flex: 1 }}
@@ -324,10 +345,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             autoFocus
                             returnKeyType="next"
                             onSubmitEditing={() => emailRef.current?.focus()}
-                            onFocus={() => {
-                                setEmailFocado(false);
-                                setSenhaFocada(false);
-                            }}
+                            onFocus={() => handleAnyInputFocus('nome')}
                             style={
                                 errors.nome || nomeInvalido
                                     ? styles.inputError
@@ -353,10 +371,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             keyboardType="email-address"
                             autoCapitalize="none"
                             returnKeyType="next"
-                            onFocus={() => {
-                                setEmailFocado(true);
-                                setSenhaFocada(false);
-                            }}
+                            onFocus={() => handleAnyInputFocus('email')}
                             onBlur={() => setEmailFocado(false)}
                             onSubmitEditing={() => cpfRef.current?.focus()}
                             style={
@@ -386,7 +401,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             keyboardType="numeric"
                             maxLength={11}
                             returnKeyType="next"
-                            onFocus={() => setCpfFocado(true)}
+                            onFocus={() => handleAnyInputFocus('cpf')}
                             onBlur={() => setCpfFocado(false)}
                             onSubmitEditing={() => rgRef.current?.focus()}
                             style={
@@ -410,17 +425,16 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                         <InputComIcone
                             iconName="id-card"
                             inputRef={rgRef}
-                            value={rg.length <= 8 ? rg : `${rg.slice(0,8)}-${rg.slice(8,9)}`}
+                            value={formatRG(rg)}
                             onChangeText={text => {
-                                // Aceita apenas números e limita a 9 dígitos
                                 const numeros = text.replace(/\D/g, '').slice(0, 9);
                                 setRg(numeros);
                             }}
                             placeholder="RG"
                             keyboardType="numeric"
-                            maxLength={10} // 9 números + 1 traço visual
+                            maxLength={10}
                             returnKeyType="next"
-                            onFocus={() => setRgFocado(true)}
+                            onFocus={() => handleAnyInputFocus('rg')}
                             onBlur={() => setRgFocado(false)}
                             onSubmitEditing={() => telefoneRef.current?.focus()}
                             style={
@@ -446,23 +460,17 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                         <InputComIcone
                             iconName="call"
                             inputRef={telefoneRef}
-                            value={
-                                telefone.length === 0 ? '' :
-                                telefone.length <= 2 ? `(${telefone}` :
-                                telefone.length <= 7 ? `(${telefone.slice(0,2)}) ${telefone.slice(2)}` :
-                                telefone.length <= 11 ? `(${telefone.slice(0,2)}) ${telefone.slice(2,7)}-${telefone.slice(7)}` :
-                                telefone
-                            }
+                            value={formatTelefone(telefone)}
                             onChangeText={text => {
-                                // Aceita apenas números e limita a 11 dígitos
                                 const numeros = text.replace(/\D/g, '').slice(0, 11);
                                 setTelefone(numeros);
                             }}
                             placeholder="Telefone"
                             keyboardType="phone-pad"
-                            maxLength={15} // (99) 99999-9999
+                            maxLength={15}
                             returnKeyType="next"
                             onSubmitEditing={() => senhaRef.current?.focus()}
+                            // Não há dica de foco para telefone, mas pode ser adicionado se desejar
                             style={
                                 errors.telefone
                                     ? styles.inputError
@@ -487,8 +495,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             secureTextEntry={!mostrarSenha}
                             returnKeyType="next"
                             onFocus={() => {
-                                setSenhaFocada(true);
-                                setEmailFocado(false);
+                                handleAnyInputFocus('senha');
                                 handleInputFocus(senhaRef);
                             }}
                             onBlur={() => setSenhaFocada(false)}
@@ -578,8 +585,12 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             <Text style={styles.errorText}>{errors.confirmarSenha}</Text>
                         )}
 
-                        <TouchableOpacity style={styles.button} onPress={handleCadastro}>
-                            <Text style={styles.buttonText}>Cadastrar</Text>
+                        <TouchableOpacity style={styles.button} onPress={handleCadastro} disabled={loading}>
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.buttonText}>Cadastrar</Text>
+                            )}
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => navigation.goBack()}>
