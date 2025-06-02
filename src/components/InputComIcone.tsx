@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { RefObject } from 'react';
 import {
     View,
     TextInput,
@@ -10,10 +10,10 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import styles from '../screens/RegisterScreen/styles';
 
-interface InputComIconeProps extends TextInputProps {
+export interface InputComIconeProps extends TextInputProps {
     iconName: string;
     iconColor?: string;
-    inputRef?: React.RefObject<TextInput>;
+    inputRef?: RefObject<TextInput | null>;
     containerStyle?: StyleProp<ViewStyle>;
     showToggle?: boolean;
     showValue?: boolean;

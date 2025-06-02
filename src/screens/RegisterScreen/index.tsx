@@ -1,12 +1,10 @@
 /* eslint-disable react-native/no-inline-styles */
 import styles from './styles';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
     View,
     Text,
-    TextInput,
     TouchableOpacity,
-    Alert,
     KeyboardAvoidingView,
     TouchableWithoutFeedback,
     Keyboard,
@@ -17,263 +15,38 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import InputComIcone from '../../components/InputComIcone';
-import { formatRG, formatTelefone } from '../../utils/format';
-import { baseUrl } from '../../config/api'; // Importa a baseUrl configurada
+import PasswordStrengthMeter from '../../components/PasswordStrengthMeter';
+import { formatRG, formatTelefone, formatCPF } from '../../utils/format';
+import useRegisterForm from '../../hooks/useRegisterForm';
+import { avaliarForcaSenha, validateCPF, validateEmail } from '../../utils/validation';
+import { scrollToInput } from '../../utils/scroll';
 
 export default function RegisterScreen({ navigation }: { navigation: any }) {
-    const [nome, setNome] = useState('');
-    const [email, setEmail] = useState('');
-    const [senha, setSenha] = useState('');
-    const [cpf, setCpf] = useState('');
-    const [rg, setRg] = useState('');
-    const [telefone, setTelefone] = useState('');
-    const [emailFocado, setEmailFocado] = useState(false);
-    const [senhaFocada, setSenhaFocada] = useState(false);
-    const [confirmarSenha, setConfirmarSenha] = useState('');
-    const [mostrarSenha, setMostrarSenha] = useState(false);
-    const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
-    const [senhaMensagem, setSenhaMensagem] = useState('');
-    const [senhaForca, setSenhaForca] = useState<'fraca' | 'média' | 'forte' | ''>('');
-    const [nomeInvalido, setNomeInvalido] = useState(false);
-    const [errors, setErrors] = useState({
-        nome: '',
-        email: '',
-        senha: '',
-        confirmarSenha: '',
-        cpf: '',
-        rg: '',
-        telefone: '',
-    });
-    const [logoVisivel, setLogoVisivel] = useState(true);
-    const [loading, setLoading] = useState(false);
-    const scrollViewRef = useRef<ScrollView>(null);
-
-    // Novos estados para requisitos da senha
-    const [senhaRequisitos, setSenhaRequisitos] = useState({
-        tamanho: false,
-        letra: false,
-        numero: false,
-        simbolo: false,
-    });
-    const [cpfFocado, setCpfFocado] = useState(false);
-    const [rgFocado, setRgFocado] = useState(false);
-
-    const nomeRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
-    const emailRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
-    const senhaRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
-    const confirmarSenhaRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
-    const cpfRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
-    const rgRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
-    const telefoneRef = useRef<TextInput>(null) as React.RefObject<TextInput>;
-
-    const validateEmail = (emailToValidate: string) => {
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return regex.test(emailToValidate);
-    };
-
-    const avaliarForcaSenha = (s: string) => {
-        if (!s) {
-            return '';
-        }
-        if (s.length < 8) {
-            return 'fraca';
-        }
-        const temLetra = /[a-zA-Z]/.test(s);
-        const temNumero = /\d/.test(s);
-        const temEspecial = /[^a-zA-Z0-9]/.test(s);
-        if (s.length >= 8 && temLetra && temNumero && temEspecial) {
-            return 'forte';
-        }
-        if (temLetra && temNumero) {
-            return 'média';
-        }
-        return 'fraca';
-    };
-
-    const handleCadastro = async () => {
-        const newErrors = {
-            nome: '',
-            email: '',
-            senha: '',
-            confirmarSenha: '',
-            cpf: '',
-            rg: '',
-            telefone: '',
-        };
-
-        const trimmedNome = nome.trim();
-        const trimmedEmail = email.trim();
-        const trimmedSenha = senha.trim();
-        const trimmedConfirmarSenha = confirmarSenha.trim();
-        const trimmedCpf = cpf.trim();
-        const trimmedRg = rg.trim();
-        const trimmedTelefone = telefone.trim();
-
-        if (!trimmedNome || trimmedNome.length < 3) {
-            newErrors.nome = 'Nome deve ter ao menos 3 caracteres.';
-            setNomeInvalido(true);
-            nomeRef.current?.focus();
-        } else if (!validateEmail(trimmedEmail)) {
-            newErrors.email = 'E-mail inválido.';
-            emailRef.current?.focus();
-        } else if (trimmedSenha.length < 8) {
-            newErrors.senha = 'Senha deve ter pelo menos 8 caracteres.';
-            senhaRef.current?.focus();
-        } else if (trimmedSenha !== trimmedConfirmarSenha) {
-            newErrors.confirmarSenha = 'As senhas não coincidem.';
-            confirmarSenhaRef.current?.focus();
-        } else if (trimmedCpf.length !== 11) {
-            newErrors.cpf = 'CPF deve ter 11 dígitos.';
-            cpfRef.current?.focus();
-        } else if (!/^\d+$/.test(trimmedCpf)) {
-            newErrors.cpf = 'CPF deve conter apenas números.';
-            cpfRef.current?.focus();
-        } else if (trimmedRg.length === 0) {
-            newErrors.rg = 'RG é obrigatório.';
-            rgRef.current?.focus();
-        } else if (trimmedTelefone.length < 10) {
-            newErrors.telefone = 'Telefone deve ter pelo menos 10 dígitos.';
-            telefoneRef.current?.focus();
-        }
-        setErrors(newErrors);
-
-        const hasError = Object.values(newErrors).some(err => err !== '');
-        if (hasError) {
-            return;
-        }
-
-        // INTEGRAÇÃO COM BACKEND
-        // Aplica máscara ao RG antes de enviar
-        const rgFormatado = rg.length === 9 ? `${rg.slice(0,8)}-${rg.slice(8)}` : rg;
-        // const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3333' : 'http://localhost:3333';
-        setLoading(true);
-        try {
-            const response = await fetch(`${baseUrl}/user`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: nome,
-                    email: email,
-                    password: senha,
-                    rg: rgFormatado,
-                    cpf: cpf,
-                    cellphone: telefone,
-                }),
-            });
-            if (response.ok) {
-                Alert.alert('Sucesso', 'Usuário cadastrado com sucesso!');
-                setNome('');
-                setEmail('');
-                setSenha('');
-                setConfirmarSenha('');
-                setCpf('');
-                setRg('');
-                setTelefone('');
-                setSenhaForca('');
-                setSenhaMensagem('');
-                setNomeInvalido(false);
-                setErrors({ nome: '', email: '', senha: '', confirmarSenha: '', cpf: '', rg: '', telefone: '' });
-            } else {
-                let data = {};
-                try {
-                    data = await response.json();
-                } catch (e) {}
-                let mensagem = 'Erro ao cadastrar usuário.';
-                if (data) {
-                    if ('message' in data && typeof (data as any).message === 'string') {
-                        mensagem = (data as any).message;
-                    } else if ('message' in data && Array.isArray((data as any).message)) {
-                        mensagem = (data as any).message.join('\n');
-                    } else if (Array.isArray(data)) {
-                        mensagem = data.map((item: any) => item.message || JSON.stringify(item)).join('\n');
-                    }
-                }
-                Alert.alert('Erro', mensagem);
-            }
-        } catch (error) {
-            Alert.alert('Erro', 'Não foi possível conectar ao servidor.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (nome.trim().length >= 3) {
-            setNomeInvalido(false);
-            setErrors(prevErrors => ({ ...prevErrors, nome: '' }));
-        }
-    }, [nome]);
-
-    useEffect(() => {
-        if (validateEmail(email)) {
-            setErrors(prevErrors => ({ ...prevErrors, email: '' }));
-        }
-    }, [email]);
-
-    useEffect(() => {
-        if (senha.length >= 8) {
-            setErrors(prevErrors => ({ ...prevErrors, senha: '' }));
-            setSenhaMensagem('');
-        }
-    }, [senha]);
-
-    useEffect(() => {
-        if (confirmarSenha === senha && senha.length >= 8) {
-            setErrors(prevErrors => ({ ...prevErrors, confirmarSenha: '' }));
-        } else if (confirmarSenha !== senha) {
-            setErrors(prevErrors => ({
-                ...prevErrors,
-                confirmarSenha: 'As senhas não coincidem.',
-            }));
-        } else if (senha.length < 8 && confirmarSenha.length > 0) {
-            setErrors(prevErrors => ({
-                ...prevErrors,
-                confirmarSenha: 'A senha deve ter pelo menos 8 caracteres.',
-            }));
-        } else if (confirmarSenha.length > 0 && senha.length === 0) {
-            setErrors(prevErrors => ({ ...prevErrors, confirmarSenha: '' }));
-        }
-    }, [confirmarSenha, senha]);
-
-    // Atualiza requisitos da senha em tempo real
-    useEffect(() => {
-        setSenhaRequisitos({
-            tamanho: senha.length >= 8,
-            letra: /[a-zA-Z]/.test(senha),
-            numero: /\d/.test(senha),
-            simbolo: /[^a-zA-Z0-9]/.test(senha),
-        });
-    }, [senha]);
-
-    // Função utilitária para cor das dicas de senha
-    const getDicaSenhaCor = (ok: boolean) => {
-        return ok ? styles.dicaSenhaCorOk : styles.dicaSenhaCorErro;
-    };
-    const getSenhaForcaCor = () => {
-        if (senhaForca === 'fraca') { return styles.senhaForcaCorFraca; }
-        if (senhaForca === 'média') { return styles.senhaForcaCorMedia; }
-        if (senhaForca === 'forte') { return styles.senhaForcaCorForte; }
-        return null;
-    };
-
-    const scrollToInput = (y: number) => {
-        if (scrollViewRef.current) {
-            scrollViewRef.current.scrollTo({
-                y: y - 100, // desloca um pouco para cima para não ficar colado no topo
-                animated: true,
-            });
-        }
-    };
-
-    const handleInputFocus = (ref: React.RefObject<TextInput | null>) => {
-        if (ref.current) {
-            ref.current.measure((x, y, width, height, pageX, pageY) => {
-                scrollToInput(pageY || 0);
-            });
-        }
-    };
+    const {
+        nome, setNome,
+        email, setEmail,
+        senha, setSenha,
+        cpf, setCpf,
+        rg, setRg,
+        telefone, setTelefone,
+        confirmarSenha, setConfirmarSenha,
+        mostrarSenha, setMostrarSenha,
+        mostrarConfirmarSenha, setMostrarConfirmarSenha,
+        senhaMensagem, setSenhaMensagem,
+        senhaForca, setSenhaForca,
+        nomeInvalido, setNomeInvalido,
+        errors, setErrors,
+        logoVisivel, setLogoVisivel,
+        loading,
+        campoFocado, setCampoFocado,
+        senhaRequisitos, setSenhaRequisitos,
+        nomeRef, emailRef, senhaRef, confirmarSenhaRef, cpfRef, rgRef, telefoneRef,
+        handleCadastro,
+        handleAnyInputFocus,
+        handleInputFocus,
+        scrollViewRef,
+        getDicaSenhaCor,
+    } = useRegisterForm();
 
     useEffect(() => {
         const onKeyboardDidShow = () => setLogoVisivel(false);
@@ -284,21 +57,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
             showListener.remove();
             hideListener.remove();
         };
-    }, []);
-
-    // Função para centralizar o reset de foco dos campos
-    const handleAnyInputFocus = (campo: 'nome' | 'email' | 'senha' | 'cpf' | 'rg' | 'telefone' | 'confirmarSenha') => {
-        setEmailFocado(false);
-        setSenhaFocada(false);
-        setCpfFocado(false);
-        setRgFocado(false);
-        // Ativa apenas o campo desejado
-        if (campo === 'email') { setEmailFocado(true); }
-        if (campo === 'senha') { setSenhaFocada(true); }
-        if (campo === 'cpf') { setCpfFocado(true); }
-        if (campo === 'rg') { setRgFocado(true); }
-        // Se quiser adicionar outros campos focados, basta seguir o padrão
-    };
+    }, [setLogoVisivel]);
 
     return (
         <KeyboardAvoidingView
@@ -328,6 +87,11 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                         )}
                         <Text style={styles.title}>Cadastre-se</Text>
 
+                        {/* Aviso de obrigatoriedade */}
+                        <Text style={{ color: '#e53935', fontSize: 15, marginBottom: 10, alignSelf: 'center' }}>
+                            Todos os campos são obrigatórios
+                        </Text>
+
                         {/* Input de Nome com ícone */}
                         <InputComIcone
                             iconName="person"
@@ -336,25 +100,31 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             onChangeText={text => {
                                 const apenasLetras = text.replace(/[^a-zA-ZÀ-ÿ\s]/g, '');
                                 setNome(apenasLetras);
-                                setNomeInvalido(
-                                    apenasLetras.trim().length > 0 &&
-                                    apenasLetras.trim().length < 3,
-                                );
+                                if (apenasLetras.trim().length === 0) {
+                                    setErrors(e => ({ ...e, nome: '' }));
+                                    setNomeInvalido(false);
+                                } else if (apenasLetras.trim().length < 3) {
+                                    setErrors(e => ({ ...e, nome: '' })); // Não mostra erro enquanto digita
+                                    setNomeInvalido(true);
+                                } else {
+                                    setErrors(e => ({ ...e, nome: '' }));
+                                    setNomeInvalido(false);
+                                }
                             }}
                             placeholder="Nome completo"
                             autoFocus
                             returnKeyType="next"
                             onSubmitEditing={() => emailRef.current?.focus()}
                             onFocus={() => handleAnyInputFocus('nome')}
-                            style={
-                                errors.nome || nomeInvalido
-                                    ? styles.inputError
+                            onBlur={() => setCampoFocado(null)}
+                            style={[
+                                campoFocado === 'nome' && styles.inputFocus,
+                                nome.trim().length > 0 && nome.trim().length < 3
+                                    ? styles.inputWarning
                                     : nome.trim().length >= 3
                                     ? styles.inputSuccess
-                                    : nome.trim().length > 0
-                                    ? styles.inputWarning
-                                    : undefined
-                            }
+                                    : undefined,
+                            ]}
                         />
                         {nomeInvalido && (
                             <Text style={styles.avisoNome}>O nome está muito curto</Text>
@@ -366,25 +136,33 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             iconName="mail"
                             inputRef={emailRef}
                             value={email}
-                            onChangeText={setEmail}
+                            onChangeText={text => {
+                                setEmail(text);
+                                if (text.trim().length === 0) {
+                                    setErrors(e => ({ ...e, email: '' }));
+                                } else if (!validateEmail(text)) {
+                                    setErrors(e => ({ ...e, email: '' })); // Não mostra erro enquanto digita
+                                } else {
+                                    setErrors(e => ({ ...e, email: '' }));
+                                }
+                            }}
                             placeholder="Email"
                             keyboardType="email-address"
                             autoCapitalize="none"
                             returnKeyType="next"
                             onFocus={() => handleAnyInputFocus('email')}
-                            onBlur={() => setEmailFocado(false)}
+                            onBlur={() => setCampoFocado(null)}
                             onSubmitEditing={() => cpfRef.current?.focus()}
-                            style={
-                                errors.email
-                                    ? styles.inputError
-                                    : validateEmail(email)
-                                    ? styles.inputSuccess
-                                    : email.trim().length > 0
+                            style={[
+                                campoFocado === 'email' && styles.inputFocus,
+                                email.length > 0 && !validateEmail(email)
                                     ? styles.inputWarning
-                                    : undefined
-                            }
+                                    : email.length > 0 && validateEmail(email)
+                                    ? styles.inputSuccess
+                                    : undefined,
+                            ]}
                         />
-                        {emailFocado && (
+                        {campoFocado === 'email' && (
                             <Text style={styles.dicaEmail}>
                                 Informe um e-mail válido (ex: seuemail@exemplo.com)
                             </Text>
@@ -395,28 +173,54 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                         <InputComIcone
                             iconName="card"
                             inputRef={cpfRef}
-                            value={cpf}
-                            onChangeText={text => setCpf(text.replace(/\D/g, ''))}
+                            value={formatCPF(cpf)}
+                            onChangeText={text => {
+                                const onlyNumbers = text.replace(/\D/g, '');
+                                setCpf(onlyNumbers);
+                                if (onlyNumbers.length === 0) {
+                                    setErrors(e => ({ ...e, cpf: '' }));
+                                } else if (onlyNumbers.length !== 11) {
+                                    setErrors(e => ({ ...e, cpf: '' })); // Não mostra erro enquanto digita
+                                } else if (!validateCPF(onlyNumbers)) {
+                                    setErrors(e => ({ ...e, cpf: 'CPF inválido.' }));
+                                } else {
+                                    setErrors(e => ({ ...e, cpf: '' }));
+                                }
+                            }}
                             placeholder="CPF"
                             keyboardType="numeric"
-                            maxLength={11}
+                            maxLength={14} // 000.000.000-00
                             returnKeyType="next"
                             onFocus={() => handleAnyInputFocus('cpf')}
-                            onBlur={() => setCpfFocado(false)}
+                            onBlur={() => setCampoFocado(null)}
                             onSubmitEditing={() => rgRef.current?.focus()}
-                            style={
-                                errors.cpf
+                            style={[
+                                campoFocado === 'cpf' && styles.inputFocus,
+                                cpf.length === 11 && !validateCPF(cpf)
                                     ? styles.inputError
-                                    : cpf.length === 11 && /^\d{11}$/.test(cpf)
+                                    : cpf.length === 11 && validateCPF(cpf)
                                     ? styles.inputSuccess
                                     : cpf.length > 0
                                     ? styles.inputWarning
-                                    : undefined
-                            }
+                                    : undefined,
+                            ]}
                         />
-                        {cpfFocado && (
-                            <Text style={styles.dicaEmail}>
-                                Apenas números, sem pontos ou traço
+                        {/* Tooltip de validação do CPF */}
+                        {campoFocado === 'cpf' && !errors.cpf && (
+                            <Text
+                                style={
+                                    cpf.length === 11 && validateCPF(cpf)
+                                        ? styles.tooltipValido
+                                        : cpf.length === 11 && !validateCPF(cpf)
+                                        ? styles.tooltipInvalido
+                                        : styles.tooltipAviso
+                                }
+                            >
+                                {cpf.length === 11 && validateCPF(cpf)
+                                    ? 'CPF válido'
+                                    : cpf.length === 11 && !validateCPF(cpf)
+                                    ? 'CPF inválido'
+                                    : 'Digite os 11 dígitos do CPF'}
                             </Text>
                         )}
                         {errors.cpf && <Text style={styles.errorText}>{errors.cpf}</Text>}
@@ -427,31 +231,36 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             inputRef={rgRef}
                             value={formatRG(rg)}
                             onChangeText={text => {
-                                const numeros = text.replace(/\D/g, '').slice(0, 9);
+                                const numeros = text.replace(/\D/g, '');
                                 setRg(numeros);
+                                if (numeros.length === 0) {
+                                    setErrors(e => ({ ...e, rg: '' }));
+                                } else if (numeros.length !== 9) {
+                                    setErrors(e => ({ ...e, rg: '' }));
+                                } else if (!/^\d{9}$/.test(numeros)) {
+                                    setErrors(e => ({ ...e, rg: 'RG inválido.' }));
+                                } else {
+                                    setErrors(e => ({ ...e, rg: '' }));
+                                }
                             }}
                             placeholder="RG"
                             keyboardType="numeric"
-                            maxLength={10}
+                            maxLength={10} // 00000000-0
                             returnKeyType="next"
                             onFocus={() => handleAnyInputFocus('rg')}
-                            onBlur={() => setRgFocado(false)}
+                            onBlur={() => setCampoFocado(null)}
                             onSubmitEditing={() => telefoneRef.current?.focus()}
-                            style={
-                                errors.rg
+                            style={[
+                                campoFocado === 'rg' && styles.inputFocus,
+                                rg.length === 9 && !/^\d{9}$/.test(rg)
                                     ? styles.inputError
-                                    : rg.length > 0 && /^\d+$/.test(rg)
+                                    : rg.length === 9 && /^\d{9}$/.test(rg)
                                     ? styles.inputSuccess
                                     : rg.length > 0
                                     ? styles.inputWarning
-                                    : undefined
-                            }
+                                    : undefined,
+                            ]}
                         />
-                        {rgFocado && (
-                            <Text style={styles.dicaEmail}>
-                                Apenas números, sem pontos ou traço
-                            </Text>
-                        )}
                         {errors.rg && (
                             <Text style={styles.errorText}>{errors.rg}</Text>
                         )}
@@ -464,22 +273,36 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             onChangeText={text => {
                                 const numeros = text.replace(/\D/g, '').slice(0, 11);
                                 setTelefone(numeros);
+                                if (numeros.length === 0) {
+                                    setErrors(e => ({ ...e, telefone: '' }));
+                                } else if (numeros.length < 10) {
+                                    setErrors(e => ({ ...e, telefone: '' })); // Não mostra erro enquanto digita
+                                } else if (!/^\d{10,11}$/.test(numeros)) {
+                                    setErrors(e => ({ ...e, telefone: 'Telefone inválido.' }));
+                                } else {
+                                    setErrors(e => ({ ...e, telefone: '' }));
+                                }
                             }}
                             placeholder="Telefone"
                             keyboardType="phone-pad"
                             maxLength={15}
                             returnKeyType="next"
-                            onSubmitEditing={() => senhaRef.current?.focus()}
-                            // Não há dica de foco para telefone, mas pode ser adicionado se desejar
-                            style={
-                                errors.telefone
+                            onFocus={() => handleAnyInputFocus('telefone')}
+                            onBlur={() => setCampoFocado(null)}
+                            onSubmitEditing={() => {
+                                senhaRef.current?.focus();
+                                scrollToInput(senhaRef, scrollViewRef);
+                            }}
+                            style={[
+                                campoFocado === 'telefone' && styles.inputFocus,
+                                telefone.length >= 10 && !/^\d{10,11}$/.test(telefone)
                                     ? styles.inputError
-                                    : telefone.length >= 10
+                                    : telefone.length >= 10 && /^\d{10,11}$/.test(telefone)
                                     ? styles.inputSuccess
                                     : telefone.length > 0
                                     ? styles.inputWarning
-                                    : undefined
-                            }
+                                    : undefined,
+                            ]}
                         />
                         {errors.telefone && <Text style={styles.errorText}>{errors.telefone}</Text>}
 
@@ -490,23 +313,47 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             onChangeText={text => {
                                 setSenha(text);
                                 setSenhaForca(avaliarForcaSenha(text));
+                                setSenhaRequisitos({
+                                    tamanho: text.length >= 8,
+                                    letra: /[a-zA-Z]/.test(text),
+                                    numero: /\d/.test(text),
+                                    simbolo: /[^a-zA-Z0-9]/.test(text),
+                                });
+                                if (text.length === 0) {
+                                    setErrors(e => ({ ...e, senha: '' }));
+                                    setSenhaMensagem('');
+                                } else if (text.length < 8) {
+                                    setErrors(e => ({ ...e, senha: '' })); // Não mostra erro enquanto digita
+                                    setSenhaMensagem('Senha muito curta.');
+                                } else {
+                                    setErrors(e => ({ ...e, senha: '' }));
+                                    setSenhaMensagem('');
+                                }
                             }}
                             placeholder="Senha"
                             secureTextEntry={!mostrarSenha}
                             returnKeyType="next"
                             onFocus={() => {
                                 handleAnyInputFocus('senha');
-                                handleInputFocus(senhaRef);
+                                handleInputFocus('senha');
+                                scrollToInput(senhaRef, scrollViewRef);
                             }}
-                            onBlur={() => setSenhaFocada(false)}
+                            onBlur={() => setCampoFocado(null)}
                             onSubmitEditing={() => confirmarSenhaRef.current?.focus()}
                             showToggle
                             showValue={mostrarSenha}
                             onToggleShow={() => setMostrarSenha(!mostrarSenha)}
-                            style={errors.senha ? styles.inputError : undefined}
+                            style={[
+                                campoFocado === 'senha' && styles.inputFocus,
+                                senha.length >= 8
+                                    ? styles.inputSuccess
+                                    : senha.length > 0
+                                    ? styles.inputWarning
+                                    : undefined,
+                            ]}
                         />
-                        {/* Dica só aparece se senhaFocada for true */}
-                        {senhaFocada && (
+                        {/* Dica só aparece se senha estiver focada */}
+                        {campoFocado === 'senha' && (
                             <View style={styles.dicaSenhaContainer}>
                                 <Text style={styles.dicaSenhaTitulo}>
                                     Para uma senha forte, use:
@@ -523,63 +370,41 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             <Text style={styles.errorText}>{senhaMensagem}</Text>
                         )}
                         {senha ? (
-                            <View style={styles.barraForcaContainer}>
-                                <View
-                                    style={[
-                                        styles.barraForca,
-                                        {
-                                            backgroundColor:
-                                                senhaForca === 'fraca'
-                                                    ? '#e53935'
-                                                    : senhaForca === 'média'
-                                                    ? '#e6b800'
-                                                    : senhaForca === 'forte'
-                                                    ? 'green'
-                                                    : '#ccc',
-                                            width:
-                                                senhaForca === 'fraca'
-                                                    ? '33%'
-                                                    : senhaForca === 'média'
-                                                    ? '66%'
-                                                    : senhaForca === 'forte'
-                                                    ? '100%'
-                                                    : '0%',
-                                        },
-                                    ]}
-                                />
-                                <Text
-                                    style={[
-                                        styles.senhaForca,
-                                        getSenhaForcaCor(),
-                                    ]}
-                                >
-                                    Senha {senhaForca}
-                                </Text>
-                                {senhaForca === 'fraca' && (
-                                    <Text style={styles.dicaSenha}>
-                                        Adicione mais caracteres, letras, números e símbolos.
-                                    </Text>
-                                )}
-                                {senhaForca === 'média' && (
-                                    <Text style={styles.dicaSenha}>
-                                        Tente adicionar símbolos para torná-la mais forte.
-                                    </Text>
-                                )}
-                            </View>
+                            <PasswordStrengthMeter
+                                senha={senha}
+                                senhaForca={senhaForca}
+                            />
                         ) : null}
-
                         <InputComIcone
                             iconName="key"
                             inputRef={confirmarSenhaRef}
                             value={confirmarSenha}
-                            onChangeText={setConfirmarSenha}
+                            onChangeText={text => {
+                                setConfirmarSenha(text);
+                                if (text.length === 0) {
+                                    setErrors(e => ({ ...e, confirmarSenha: '' }));
+                                } else if (text !== senha) {
+                                    setErrors(e => ({ ...e, confirmarSenha: 'As senhas não coincidem.' }));
+                                } else if (senha.length < 8) {
+                                    setErrors(e => ({ ...e, confirmarSenha: 'A senha deve ter pelo menos 8 caracteres.' }));
+                                } else {
+                                    setErrors(e => ({ ...e, confirmarSenha: '' }));
+                                }
+                            }}
                             placeholder="Confirmar senha"
                             secureTextEntry={!mostrarConfirmarSenha}
-                            onFocus={() => handleInputFocus(confirmarSenhaRef)}
+                            onFocus={() => {
+                                handleAnyInputFocus('confirmarSenha');
+                                handleInputFocus('confirmarSenha');
+                            }}
+                            onBlur={() => setCampoFocado(null)}
                             showToggle
                             showValue={mostrarConfirmarSenha}
                             onToggleShow={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
-                            style={errors.confirmarSenha ? styles.inputError : undefined}
+                            style={[
+                                campoFocado === 'confirmarSenha' && styles.inputFocus,
+                                errors.confirmarSenha ? styles.inputError : undefined,
+                            ]}
                         />
                         {errors.confirmarSenha && (
                             <Text style={styles.errorText}>{errors.confirmarSenha}</Text>

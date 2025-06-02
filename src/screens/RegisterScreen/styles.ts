@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 
+// ==================== Container Styles ====================
 const styles = StyleSheet.create({
     scrollContainer: {
         flexGrow: 1,
@@ -7,15 +8,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#f6fafd',
     },
     container: {
-        flex: 1, // Isso fará com que o container interno ocupe todo o espaço disponível
+        flex: 1,
         alignItems: 'center',
         width: '100%',
         justifyContent: 'center',
     },
+
+    // ==================== Logo & Title ====================
     logo: {
-        maxHeight: 160, // altura máxima dinâmica
-        height: undefined, // garante que não há altura fixa
-        aspectRatio: 1.5, // mantém proporção visual agradável
+        maxHeight: 160,
+        height: undefined,
+        aspectRatio: 1.5,
     },
     title: {
         fontSize: 28,
@@ -25,6 +28,8 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         letterSpacing: 1,
     },
+
+    // ==================== Input States ====================
     inputError: {
         borderColor: '#e53935',
     },
@@ -34,6 +39,12 @@ const styles = StyleSheet.create({
     inputWarning: {
         borderColor: '#e6b800',
     },
+    inputFocus: {
+        borderColor: '#007bff',
+        borderWidth: 2,
+    },
+
+    // ==================== Button ====================
     button: {
         width: '100%',
         backgroundColor: '#0271bb',
@@ -54,6 +65,8 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         letterSpacing: 0.5,
     },
+
+    // ==================== Links ====================
     loginLinkText: {
         color: '#007bff',
         fontSize: 17, // maior
@@ -62,6 +75,8 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         fontWeight: '500',
     },
+
+    // ==================== Password Input ====================
     passwordContainer: {
         width: '100%',
         flexDirection: 'row',
@@ -78,13 +93,6 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
         elevation: 1,
     },
-    inputField: {
-        flex: 1,
-        height: 50,
-        fontSize: 16,
-        color: '#000',
-        width: '100%', // garante largura total
-    },
     passwordInput: {
         flex: 1,
         height: 50,
@@ -92,80 +100,14 @@ const styles = StyleSheet.create({
         color: '#000',
         width: '100%',
     },
-    errorText: {
-        color: '#e53935',
-        fontSize: 16,
-        marginBottom: 20,
-        marginLeft: 4,
-        fontWeight: '500',
-    },
-    senhaForca: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 14,
-        marginLeft: 4,
-        alignSelf: 'flex-start',
-    },
-    avisoNome: {
-        color: '#e6b800',
-        fontSize: 16,
-        marginBottom: 14,
-        marginLeft: 4,
-        fontWeight: 'bold',
-        alignSelf: 'center',
-        marginTop: -7,
-    },
-    dicaSenha: {
-        fontSize: 14,
-        color: '#777',
-        marginLeft: 4,
-        alignSelf: 'flex-start',
-        marginBottom: 2,
-    },
-    dicaEmail: {
-        fontSize: 14,
-        color: '#777',
-        marginLeft: 4,
-        alignSelf: 'flex-start',
-        marginBottom: 8,
-        marginTop: -8,
-    },
-    flex1: {
+
+    // ==================== Input Fields ====================
+    inputField: {
         flex: 1,
-    },
-    dicaSenhaContainer: {
+        height: 50,
+        fontSize: 16,
+        color: '#000',
         width: '100%',
-        marginBottom: 8,
-    },
-    dicaSenhaTitulo: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 4,
-    },
-    dicaSenhaItem: {},
-    dicaSenhaCorOk: {
-        color: 'green',
-    },
-    dicaSenhaCorErro: {
-        color: 'red',
-    },
-    barraForcaContainer: {
-        width: '100%',
-        marginBottom: 8,
-    },
-    barraForca: {
-        height: 6,
-        borderRadius: 3,
-        marginBottom: 2,
-    },
-    senhaForcaCorFraca: {
-        color: 'red',
-    },
-    senhaForcaCorMedia: {
-        color: '#e6b800',
-    },
-    senhaForcaCorForte: {
-        color: 'green',
     },
     inputWithIcon: {
         width: '100%',
@@ -186,6 +128,131 @@ const styles = StyleSheet.create({
     },
     inputIcon: {
         marginRight: 8,
+    },
+
+    // ==================== Error & Warning Texts ====================
+    errorText: {
+        color: '#e53935',
+        fontSize: 16,
+        marginBottom: 20,
+        marginLeft: 4,
+        fontWeight: '500',
+    },
+    avisoNome: {
+        color: '#e6b800',
+        fontSize: 16,
+        marginBottom: 14,
+        marginLeft: 4,
+        fontWeight: 'bold',
+        alignSelf: 'center',
+        marginTop: -7,
+    },
+
+    // ==================== Password Strength & Tips ====================
+    senhaForca: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 14,
+        marginLeft: 4,
+        alignSelf: 'flex-start',
+    },
+    dicaSenha: {
+        fontSize: 14,
+        color: '#777',
+        marginLeft: 4,
+        alignSelf: 'flex-start',
+        marginBottom: 2,
+    },
+    dicaEmail: {
+        fontSize: 14,
+        color: '#777',
+        marginLeft: 4,
+        alignSelf: 'flex-start',
+        marginBottom: 8,
+        marginTop: -8,
+    },
+    dicaSenhaContainer: {
+        width: '100%',
+        marginBottom: 8,
+    },
+    dicaSenhaTitulo: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 4,
+    },
+    dicaSenhaItem: {},
+    dicaSenhaCorOk: {
+        color: 'green',
+    },
+    dicaSenhaCorErro: {
+        color: 'red',
+    },
+
+    // ==================== Password Strength Bar ====================
+    barraForcaContainer: {
+        width: '100%',
+        marginBottom: 8,
+    },
+    barraForca: {
+        height: 6,
+        borderRadius: 3,
+        marginBottom: 2,
+    },
+    barraForcaFraca: {
+        backgroundColor: '#e53935',
+        width: '33%',
+    },
+    barraForcaMedia: {
+        backgroundColor: '#e6b800',
+        width: '66%',
+    },
+    barraForcaForte: {
+        backgroundColor: 'green',
+        width: '100%',
+    },
+    barraForcaVazia: {
+        backgroundColor: '#ccc',
+        width: '0%',
+    },
+    senhaForcaCorFraca: {
+        color: 'red',
+    },
+    senhaForcaCorMedia: {
+        color: '#e6b800',
+    },
+    senhaForcaCorForte: {
+        color: 'green',
+    },
+
+    // ==================== Tooltips ====================
+    tooltipValido: {
+        color: 'green',
+        fontSize: 15,
+        marginTop: -8,
+        marginBottom: 13,
+        alignSelf: 'center',
+        fontWeight: 'bold',
+    },
+    tooltipInvalido: {
+        color: '#e53935',
+        fontSize: 15,
+        marginTop: -8,
+        marginBottom: 13,
+        alignSelf: 'center',
+        fontWeight: 'bold',
+    },
+    tooltipAviso: {
+        color: '#e6b800',
+        fontSize: 15,
+        marginTop: -8,
+        marginBottom: 13,
+        alignSelf: 'center',
+        fontWeight: 'bold',
+    },
+
+    // ==================== Utility ====================
+    flex1: {
+        flex: 1,
     },
 });
 
