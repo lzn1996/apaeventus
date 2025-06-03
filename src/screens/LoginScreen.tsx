@@ -84,7 +84,10 @@ export default function LoginScreen({ navigation }: any) {
             <TouchableOpacity onPress={() => navigation.navigate('RecuperarSenha')}>
               <Text style={styles.link}>Esqueceu a senha?</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('Cadastro')}>
+            <TouchableOpacity onPress={() => {
+              Keyboard.dismiss();
+              setTimeout(() => navigation.navigate('Cadastro'), 50);
+            }}>
               <Text style={styles.link}>Cadastrar-se</Text>
             </TouchableOpacity>
           </View>

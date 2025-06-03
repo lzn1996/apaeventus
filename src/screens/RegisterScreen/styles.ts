@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 
+// ==================== Container Styles ====================
 const styles = StyleSheet.create({
     scrollContainer: {
         flexGrow: 1,
@@ -7,43 +8,43 @@ const styles = StyleSheet.create({
         backgroundColor: '#f6fafd',
     },
     container: {
-        flex: 1, // Isso fará com que o container interno ocupe todo o espaço disponível
+        flex: 1,
         alignItems: 'center',
         width: '100%',
         justifyContent: 'center',
     },
+
+    // ==================== Logo & Title ====================
     logo: {
-        maxHeight: 180, // altura máxima dinâmica
-        height: undefined, // garante que não há altura fixa
-        aspectRatio: 1.5, // mantém proporção visual agradável
+        maxHeight: 160,
+        height: undefined,
+        aspectRatio: 1.5,
     },
     title: {
-        fontSize: 32, // maior
+        fontSize: 28,
         fontWeight: 'bold',
-        marginBottom: 36, // aumentado
+        marginBottom: 26,
         color: '#007bff',
         alignSelf: 'center',
         letterSpacing: 1,
     },
-    input: {
-        width: '100%',
-        height: 53,
-        backgroundColor: '#fff',
-        borderColor: '#b0b8c1',
-        borderWidth: 1.5,
-        borderRadius: 10,
-        paddingHorizontal: 16,
-        fontSize: 18, // maior
-        marginBottom: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 2,
-        elevation: 1,
-    },
+
+    // ==================== Input States ====================
     inputError: {
         borderColor: '#e53935',
     },
+    inputSuccess: {
+        borderColor: '#2ecc40',
+    },
+    inputWarning: {
+        borderColor: '#e6b800',
+    },
+    inputFocus: {
+        borderColor: '#007bff',
+        borderWidth: 2,
+    },
+
+    // ==================== Button ====================
     button: {
         width: '100%',
         backgroundColor: '#0271bb',
@@ -64,6 +65,8 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         letterSpacing: 0.5,
     },
+
+    // ==================== Links ====================
     loginLinkText: {
         color: '#007bff',
         fontSize: 17, // maior
@@ -72,6 +75,8 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         fontWeight: '500',
     },
+
+    // ==================== Password Input ====================
     passwordContainer: {
         width: '100%',
         flexDirection: 'row',
@@ -79,7 +84,7 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: '#b0b8c1',
         borderRadius: 10,
-        paddingHorizontal: 16,
+        paddingHorizontal: 13,
         marginBottom: 22,
         backgroundColor: '#fff',
         shadowColor: '#000',
@@ -93,20 +98,45 @@ const styles = StyleSheet.create({
         height: 50,
         fontSize: 18,
         color: '#000',
+        width: '100%',
     },
+
+    // ==================== Input Fields ====================
+    inputField: {
+        flex: 1,
+        height: 50,
+        fontSize: 16,
+        color: '#000',
+        width: '100%',
+    },
+    inputWithIcon: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderColor: '#b0b8c1',
+        borderWidth: 1.5,
+        borderRadius: 10,
+        paddingLeft: 12,
+        paddingRight: 16,
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    inputIcon: {
+        marginRight: 8,
+    },
+
+    // ==================== Error & Warning Texts ====================
     errorText: {
         color: '#e53935',
         fontSize: 16,
         marginBottom: 20,
         marginLeft: 4,
         fontWeight: '500',
-    },
-    senhaForca: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 14,
-        marginLeft: 4,
-        alignSelf: 'flex-start',
     },
     avisoNome: {
         color: '#e6b800',
@@ -115,6 +145,16 @@ const styles = StyleSheet.create({
         marginLeft: 4,
         fontWeight: 'bold',
         alignSelf: 'center',
+        marginTop: -7,
+    },
+
+    // ==================== Password Strength & Tips ====================
+    senhaForca: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 14,
+        marginLeft: 4,
+        alignSelf: 'flex-start',
     },
     dicaSenha: {
         fontSize: 14,
@@ -130,9 +170,6 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         marginBottom: 8,
         marginTop: -8,
-    },
-    flex1: {
-        flex: 1,
     },
     dicaSenhaContainer: {
         width: '100%',
@@ -150,6 +187,8 @@ const styles = StyleSheet.create({
     dicaSenhaCorErro: {
         color: 'red',
     },
+
+    // ==================== Password Strength Bar ====================
     barraForcaContainer: {
         width: '100%',
         marginBottom: 8,
@@ -159,6 +198,22 @@ const styles = StyleSheet.create({
         borderRadius: 3,
         marginBottom: 2,
     },
+    barraForcaFraca: {
+        backgroundColor: '#e53935',
+        width: '33%',
+    },
+    barraForcaMedia: {
+        backgroundColor: '#e6b800',
+        width: '66%',
+    },
+    barraForcaForte: {
+        backgroundColor: 'green',
+        width: '100%',
+    },
+    barraForcaVazia: {
+        backgroundColor: '#ccc',
+        width: '0%',
+    },
     senhaForcaCorFraca: {
         color: 'red',
     },
@@ -167,6 +222,37 @@ const styles = StyleSheet.create({
     },
     senhaForcaCorForte: {
         color: 'green',
+    },
+
+    // ==================== Tooltips ====================
+    tooltipValido: {
+        color: 'green',
+        fontSize: 15,
+        marginTop: -8,
+        marginBottom: 13,
+        alignSelf: 'center',
+        fontWeight: 'bold',
+    },
+    tooltipInvalido: {
+        color: '#e53935',
+        fontSize: 15,
+        marginTop: -8,
+        marginBottom: 13,
+        alignSelf: 'center',
+        fontWeight: 'bold',
+    },
+    tooltipAviso: {
+        color: '#e6b800',
+        fontSize: 15,
+        marginTop: -8,
+        marginBottom: 13,
+        alignSelf: 'center',
+        fontWeight: 'bold',
+    },
+
+    // ==================== Utility ====================
+    flex1: {
+        flex: 1,
     },
 });
 
