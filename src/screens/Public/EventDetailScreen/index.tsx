@@ -1,18 +1,52 @@
-import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native';
+// src/screens/Public/EventDetailScreen/index.tsx
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import styles from './styles';
+import { getTicketById } from '../../../services/eventService';
+import eventBanner from '../../../assets/event-banner.png';
 
 export default function EventDetailScreen() {
-    const event = {
-        title: 'Festa Junina - 2025',
-        description: 'Prepare-se para a tradicional Festa Junina da APAE Itapira!\nUm evento repleto de comidas típicas, quadrilha animada e um super show da renomada dupla sertaneja César & Paulinho. Diversão garantida para toda a família!',
-        price: 30.0,
-        date: '14/06/2025 às 19h',
-        imageUrl: require('../../../assets/event-banner.png'),
-        address: 'Rua Jacob Audi, 132\nPenha do Rio do Peixe - Itapira - SP\n(19) 3813-8899',
-    };
+    const [event, setEvent] = useState<any>(null);
     const [quantity, setQuantity] = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [imageError, setImageError] = useState(false);
+    const [aspectRatio, setAspectRatio] = useState(16 / 9);
+    const ticketId = '0ce23db5-6566-4abf-b467-f94f7fa676cc';
+
+    useEffect(() => {
+        async function fetchEvent() {
+            try {
+                const data = await getTicketById(ticketId);
+                setEvent(data);
+            } catch (err) {
+                setError('Erro ao carregar evento.');
+                Alert.alert('Erro', 'Não foi possível carregar o evento.');
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchEvent();
+    }, []);
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#007bff" />
+                <Text>Carregando evento...</Text>
+            </View>
+        );
+    }
+
+    if (error || !event) {
+        return (
+            <View style={styles.loadingContainer}>
+                <Text style={styles.errorText}>{error || 'Evento não encontrado.'}</Text>
+            </View>
+        );
+    }
+
     const total = event.price * quantity;
 
     const handleBuy = () => {
@@ -21,50 +55,66 @@ export default function EventDetailScreen() {
         console.log(`Comprando ${quantity} ingresso(s) por R$${total.toFixed(2)}`);
     };
 
+    const handleIncrement = () => {
+        setQuantity(prev => (prev < 5 ? prev + 1 : prev));
+    };
+    const handleDecrement = () => {
+        setQuantity(prev => Math.max(1, prev - 1));
+    };
+
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Image
-                source={event.imageUrl}
-                style={styles.banner}
-            />
+        <View style={styles.root}>
+            <ScrollView contentContainerStyle={styles.container} alwaysBounceVertical={true}>
+                <Image
+                    source={imageError || !event.imageUrl ? eventBanner : { uri: event.imageUrl }}
+                    style={[styles.banner, { aspectRatio }]}
+                    resizeMode="contain"
+                    onError={() => setImageError(true)}
+                    onLoad={e => {
+                        if (e.nativeEvent && e.nativeEvent.source && e.nativeEvent.source.width && e.nativeEvent.source.height) {
+                            setAspectRatio(e.nativeEvent.source.width / e.nativeEvent.source.height);
+                        }
+                    }}
+                />
 
-            <Text style={styles.title}>{event.title}</Text>
+                <Text style={styles.title}>{event.title}</Text>
 
-            <View style={styles.dateRow}>
-                <Ionicons name="calendar-outline" size={16} color="#555" />
-                <Text style={styles.dateText}>{event.date}</Text>
-            </View>
-
-            <View style={styles.priceBox}>
-                <Text style={styles.price}>R${event.price.toFixed(2)}</Text>
-
-                <View style={styles.counter}>
-                    <TouchableOpacity onPress={() => setQuantity(prev => Math.max(1, prev - 1))}>
-                        <Text style={styles.counterButton}>-</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.counterValue}>{quantity}</Text>
-                    <TouchableOpacity onPress={() => setQuantity(prev => prev + 1)}>
-                        <Text style={styles.counterButton}>+</Text>
-                    </TouchableOpacity>
+                <View style={styles.dateRow}>
+                    <Ionicons name="calendar-outline" size={16} color="#555" />
+                    <Text style={styles.dateText}>{new Date(event.eventDate).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</Text>
                 </View>
 
-                <Text style={styles.total}>Total: R${total.toFixed(2)}</Text>
-            </View>
+                <View style={styles.priceBox}>
+                    <Text style={styles.price}>R${Number(event.price).toFixed(2)}</Text>
 
-            <TouchableOpacity style={styles.buyButton} onPress={handleBuy}>
-                <Text style={styles.buyButtonText}>Comprar</Text>
-            </TouchableOpacity>
+                    <View style={styles.counter}>
+                        <TouchableOpacity onPress={handleDecrement} disabled={quantity === 1}>
+                            <Text style={[styles.counterButton, quantity === 1 && styles.counterButtonDisabled]}>-</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.counterValue}>{quantity}</Text>
+                        <TouchableOpacity onPress={handleIncrement} disabled={quantity === 5}>
+                            <Text style={[styles.counterButton, quantity === 5 && styles.counterButtonDisabled]}>+</Text>
+                        </TouchableOpacity>
+                    </View>
 
-            <View style={styles.descriptionBox}>
-                <Text style={styles.sectionTitle}>{event.title}</Text>
-                <Text style={styles.description}>
-                    {event.description}
+                    <Text style={styles.total}>Total: R${(Number(event.price) * quantity).toFixed(2)}</Text>
+                </View>
+
+                <TouchableOpacity style={styles.buyButton} onPress={handleBuy}>
+                    <Text style={styles.buyButtonText}>Comprar</Text>
+                </TouchableOpacity>
+
+                <View style={styles.descriptionBox}>
+                    <Text style={styles.sectionTitle}>{event.title}</Text>
+                    <Text style={styles.description}>
+                        {event.description}
+                    </Text>
+                </View>
+
+                <Text style={styles.address}>
+                    Rua Jacob Audi, 132{'\n'}Penha do Rio do Peixe - Itapira - SP{'\n'}(19) 3813-8899
                 </Text>
-            </View>
-
-            <Text style={styles.address}>
-                {event.address}
-            </Text>
-        </ScrollView>
+            </ScrollView>
+        </View>
     );
 }

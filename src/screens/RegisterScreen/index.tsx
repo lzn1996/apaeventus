@@ -352,6 +352,9 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                                     : undefined,
                             ]}
                         />
+                        {errors.senha && (
+                            <Text style={styles.errorText}>{errors.senha}</Text>
+                        )}
                         {/* Dica só aparece se senha estiver focada */}
                         {campoFocado === 'senha' && (
                             <View style={styles.dicaSenhaContainer}>

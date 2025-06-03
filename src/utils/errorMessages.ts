@@ -12,6 +12,7 @@ const errorMessages = {
   email: {
     required: 'E-mail é obrigatório.',
     invalid: 'E-mail inválido.',
+    exists: 'Este e-mail já está cadastrado.',
   },
   senha: {
     required: 'Senha é obrigatória.',

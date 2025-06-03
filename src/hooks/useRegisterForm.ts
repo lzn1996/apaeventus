@@ -1,7 +1,7 @@
 // src/hooks/useRegisterForm.ts
 
 import { useState, useRef, useEffect } from 'react';
-import { Alert, Keyboard, ScrollView } from 'react-native'; // Importe conforme necessário
+import { Alert, Keyboard, ScrollView } from 'react-native';
 import { baseUrl } from '../config/api';
 import {
     validateEmail,
@@ -9,10 +9,10 @@ import {
     avaliarForcaSenha,
     validateRG,
     validateTelefone,
-    validateNome, // Adicionado para consistência
+    validateNome,
 } from '../utils/validation';
 import errorMessages from '../utils/errorMessages';
-import { formatCPF, formatRG, formatTelefone } from '../utils/format'; // Importe os formatadores
+import { formatCPF, formatRG, formatTelefone } from '../utils/format';
 import type { TextInput } from 'react-native';
 
 // Definição de tipo para os erros
@@ -89,19 +89,19 @@ const useRegisterForm = () => {
 
     const handleChangeEmail = (text: string) => {
         setEmail(text);
-        setErrors(e => ({ ...e, email: '' })); // Limpa o erro ao digitar
+        setErrors(e => ({ ...e, email: '' }));
     };
 
     const handleChangeCPF = (text: string) => {
         const onlyNumbers = text.replace(/\D/g, '');
         setCpf(onlyNumbers);
-        setErrors(e => ({ ...e, cpf: '' })); // Limpa o erro ao digitar
+        setErrors(e => ({ ...e, cpf: '' }));
     };
 
     const handleChangeRG = (text: string) => {
         const numeros = text.replace(/\D/g, '');
         setRg(numeros);
-        setErrors(e => ({ ...e, rg: '' })); // Limpa o erro ao digitar
+        setErrors(e => ({ ...e, rg: '' }));
     };
 
     const handleChangeTelefone = (text: string) => {
@@ -292,16 +292,32 @@ const useRegisterForm = () => {
                 let data = {};
                 try { data = await response.json(); } catch (e) { }
                 let mensagem = 'Erro ao cadastrar usuário.';
+                let emailDuplicado = false;
                 if (data) {
                     if ('message' in data && typeof (data as any).message === 'string') {
                         mensagem = (data as any).message;
+                        if (mensagem.toLowerCase().includes('email') && mensagem.toLowerCase().includes('já cadastrado')) {
+                            setErrors(e => ({ ...e, email: errorMessages.email.exists }));
+                            emailDuplicado = true;
+                        }
                     } else if ('message' in data && Array.isArray((data as any).message)) {
-                        mensagem = (data as any).message.join('\n');
+                        const msgArr = (data as any).message;
+                        if (msgArr.some((m: string) => m.toLowerCase().includes('email') && m.toLowerCase().includes('já cadastrado'))) {
+                            setErrors(e => ({ ...e, email: errorMessages.email.exists }));
+                            emailDuplicado = true;
+                        }
+                        mensagem = msgArr.join('\n');
                     } else if (Array.isArray(data)) {
+                        if (data.some((item: any) => (item.message || '').toLowerCase().includes('email') && (item.message || '').toLowerCase().includes('já cadastrado'))) {
+                            setErrors(e => ({ ...e, email: errorMessages.email.exists }));
+                            emailDuplicado = true;
+                        }
                         mensagem = data.map((item: any) => item.message || JSON.stringify(item)).join('\n');
                     }
                 }
-                Alert.alert('Erro', mensagem);
+                if (!emailDuplicado) {
+                    Alert.alert('Erro', mensagem);
+                }
             }
         } catch (error: any) {
             if (timeoutId) { clearTimeout(timeoutId); }
