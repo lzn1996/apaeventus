@@ -9,13 +9,14 @@ import QRCodeScannerScreen from '../screens/QRCodeScannerScreen';
 import RegisterScreen from '../screens/RegisterScreen'; // Registration screen for new users
 import SplashScreen from '../screens/SplashScreen'; // Splash screen for initial loading
 import EventDetailScreen from '../screens/Public/EventDetailScreen'; // Public event detail screen
+import PurchaseScreen from '../screens/PurchaseScreen'; // Importing PurchaseScreen
 
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
   return (
-    <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false }}>
+    <Stack.Navigator initialRouteName="EventDetail" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />{/* Splash screen for initial loading */}
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
@@ -25,6 +26,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Scanner" component={QRCodeScannerScreen} />
       <Stack.Screen name="Cadastro" component={RegisterScreen} />{/* Registration screen for new users */}
       <Stack.Screen name="EventDetail" component={EventDetailScreen} options={{ headerShown: false }}/>{/* Public event detail screen */}
+      <Stack.Screen name="Purchase" component={PurchaseScreen} options={{ headerShown: true, title: 'Finalizar Compra' }} />{/* Purchase screen for ticket buying */}
 
     </Stack.Navigator>
   );
