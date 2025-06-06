@@ -37,11 +37,15 @@ const processQueue = (error: any, token: string | null = null) => {
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
+        if (error?.response?.status === 401) {
+            console.log('API response Interceptor Received error staus: 401', error?.config?.url);
+        }
         const originalRequest = error.config;
         if (
             error.response?.status === 401 &&
             !originalRequest._retry
         ) {
+            console.log('[api.interceptor] Tentando refreshToken para:', originalRequest.url);
             if (isRefreshing) {
                 return new Promise(function (resolve, reject) {
                     failedQueue.push({ resolve, reject });
@@ -58,6 +62,9 @@ api.interceptors.response.use(
             isRefreshing = true;
             try {
                 const newAccessToken = await refreshToken();
+                if (!newAccessToken) {
+                    throw new Error('Refresh token inválido');
+                }
                 const currentRefreshToken = await authService.getRefreshToken();
                 await authService.setTokens(newAccessToken, currentRefreshToken || '');
                 processQueue(null, newAccessToken);
@@ -66,8 +73,12 @@ api.interceptors.response.use(
             } catch (refreshError) {
                 processQueue(refreshError, null);
                 await authService.clearTokens();
-                Alert.alert('Sessão expirada', 'Faça login novamente para continuar.');
-                navigate('Login');
+                if (!error.config._fromRefresh) {
+                    console.log('[api.interceptor] Falha ao renovar token, redirecionando para login.');
+                    Alert.alert('Sessão expirada', 'Faça login novamente para continuar.');
+                    navigate('Login');
+                    error.config._fromRefresh = true;
+                }
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;

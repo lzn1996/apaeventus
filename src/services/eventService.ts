@@ -1,10 +1,9 @@
-import axios from 'axios';
-import { baseUrl } from '../config/api';
+import api from './api';
 
 // Buscar todos os tickets (ingressos)
 export async function getTickets() {
     try {
-        const response = await axios.get(`${baseUrl}/ticket`);
+        const response = await api.get('/ticket');
         return response.data;
     } catch (error) {
         console.error('Erro ao buscar tickets:', error);
@@ -15,7 +14,7 @@ export async function getTickets() {
 // Buscar detalhes de um ticket específico
 export async function getTicketById(id: string | number) {
     try {
-        const response = await axios.get(`${baseUrl}/ticket/${id}`);
+        const response = await api.get(`/ticket/${id}`);
         return response.data;
     } catch (error) {
         console.error('Erro ao buscar ticket por ID:', error);
@@ -26,7 +25,7 @@ export async function getTicketById(id: string | number) {
 // Criar uma venda (compra de ingresso)
 export async function createSale(data: { ticketId: string | number; quantity: number; userId?: string }) {
     try {
-        const response = await axios.post(`${baseUrl}/sale`, data);
+        const response = await api.post('/sale', data);
         return response.data;
     } catch (error) {
         console.error('Erro ao criar venda:', error);

@@ -1,6 +1,4 @@
-import axios from 'axios';
-import { baseUrl } from '../config/api';
-import { authService } from './authService';
+import api from './api';
 
 /**
  * Serviço responsável por operações relacionadas ao usuário, como obtenção do perfil do usuário autenticado.
@@ -8,12 +6,7 @@ import { authService } from './authService';
  */
 
 export async function getUserProfile() {
-    const accessToken = await authService.getAccessToken();
-    if (!accessToken) {throw new Error('Usuário não autenticado');}
-    const response = await axios.get(`${baseUrl}/user/profile`, {
-        headers: {
-        Authorization: `Bearer ${accessToken}`,
-        },
-    });
+    // Não precisa pegar o accessToken manualmente, o api já faz isso
+    const response = await api.get('/user/profile');
     return response.data;
 }

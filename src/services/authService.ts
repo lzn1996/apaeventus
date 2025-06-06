@@ -20,14 +20,31 @@ export const authService = {
      * @param refreshToken - Token de refresh do usuário.
      */
     async setTokens(accessToken: string, refreshToken: string) {
-    try {
-        await AsyncStorage.multiSet([
-            [ACCESS_TOKEN_KEY, accessToken],
-            [REFRESH_TOKEN_KEY, refreshToken],
-        ]);
-    } catch (error) {
-        console.error('Erro ao salvar tokens:', error);
-    }
+        try {
+            let safeRefreshToken = refreshToken;
+            if (typeof safeRefreshToken !== 'string' || safeRefreshToken === '') {
+                // Se não veio um novo refreshToken, tenta manter o anterior
+                const previous = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+                safeRefreshToken = previous || '';
+                if (__DEV__) {
+                    console.log('[authService] Mantendo refreshToken anterior:', safeRefreshToken);
+                }
+            } else {
+                if (__DEV__) {
+                    console.log('[authService] Novo refreshToken recebido:', safeRefreshToken);
+                }
+            }
+            await AsyncStorage.multiSet([
+                [ACCESS_TOKEN_KEY, accessToken],
+                [REFRESH_TOKEN_KEY, safeRefreshToken],
+            ]);
+            if (__DEV__) {
+                console.log('[authService] AccessToken salvo:', accessToken);
+                console.log('[authService] RefreshToken salvo:', safeRefreshToken);
+            }
+        } catch (error) {
+            console.error('[authService] Erro ao salvar tokens:', error);
+        }
 },
 
     /**
@@ -37,7 +54,7 @@ export const authService = {
     async getAccessToken() {
         const token = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
         if (__DEV__) {
-        console.log('AccessToken salvo no AsyncStorage:', token);
+            console.log('[authService] getAccessToken:', token);
         }
         return token;
     },
@@ -48,7 +65,9 @@ export const authService = {
      */
     async getRefreshToken() {
         const token = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
-        console.log('RefreshToken salvo no AsyncStorage:', token);
+        if (__DEV__) {
+            console.log('[authService] getRefreshToken:', token);
+        }
         return token;
     },
 

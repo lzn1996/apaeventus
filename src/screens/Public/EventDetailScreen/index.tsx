@@ -18,7 +18,7 @@ export default function EventDetailScreen() {
     const [error, setError] = useState<string | null>(null);
     const [imageError, setImageError] = useState(false);
     const [aspectRatio, setAspectRatio] = useState(16 / 9);
-    const ticketId = '0ce23db5-6566-4abf-b467-f94f7fa676cc';
+    const ticketId = '081bc814-21ad-47dc-8120-ab6d86c89981'; // Replace with dynamic ID as needed
 
     useEffect(() => {
         async function fetchEvent() {
