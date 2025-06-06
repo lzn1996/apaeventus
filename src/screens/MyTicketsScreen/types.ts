@@ -4,6 +4,7 @@ export interface MyEvent {
   id: string;
   title: string;
   date: string;
+  time?: string; // horário do evento (opcional)
   location: string;
   imageUrl?: string;
 }

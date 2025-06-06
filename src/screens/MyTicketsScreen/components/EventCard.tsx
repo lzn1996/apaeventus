@@ -16,7 +16,10 @@ const EventCard: React.FC<EventCardProps> = ({ event, onPress }) => (
         )}
         <View style={styles.cardContent}>
             <Text style={styles.cardTitle}>{event.title}</Text>
-            <Text style={styles.cardDate}>{event.date}</Text>
+            <Text style={styles.cardDate}>
+                {event.date}
+                {event.time ? ` • ${event.time}` : ''}
+            </Text>
             <Text style={styles.cardLocation}>{event.location}</Text>
         </View>
     </TouchableOpacity>
