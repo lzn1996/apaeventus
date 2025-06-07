@@ -10,6 +10,8 @@ import { getTicketById } from '../../../services/eventService';
 import { authService } from '../../../services/authService';
 import eventBanner from '../../../assets/event-banner.png';
 
+declare module '*.png';
+
 export default function EventDetailScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'EventDetail'>>();
     const [event, setEvent] = useState<any>(null);

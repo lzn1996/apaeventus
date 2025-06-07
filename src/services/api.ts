@@ -11,6 +11,10 @@ const api = axios.create({
 
 // Adiciona o accessToken antes de cada requisição
 api.interceptors.request.use(async (config) => {
+    // Não adiciona Authorization no login
+    if (config.url?.includes('/auth/login')) {
+        return config;
+    }
     const token = await authService.getAccessToken();
     if (token) {
         config.headers = config.headers || {};

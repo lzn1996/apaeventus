@@ -3,14 +3,14 @@ import React, { useEffect, useState } from 'react';
 import { View, FlatList, Text } from 'react-native';
 import styles from './styles';
 import EventCard from './components/EventCard';
-import { getUserSales } from '../../services/saleService';
-import { Sale } from '../../services/saleService';
+import { getAllEvents, getTicketsByEvent, logAllTickets } from '../../database/ticketService';
+import type { TicketDB } from '../../database/ticketService';
 import { MyEvent } from './types';
 import { getUserProfile } from '../../services/userService';
 
 interface GroupedTickets {
     event: MyEvent;
-    tickets: Sale[];
+    tickets: TicketDB[];
 }
 
 export default function MyTicketsScreen({ navigation }: any) {
@@ -26,49 +26,64 @@ export default function MyTicketsScreen({ navigation }: any) {
             // Busca o perfil do usuário autenticado
             const profile = await getUserProfile();
             setUserProfile(profile);
-            const data = await getUserSales();
-            // Agrupa os ingressos por ticket.id
-            const map = new Map<string, GroupedTickets>();
-            data.forEach((sale: Sale) => {
-                const ticketId = sale.ticket.id;
-                if (!map.has(ticketId)) {
-                    map.set(ticketId, {
-                        event: {
-                            id: ticketId,
-                            title: sale.ticket.title,
-                            date: new Date(sale.ticket.eventDate).toLocaleDateString('pt-BR'),
-                            location: sale.ticket.description,
-                            imageUrl: sale.ticket.imageUrl,
-                        },
-                        tickets: [sale],
-                    });
-                } else {
-                    map.get(ticketId)!.tickets.push(sale);
-                }
+            // Busca todos os ingressos do SQLite (de todos os eventos)
+            const events = await getAllEvents();
+            let allTickets: TicketDB[] = [];
+            for (const event of events) {
+                const tickets = await getTicketsByEvent(event.id);
+                allTickets = allTickets.concat(tickets);
+            }
+            // Log de depuração: mostra todos os ingressos encontrados no banco local
+            console.log('[MyTicketsScreen] Ingressos encontrados no SQLite:', allTickets.length, allTickets);
+            // Log extra: mostra o event_id de cada ingresso
+            allTickets.forEach(t => {
+                console.log(`[MyTicketsScreen] ticket.id=${t.id} event_id=${t.event_id} code=${t.code}`);
             });
-            // Ordena os eventos por data real do evento (eventDate) em ordem decrescente
-            const groupedArr = Array.from(map.values()).sort((a, b) => {
-                const dateA = new Date(a.tickets[0].ticket.eventDate).getTime();
-                const dateB = new Date(b.tickets[0].ticket.eventDate).getTime();
+            // Agrupa os ingressos por ticket.event_id
+            const groupedMap: { [eventId: string]: GroupedTickets } = {};
+            for (const ticket of allTickets) {
+                const event = events.find(e => e.id === ticket.event_id);
+                if (!event) { continue; }
+                if (!groupedMap[event.id]) {
+                    groupedMap[event.id] = {
+                        event: { ...event, location: event.location || '' },
+                        tickets: [],
+                    };
+                }
+                groupedMap[event.id].tickets.push(ticket);
+            }
+            // Mapeia para array e ordena por data
+            const groupedArr: GroupedTickets[] = Object.values(groupedMap);
+            groupedArr.sort((a, b) => {
+                const dateA = new Date(`${a.event.date}${a.event.time ? 'T' + a.event.time : ''}`).getTime();
+                const dateB = new Date(`${b.event.date}${b.event.time ? 'T' + b.event.time : ''}`).getTime();
                 return dateB - dateA;
             });
             // Formata a data e o horário para exibição amigável no card
             groupedArr.forEach(group => {
-                const eventDate = new Date(group.tickets[0].ticket.eventDate);
-                group.event.date = eventDate.toLocaleDateString('pt-BR', {
+                const dateStr = group.event.date;
+                const timeStr = group.event.time;
+                let eventDate: Date;
+                if (dateStr && timeStr) {
+                    eventDate = new Date(`${dateStr}T${timeStr}`);
+                } else if (dateStr) {
+                    eventDate = new Date(dateStr);
+                } else {
+                    eventDate = new Date();
+                }
+                group.event.displayDate = eventDate.toLocaleDateString('pt-BR', {
                     weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
                 });
-                group.event.time = eventDate.toLocaleTimeString('pt-BR', {
+                group.event.displayTime = eventDate.toLocaleTimeString('pt-BR', {
                     hour: '2-digit', minute: '2-digit',
                 });
             });
             setGrouped(groupedArr);
+            // Log de depuração: mostra quantos ingressos há em cada evento
+            groupedArr.forEach(group => {
+                console.log(`[MyTicketsScreen] Evento: ${group.event.title} - Ingressos: ${group.tickets.length}`);
+            });
         } catch (e: any) {
-            // Se for erro de autenticação, redireciona para login
-            if (e?.response?.status === 401 || e?.message?.includes('autenticado')) {
-                navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-                return;
-            }
             setError('Erro ao carregar seus ingressos ou perfil. Tente novamente.');
         } finally {
             setLoading(false);
@@ -76,8 +91,9 @@ export default function MyTicketsScreen({ navigation }: any) {
     };
 
     useEffect(() => {
+        // Loga todos os ingressos do banco local ao abrir a tela
+        logAllTickets();
         fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleEventPress = (group: GroupedTickets) => {
@@ -89,21 +105,25 @@ export default function MyTicketsScreen({ navigation }: any) {
                     phone: userProfile.cellphone || userProfile.phone || '',
                 }
             : { name: '', email: '', phone: '' };
-        const tickets = group.tickets.map((sale) => ({
-            eventImageUrl: sale.ticket.imageUrl,
-            id: sale.id,
-            type: sale.ticket.title,
-            code: sale.id,
-            used: sale.used,
-            qrCodeUrl: sale.qrCodeUrl,
-            pdfUrl: sale.pdfUrl,
-            qrCodeDataUrl: sale.qrCodeDataUrl,
-            eventDate: sale.ticket.eventDate,
+        // Passa todos os ingressos daquele evento
+        const tickets = group.tickets.map((ticket) => ({
+            eventImageUrl: group.event.imageUrl, // do evento
+            id: ticket.id,
+            type: ticket.type,
+            code: ticket.code,
+            used: ticket.used,
+            qrCodeUrl: ticket.qrCodeUrl,
+            pdfUrl: ticket.pdfUrl,
+            qrCodeDataUrl: ticket.qrCodeDataUrl,
+            eventDate: (group.event.date && group.event.time)
+                ? `${group.event.date}T${group.event.time}`
+                : group.event.date || '',
             buyer,
-            boughtAt: sale.createdAt,
-            price: sale.ticket.price,
+            boughtAt: ticket.boughtAt,
+            price: ticket.price,
         }));
-
+        // Log para depuração: quantos ingressos estão sendo enviados para o carrossel
+        console.log('[MyTicketsScreen] Tickets enviados para o carrossel:', tickets.length, tickets);
         navigation.navigate('TicketsByEvent', {
             eventId: group.event.id,
             eventTitle: group.event.title,

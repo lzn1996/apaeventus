@@ -29,12 +29,6 @@ interface TicketCardProps {
 }
 
 const TicketCard: React.FC<TicketCardProps> = ({ ticket, index, total, style }) => {
-    // DEBUG: Verifica se styles está undefined e loga as chaves disponíveis
-    if (!styles || typeof styles !== 'object') {
-        throw new Error('ERRO: styles está undefined ou não é um objeto em TicketCard. Verifique o import e o export default do arquivo styles.ts');
-    } else {
-        console.log('DEBUG TicketCard: styles OK. Chaves:', Object.keys(styles));
-    }
 
     return (
         <View style={[styles.ticketCardContainer, style]}>
