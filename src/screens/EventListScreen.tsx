@@ -1,21 +1,33 @@
-import React from 'react';
-import { View, Text, Button, FlatList } from 'react-native';
-
-const mockEvents = [
-  { id: '1', name: 'Festa Junina' },
-  { id: '2', name: 'Palestra Inclusão' },
-];
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, FlatList, TouchableOpacity } from 'react-native';
+import { getAllEvents } from '../database/eventLocalService';
 
 export default function EventListScreen({ navigation }: any) {
+  const [events, setEvents] = useState<any[]>([]);
+  useEffect(() => {
+    getAllEvents()
+      .then(evts => {
+        setEvents(evts);
+        console.log('[EventListScreen] Eventos carregados:', evts.length, evts);
+      })
+      .catch(err => {
+        setEvents([]);
+        console.warn('[EventListScreen] Erro ao buscar eventos locais:', err);
+      });
+  }, []);
+
   return (
     <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 24 }}>Eventos (Mock)</Text>
+      <Text style={{ fontSize: 24 }}>Eventos</Text>
       <FlatList
-        data={mockEvents}
+        data={events}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
-          <Text style={{ marginVertical: 8 }}>• {item.name}</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('EventDetail', { eventId: item.id })}>
+            <Text style={{ marginVertical: 8 }}>• {item.title} ({new Date(item.date).toLocaleString('pt-BR')})</Text>
+          </TouchableOpacity>
         )}
+        ListEmptyComponent={<Text style={{ marginTop: 24 }}>Nenhum evento cadastrado.</Text>}
       />
       <Button title="Criar Novo Evento" onPress={() => navigation.navigate('CreateEvent')} />
     </View>

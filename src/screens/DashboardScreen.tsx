@@ -22,6 +22,7 @@ export default function DashboardScreen({ navigation }: DashboardScreenProps) {
   const modules = [
     { key: 'Eventos', screen: 'Events', color: '#FF9500' },
     { key: 'Ingressos', screen: 'Tickets', color: '#34C759' },
+    { key: 'Meus Ingressos', screen: 'MyTickets', color: '#00B894' },
     { key: 'Check-in', screen: 'Scan', color: '#007AFF' },
     { key: 'Relatórios', screen: 'Reports', color: '#5856D6' },
   ];

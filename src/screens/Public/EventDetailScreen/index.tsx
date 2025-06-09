@@ -2,18 +2,25 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../../types/navigation'; // Adjust the import path as necessary
 import styles from './styles';
 import { getTicketById } from '../../../services/eventService';
+import { authService } from '../../../services/authService';
 import eventBanner from '../../../assets/event-banner.png';
 
+declare module '*.png';
+
 export default function EventDetailScreen() {
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'EventDetail'>>();
     const [event, setEvent] = useState<any>(null);
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [imageError, setImageError] = useState(false);
     const [aspectRatio, setAspectRatio] = useState(16 / 9);
-    const ticketId = '0ce23db5-6566-4abf-b467-f94f7fa676cc';
+    const ticketId = '081bc814-21ad-47dc-8120-ab6d86c89981'; // Replace with dynamic ID as needed
 
     useEffect(() => {
         async function fetchEvent() {
@@ -47,12 +54,21 @@ export default function EventDetailScreen() {
         );
     }
 
-    const total = event.price * quantity;
-
-    const handleBuy = () => {
-        // lógica de compra ou redirecionamento
-        // TODO: Implement purchase logic or show a confirmation modal/toast here
-        console.log(`Comprando ${quantity} ingresso(s) por R$${total.toFixed(2)}`);
+    const handleBuy = async () => {
+        if (!event) { return; }
+        const isLogged = await authService.isLoggedIn();
+        if (!isLogged) {
+            Alert.alert('É necessário estar logado para comprar ingressos.', 'Por favor, faça login para continuar.');
+            navigation.navigate({ name: 'Login' } as any);
+            return;
+        }
+        navigation.navigate('Purchase', {
+            ticketId: event.id,
+            eventTitle: event.title,
+            price: event.price,
+            maxQuantity: 5,
+            quantity: quantity,
+        });
     };
 
     const handleIncrement = () => {
