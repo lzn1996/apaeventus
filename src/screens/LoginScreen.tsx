@@ -9,21 +9,76 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Platform,
+  Alert,
 } from 'react-native';
+import { authService } from '../services/authService';
+import { syncAll } from '../database/syncService';
+import api from '../services/api';
+import { initDatabase } from '../database/init';
+import NetInfo from '@react-native-community/netinfo';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [nivel, setNivel] = useState<'administrador' | 'organizador' | 'recepcionista'>('administrador');
   const senhaInputRef = useRef<TextInput>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = () => {
-    navigation.navigate('Dashboard');
+  const handleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('[LoginScreen] Iniciando login para', email);
+      // Login na API
+      const response = await api.post('/auth/login', { email, password: senha });
+      const { accessToken, refreshToken } = response.data;
+      await authService.setTokens(accessToken, refreshToken);
+      console.log('[LoginScreen] Tokens salvos, inicializando banco...');
+      // Inicializa banco e sincroniza
+      await initDatabase();
+      console.log('[LoginScreen] Banco inicializado, sincronizando...');
+      await syncAll('', async () => true);
+      console.log('[LoginScreen] Sync concluído, navegando para Dashboard');
+      navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
+    } catch (err: any) {
+      console.error('[LoginScreen] Erro no login:', err);
+      setError('E-mail ou senha inválidos!');
+      Alert.alert('Erro', 'E-mail ou senha inválidos!');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Função para resetar o banco SQLite (apenas para testes)
+  const handleResetDatabase = async () => {
+    try {
+      const db = await require('../database/db').openDatabase();
+      await db.executeSql('DROP TABLE IF EXISTS tickets');
+      await db.executeSql('DROP TABLE IF EXISTS events');
+      await initDatabase();
+      Alert.alert('Banco resetado', 'As tabelas foram excluídas e recriadas.');
+    } catch (err) {
+      Alert.alert('Erro ao resetar banco', String(err));
+    }
+  };
+
+  // Listener para sincronizar sempre que ficar online após login
+  React.useEffect(() => {
+    if (!loading) { return; }
+    let unsubscribe: (() => void) | null = null;
+    unsubscribe = NetInfo.addEventListener(state => {
+      if (state.isConnected) {
+        syncAll('', async () => true);
+      }
+    });
+    return () => {
+      if (unsubscribe) { unsubscribe(); }
+    };
+  }, [loading]);
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -53,31 +108,10 @@ export default function LoginScreen({ navigation }: any) {
             onChangeText={setSenha}
           />
 
-          <Text style={styles.label}>Acesso como:</Text>
-          <View style={styles.levelContainer}>
-            {['administrador', 'organizador', 'recepcionista'].map((n) => (
-              <TouchableOpacity
-                key={n}
-                style={[
-                  styles.levelButton,
-                  nivel === n && styles.levelButtonActive,
-                ]}
-                onPress={() => setNivel(n as any)}
-              >
-                <Text
-                  style={[
-                    styles.levelText,
-                    nivel === n && styles.levelTextActive,
-                  ]}
-                >
-                  {n.charAt(0).toUpperCase() + n.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>Entrar</Text>
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
+            <Text style={styles.loginButtonText}>{loading ? 'Entrando...' : 'Entrar'}</Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>
@@ -91,6 +125,12 @@ export default function LoginScreen({ navigation }: any) {
               <Text style={styles.link}>Cadastrar-se</Text>
             </TouchableOpacity>
           </View>
+          {/* Botão de reset do banco para testes */}
+          {__DEV__ && (
+            <TouchableOpacity style={[styles.loginButton, { backgroundColor: '#E53935' }]} onPress={handleResetDatabase}>
+              <Text style={styles.loginButtonText}>Resetar Banco (TESTE)</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -127,29 +167,6 @@ const styles = StyleSheet.create({
     color: '#555',
     marginBottom: 8,
   },
-  levelContainer: {
-    flexDirection: 'row',
-    marginBottom: 24,
-  },
-  levelButton: {
-    flex: 1,
-    paddingVertical: 10,
-    marginHorizontal: 4,
-    borderRadius: 8,
-    backgroundColor: '#ccc',
-    alignItems: 'center',
-  },
-  levelButtonActive: {
-    backgroundColor: '#007AFF',
-  },
-  levelText: {
-    color: '#333',
-    fontSize: 14,
-  },
-  levelTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
   loginButton: {
     width: '100%',
     height: 48,
@@ -171,5 +188,9 @@ const styles = StyleSheet.create({
   link: {
     color: '#007AFF',
     fontSize: 14,
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 12,
   },
 });

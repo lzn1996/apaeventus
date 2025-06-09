@@ -65,12 +65,12 @@ api.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
             try {
-                const newAccessToken = await refreshToken();
+                // Agora refreshToken retorna ambos os tokens
+                const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await refreshToken();
                 if (!newAccessToken) {
                     throw new Error('Refresh token inválido');
                 }
-                const currentRefreshToken = await authService.getRefreshToken();
-                await authService.setTokens(newAccessToken, currentRefreshToken || '');
+                await authService.setTokens(newAccessToken, newRefreshToken);
                 processQueue(null, newAccessToken);
                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
                 return api(originalRequest);

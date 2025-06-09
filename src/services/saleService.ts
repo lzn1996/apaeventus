@@ -14,6 +14,9 @@ export async function createSaleProtected(data: { ticketId: string; quantity: nu
     return response.data;
 }
 
+// Todas as funções devem usar apenas o api (axios) para requisições HTTP.
+// Não usar fetch nem manipulação manual de tokens.
+
 export async function refreshToken() {
     try {
         console.log('[refreshToken] Iniciando refresh do token...');
@@ -30,7 +33,8 @@ export async function refreshToken() {
         console.log('[refreshToken] Novo accessToken:', newAccessToken);
         console.log('[refreshToken] Novo refreshToken:', newRefreshToken);
         await authService.setTokens(newAccessToken, newRefreshToken);
-        return newAccessToken;
+        // Retorne ambos!
+        return { accessToken: newAccessToken, refreshToken: newRefreshToken };
     } catch (error) {
         console.error('[refreshToken] Erro ao tentar renovar o token:', error);
         throw error;

@@ -33,4 +33,5 @@ export async function createSale(data: { ticketId: string | number; quantity: nu
     }
 }
 
-// Adicione outras funções conforme necessário para integração com o backend
+// Todas as funções devem usar apenas o api (axios) para requisições HTTP.
+// Não usar fetch nem manipulação manual de tokens.

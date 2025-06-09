@@ -19,3 +19,14 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// Filtro de variantes do react-native-camera para evitar ambiguidade (MLKit)
+project(':react-native-camera') {
+    afterEvaluate { project ->
+        project.android.variantFilter { variant ->
+            if (variant.name.toLowerCase().contains('mlkit')) {
+                setIgnore(true)
+            }
+        }
+    }
+}

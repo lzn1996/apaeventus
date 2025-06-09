@@ -29,13 +29,20 @@ interface TicketCardProps {
 }
 
 const TicketCard: React.FC<TicketCardProps> = ({ ticket, index, total, style }) => {
-
     return (
         <View style={[styles.ticketCardContainer, style]}>
             {/* Ingresso X de Y */}
             <Text style={styles.ticketCountText}>
                 {`Ingresso ${index + 1} de ${total}`}
             </Text>
+            {/* Status pendente de sync */}
+            {ticket.pendingSync && (
+                <View style={styles.pendingSyncBadge}>
+                    <Text style={styles.pendingSyncText}>
+                        Pendente de sincronização
+                    </Text>
+                </View>
+            )}
             {/* Header com imagem do evento */}
             {ticket.eventImageUrl && (
                 <Image
@@ -87,6 +94,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, index, total, style }) 
                     )}
                 </View>
                 <Text style={styles.ticketCode}>{ticket.code}</Text>
+                {/* Botão para marcar/desmarcar uso offline removido */}
             </View>
         </View>
     );
