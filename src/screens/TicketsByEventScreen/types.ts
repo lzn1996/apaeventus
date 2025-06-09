@@ -17,6 +17,7 @@ export interface Ticket {
     };
     boughtAt: string;
     price: number;
+    pendingSync?: boolean; // Adicionado para status pendente
 }
 
 export interface TicketsByEventScreenProps {

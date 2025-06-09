@@ -7,6 +7,9 @@ import { getAllEvents, getTicketsByEvent, logAllTickets } from '../../database/t
 import type { TicketDB } from '../../database/ticketService';
 import { MyEvent } from './types';
 import { getUserProfile } from '../../services/userService';
+import NetInfo from '@react-native-community/netinfo';
+import { syncFromServer } from '../../database/syncService';
+import { getUserProfileLocal, saveUserProfileLocal } from '../../database/profileLocalService';
 
 interface GroupedTickets {
     event: MyEvent;
@@ -18,14 +21,26 @@ export default function MyTicketsScreen({ navigation }: any) {
     const [loading, setLoading] = useState(true);
     const [userProfile, setUserProfile] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isConnected, setIsConnected] = useState(true);
+    const [showOnlineBanner, setShowOnlineBanner] = useState(false);
 
     const fetchData = async () => {
         setLoading(true);
         setError(null);
         try {
-            // Busca o perfil do usuário autenticado
-            const profile = await getUserProfile();
-            setUserProfile(profile);
+            let profile = userProfile;
+            if (isConnected) {
+                profile = await getUserProfile();
+                setUserProfile(profile);
+                // Salva perfil localmente
+                if (profile && profile.id) {
+                  await saveUserProfileLocal(profile);
+                }
+            } else {
+                // Busca perfil do SQLite local
+                profile = await getUserProfileLocal();
+                setUserProfile(profile);
+            }
             // Busca todos os ingressos do SQLite (de todos os eventos)
             const events = await getAllEvents();
             let allTickets: TicketDB[] = [];
@@ -84,16 +99,31 @@ export default function MyTicketsScreen({ navigation }: any) {
                 console.log(`[MyTicketsScreen] Evento: ${group.event.title} - Ingressos: ${group.tickets.length}`);
             });
         } catch (e: any) {
-            setError('Erro ao carregar seus ingressos ou perfil. Tente novamente.');
+            // Só exibe erro se estiver online; se offline, ignora erro de rede
+            if (isConnected) {
+                setError('Erro ao carregar seus ingressos ou perfil. Tente novamente.');
+            }
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        // Loga todos os ingressos do banco local ao abrir a tela
         logAllTickets();
         fetchData();
+        let wasConnected: boolean | null = null;
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setIsConnected(!!state.isConnected);
+            if (wasConnected === false && state.isConnected) {
+                // Só sincroniza se acabou de voltar para online
+                syncFromServer().then(fetchData);
+                setShowOnlineBanner(true);
+                setTimeout(() => setShowOnlineBanner(false), 5000);
+            }
+            wasConnected = state.isConnected;
+        });
+        return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleEventPress = (group: GroupedTickets) => {
@@ -168,6 +198,14 @@ export default function MyTicketsScreen({ navigation }: any) {
 
     return (
         <View style={styles.container}>
+            {/* Banner de status de conexão */}
+            {(!isConnected || showOnlineBanner) && (
+                <View style={styles.connectionBannerContainer}>
+                    <Text style={[styles.connectionBanner, isConnected ? styles.connectionOnline : styles.connectionOffline]}>
+                        {isConnected ? 'Conectado' : 'Sem conexão - exibindo dados offline'}
+                    </Text>
+                </View>
+            )}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Meus Ingressos</Text>
             </View>

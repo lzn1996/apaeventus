@@ -1,796 +1,137 @@
-// src/screens/DashboardScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
-  Image,
+  TouchableOpacity,
   ScrollView,
-  Pressable,
   StyleSheet,
-  Dimensions,
-  ActivityIndicator,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import MaterialIcons          from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Event } from '../types/Event';
-import { baseUrl } from '../config/api';
 
-interface EventRaw {
-  id: string;
-  title: string;
-  description: string;
-  eventDate: string;
-  imageUrl: string | null;
-  quantity: number;
-  price: number;
-  isActive: boolean;
-  isDeleted: boolean;
-  createdAt: string;
-  updatedAt: string;
-  sold: number;
+interface DashboardScreenProps {
+  navigation: any;
 }
 
-/** ----------------------
- *   FUNÇÃO DE LOGOUT
- *  ----------------------
- */
-async function handleLogout(navigation: any) {
-  try {
-    const accessToken = await AsyncStorage.getItem('accessToken');
-    if (accessToken) {
-      await fetch(`${baseUrl}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-    }
-    await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
-    navigation.replace('Login');
-  } catch (error) {
-    console.warn('Erro ao tentar deslogar:', error);
-    await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
-    navigation.replace('Login');
-  }
-}
-
-export default function DashboardScreen({ navigation }: any) {
-  const [activeTab, setActiveTab] = useState<'Home' | 'Search' | 'MyTickets' | 'Profile'>('Home');
-
-  // --- Autenticação simplificada via AsyncStorage “userRole” ---
-  const [isLogged, setIsLogged] = useState(false);
-  // “ADMIN” | “USER” | null
-  const [userRole, setUserRole] = useState<'ADMIN' | 'USER' | null>(null);
-
-  // Carregando dados iniciais
-  const [loadingEvents, setLoadingEvents] = useState<boolean>(true);
-
-  // Estados de eventos
-  const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
-  const [nextEvents, setNextEvents] = useState<Event[]>([]);
-  const [allEvents, setAllEvents] = useState<Event[]>([]);
-
-  // Busca
-  const [searchQuery, setSearchQuery] = useState<string>('');
-
-  /**
-   * Lê o “userRole” do AsyncStorage e atualiza isLogged / userRole.
-   */
-  const loadUserRole = useCallback(async () => {
-    try {
-      const role = await AsyncStorage.getItem('userRole');
-      if (role === 'ADMIN' || role === 'USER') {
-        setUserRole(role);
-        setIsLogged(true);
-      } else {
-        setUserRole(null);
-        setIsLogged(false);
-      }
-    } catch (err) {
-      console.warn('Erro ao ler userRole do AsyncStorage', err);
-      setUserRole(null);
-      setIsLogged(false);
-    }
-  }, []);
-
-  /**
-   * Busca sempre os eventos, mesmo sem login.
-   */
-  const fetchEventsFromBackend = useCallback(async () => {
-    try {
-      setLoadingEvents(true);
-
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (accessToken) {headers.Authorization = `Bearer ${accessToken}`;}
-
-      const res = await fetch(`${baseUrl}/ticket?showInactive=false`, {
-        method: 'GET',
-        headers,
-      });
-      if (!res.ok) {
-        console.warn('Erro ao buscar MyTickets:', res.status);
-        setFeaturedEvents([]);
-        setNextEvents([]);
-        setAllEvents([]);
-        return;
-      }
-
-      const rawData = (await res.json()) as EventRaw[];
-      const mapped: Event[] = rawData.map(e => {
-        const fullImageUrl = e.imageUrl
-          ? e.imageUrl.startsWith('http')
-            ? e.imageUrl
-            : `${baseUrl}/${e.imageUrl}`
-          : undefined;
-        return {
-          id: e.id,
-          title: e.title,
-          date: e.eventDate,
-          imageUrl: fullImageUrl,
-        };
-      });
-
-      setAllEvents(mapped);
-      if (mapped.length === 0) {
-        setFeaturedEvents([]);
-        setNextEvents([]);
-      } else {
-        setFeaturedEvents([mapped[0]]);
-        setNextEvents(mapped.slice(1));
-      }
-    } catch (error) {
-      console.warn('Erro fetchEvents:', error);
-      setFeaturedEvents([]);
-      setNextEvents([]);
-      setAllEvents([]);
-    } finally {
-      setLoadingEvents(false);
-    }
-  }, []);
-
-  // Quando a tela monta ou volta ao foco:
-  // 1) Carrega userRole / isLogged
-  // 2) Carrega eventos
-  useEffect(() => {
-    let isActive = true;
-
-    async function initialize() {
-      await loadUserRole();
-      if (!isActive) {return;}
-      await fetchEventsFromBackend();
-    }
-
-    const unsubscribeFocus = navigation.addListener('focus', initialize);
-    initialize();
-
-    return () => {
-      isActive = false;
-      unsubscribeFocus();
-    };
-  }, [navigation, loadUserRole, fetchEventsFromBackend]);
-
-  /**
-   * Tratamento ao clicar em “Perfil/Admin”:
-   */
-// src/screens/DashboardScreen.tsx
-
-const onProfileOrAdminPress = useCallback(() => {
-  if (!isLogged) {
-    // força login
-    navigation.navigate('Login');
-  } else if (userRole === 'ADMIN') {
-    // admin vai pra lista de eventos
-    navigation.navigate('ProfileEdit');
-  } else {
-    // usuário comum vai pra edição de perfil
-    navigation.navigate('ProfileEdit');
-  }
-  setActiveTab('Profile');
-}, [isLogged, userRole, navigation]);
-
-
-
-  /**
-   * Ao clicar nas abas:
-   * - “MyTickets” exige login
-   * - “Profile/Admin” chama onProfileOrAdminPress()
-   */
-  const handleTabPress = (tabName: 'Home' | 'Search' | 'MyTickets' | 'Profile') => {
-    if (tabName === 'Search') {
-      setActiveTab('Search');
-    } else if (tabName === 'MyTickets') {
-      if (!isLogged) {
-        Alert.alert('Atenção', 'Faça login para ver os ingressos.');
-        return;
-      }
-      // Redireciona para a tela MyTickets
-      navigation.navigate('MyTickets');
-      setActiveTab('MyTickets');
-    } else if (tabName === 'Profile') {
-      onProfileOrAdminPress();
-    } else {
-      setActiveTab('Home');
-    }
+export default function DashboardScreen({ navigation }: DashboardScreenProps) {
+  // Dados estáticos de exemplo; substitua pelos dados reais da API
+  const stats = {
+    ticketsSold: 124,
+    ticketsUsed: 98,
+    activeEvents: 3,
   };
 
-  // Spinner enquanto carrega eventos
-  if (loadingEvents) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <View style={[styles.centeredContainer, styles.flex1]}>
-          <ActivityIndicator size="large" color="#007AFF" />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Filtra eventos pela busca
-  const filteredEvents = allEvents.filter(ev =>
-    ev.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
-  );
-
-  /**
-   * Ao tocar em cima de um evento, navega para a tela de compra.
-   * Passamos o ticketId (event.id) e o title (para exibir opcionalmente) como params.
-   */
-  const goToPurchase = (ticketId: string, title: string) => {
-    navigation.navigate('Purchase', { ticketId, title });
-  };
-/*
-  // 1) Função para dar refresh no accessToken
-  const refreshAccessToken = async (): Promise<string | null> => {
-    const old = await AsyncStorage.getItem('accessToken');
-    const refresh = await AsyncStorage.getItem('refreshToken');
-    if (!old || !refresh) return null;
-    const res = await fetch(`${BASE_URL}/auth/refresh-token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${old}`,
-      },
-      body: JSON.stringify({ refreshToken: refresh }),
-    });
-    if (!res.ok) return null;
-    const js = await res.json();
-    if (js.accessToken) {
-      await AsyncStorage.setItem('accessToken', js.accessToken);
-      if (js.refreshToken) await AsyncStorage.setItem('refreshToken', js.refreshToken);
-      return js.accessToken;
-    }
-    return null;
-  };
-*/
-  /**
-   * Função para ativar/desativar evento.
-   * (Comentada pois não está sendo usada atualmente)
-   */
-  /*
-  // 2) Função para ativar/desativar evento
-  const toggleActive = async (id: string, isActive: boolean) => {
-    // tenta refresh antes de tudo
-    let token = (await refreshAccessToken()) || (await AsyncStorage.getItem('accessToken'));
-    if (!token) return Alert.alert('Sessão inválida', 'Faça login novamente.');
-    // dispara o POST
-    let res = await fetch(`${BASE_URL}/ticket/enable-disable`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ id, isActive }),
-    });
-    // se 401, refresh e retry
-    if (res.status === 401) {
-      token = (await refreshAccessToken()) || token;
-      res = await fetch(`${BASE_URL}/ticket/enable-disable`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ id, isActive }),
-      });
-    }
-    if (!res.ok) {
-      const txt = await res.text();
-      return Alert.alert('Erro', `Status ${res.status}\n${txt}`);
-    }
-    // recarrega
-    await fetchEventsFromBackend();
-  };*/
-
-
+  const modules = [
+    { key: 'Eventos', screen: 'Events', color: '#FF9500' },
+    { key: 'Ingressos', screen: 'Tickets', color: '#34C759' },
+    { key: 'Meus Ingressos', screen: 'MyTickets', color: '#00B894' },
+    { key: 'Check-in', screen: 'Scan', color: '#007AFF' },
+    { key: 'Relatórios', screen: 'Reports', color: '#5856D6' },
+  ];
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* ================== Header ================== */}
-     <View style={styles.header}>
-  {isLogged && userRole === 'ADMIN' ? (
-    <View style={styles.adminButtons}>
-      <Pressable
-        onPress={() => navigation.navigate('CreateEvent')}
-        style={styles.iconButton}
-      >
-           <MaterialIcons name="add" size={28} color="#007AFF" />
-      </Pressable>
-      <Pressable
-        onPress={() => navigation.navigate('AdminEvents')}
-        style={styles.iconButton}
-      >
-        <MaterialIcons name="event" size={24} color="#007AFF" />
-      </Pressable>
-       <Pressable
-        onPress={() => navigation.navigate('Scanner')}
-        style={styles.iconButton}
-      >
-    <MaterialCommunityIcons name="qrcode-scan" size={24} color="#007AFF" />
-      </Pressable>
-    </View>
-  ) : (
-    <View style={styles.menuButtonPlaceholder} />
-  )}
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.welcome}>Olá, Organizadores!</Text>
 
-  <View style={styles.logoWrapper}>
-    <Image source={require('../assets/logo.png')} style={styles.logo} />
-  </View>
-
-  {isLogged && (
-    <Pressable onPress={() => handleLogout(navigation)} style={styles.logoutButton}>
-      <MaterialCommunityIcons name="logout" size={24} color="#E74C3C" />
-    </Pressable>
-  )}
-</View>
-
-      {/* ============ Conteúdo das abas ============ */}
-      {activeTab === 'Search' ? (
-        <KeyboardAvoidingView
-          style={styles.content}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={styles.searchHeader}>
-            <MaterialIcons name="search" size={24} color="#666" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Pesquisar por nome..."
-              autoFocus
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              returnKeyType="search"
-            />
-          </View>
-  <ScrollView
-  contentContainerStyle={styles.searchContainer}
-  showsVerticalScrollIndicator={false}
->
-  {filteredEvents.length > 0 ? (
-    filteredEvents.map(event => (
-      <Pressable
-        key={event.id}
-        style={styles.searchCard}
-        onPress={() => goToPurchase(event.id, event.title)}
-      >
-        {event.imageUrl && (
-          <Image source={{ uri: event.imageUrl }} style={styles.searchImage} />
-        )}
-        <View style={styles.searchTextContainer}>
-          <Text style={styles.searchTitleText}>{event.title}</Text>
-          <Text style={styles.searchDateText}>
-            {formatDateToLabel(event.date)}
-          </Text>
+      <View style={styles.statsContainer}>
+        <View style={[styles.statCard, styles.shadow]}>
+          <Text style={styles.statValue}>{stats.ticketsSold}</Text>
+          <Text style={styles.statLabel}>Ingressos Vendidos</Text>
         </View>
-      </Pressable>
-    ))
-  ) : (
-    <Text style={styles.noResultsText}>Nenhum evento encontrado.</Text>
-  )}
-</ScrollView>
-
-
-
-        </KeyboardAvoidingView>
-      ) : (
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* ===== Evento em Destaque ===== */}
-          <Text style={styles.sectionTitle}>Evento em Destaque</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-          >
-            {featuredEvents.length > 0 ? (
-              featuredEvents.map(event => (
-                <Pressable
-                  key={event.id}
-                  style={styles.featureCard}
-                  onPress={() => goToPurchase(event.id, event.title)}
-                >
-                  {event.imageUrl && (
-                    <Image source={{ uri: event.imageUrl }} style={styles.featureImage} />
-                  )}
-                  <View style={styles.cardTextContainer}>
-                    <Text style={styles.featureTitle}>{event.title}</Text>
-                    <Text style={styles.featureDate}>{formatDateToLabel(event.date)}</Text>
-                  </View>
-                </Pressable>
-              ))
-            ) : (
-              <Text style={styles.noneText}>Nenhum evento em destaque.</Text>
-            )}
-          </ScrollView>
-
-          {/* ===== Próximos Eventos ===== */}
-          <Text style={styles.sectionTitle}>Próximos Eventos</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-          >
-            {nextEvents.length > 0 ? (
-              nextEvents.map(event => (
-                <Pressable
-                  key={event.id}
-                  style={styles.nextCard}
-                  onPress={() => goToPurchase(event.id, event.title)}
-                >
-                  {event.imageUrl && (
-                    <Image source={{ uri: event.imageUrl }} style={styles.nextImage} />
-                  )}
-                  <View style={styles.cardTextContainer}>
-                    <Text style={styles.nextTitle}>{event.title}</Text>
-                    <Text style={styles.nextDate}>{formatDateToLabel(event.date)}</Text>
-                  </View>
-                </Pressable>
-              ))
-            ) : (
-              <Text style={styles.noneText}>Nenhum próximo evento.</Text>
-            )}
-          </ScrollView>
-        </ScrollView>
-      )}
-
-      {/* ================== Tab Bar ================== */}
-      <View style={styles.tabBar}>
-        {/* Home */}
-        <Pressable onPress={() => handleTabPress('Home')} style={styles.tabItem}>
-          <MaterialIcons
-            name="home"
-            size={26}
-            color={activeTab === 'Home' ? '#007AFF' : '#666'}
-          />
-          <Text style={[styles.tabLabel, activeTab === 'Home' && styles.tabLabelActive]}>
-            Home
-          </Text>
-        </Pressable>
-
-        {/* Busca */}
-        <Pressable onPress={() => handleTabPress('Search')} style={styles.tabItem}>
-          <MaterialIcons
-            name="search"
-            size={26}
-            color={activeTab === 'Search' ? '#007AFF' : '#666'}
-          />
-          <Text style={[styles.tabLabel, activeTab === 'Search' && styles.tabLabelActive]}>
-            Busca
-          </Text>
-        </Pressable>
-
-        {/* Ingressos */}
-        <Pressable onPress={() => handleTabPress('MyTickets')} style={styles.tabItem}>
-          <MaterialCommunityIcons
-            name="ticket-outline"
-            size={26}
-            color={activeTab === 'MyTickets' ? '#007AFF' : '#666'}
-          />
-          <Text style={[styles.tabLabel, activeTab === 'MyTickets' && styles.tabLabelActive]}>
-            Ingressos
-          </Text>
-        </Pressable>
-
-        {/* Conta / Perfil / Admin */}
-        <Pressable onPress={() => handleTabPress('Profile')} style={styles.tabItem}>
-          {isLogged ? (
-            userRole === 'ADMIN' ? (
-              // ADMIN: ícone shield-account + label “Admin”
-              <MaterialCommunityIcons
-                name="shield-account"
-                size={28}
-                color={activeTab === 'Profile' ? '#007AFF' : '#666'}
-              />
-            ) : (
-              // USER: ícone account-circle + label “Perfil”
-              <MaterialIcons
-                name="account-circle"
-                size={28}
-                color={activeTab === 'Profile' ? '#007AFF' : '#666'}
-              />
-            )
-          ) : (
-            // Não logado: ícone person + label “Conta”
-            <MaterialIcons
-              name="person"
-              size={28}
-              color={activeTab === 'Profile' ? '#007AFF' : '#666'}
-            />
-          )}
-          <Text style={[styles.tabLabel, activeTab === 'Profile' && styles.tabLabelActive]}>
-            {isLogged
-              ? userRole === 'ADMIN'
-                ? 'Admin'
-                : 'Perfil'
-              : 'Conta'}
-          </Text>
-        </Pressable>
+        <View style={[styles.statCard, styles.shadow]}>
+          <Text style={styles.statValue}>{stats.ticketsUsed}</Text>
+          <Text style={styles.statLabel}>Ingressos Usados</Text>
+        </View>
+        <View style={[styles.statCard, styles.shadow]}>
+          <Text style={styles.statValue}>{stats.activeEvents}</Text>
+          <Text style={styles.statLabel}>Eventos Ativos</Text>
+        </View>
       </View>
-    </SafeAreaView>
+
+      <Text style={styles.sectionTitle}>Módulos</Text>
+      <View style={styles.modulesGrid}>
+        {modules.map((mod) => (
+          <TouchableOpacity
+            key={mod.key}
+            style={[styles.moduleCard, { backgroundColor: mod.color }]}
+            onPress={() => navigation.navigate(mod.screen)}
+          >
+            <Text style={styles.moduleText}>{mod.key}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </ScrollView>
   );
 }
 
-// Formata “2025-06-14T19:00:00.000Z” em “14 jun, 19h”
-function formatDateToLabel(isoString: string): string {
-  try {
-    const dateObj = new Date(isoString);
-    const day = dateObj.getDate();
-    const monthNames = [
-      'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-      'jul', 'ago', 'set', 'out', 'nov', 'dez',
-    ];
-    const month = monthNames[dateObj.getMonth()];
-    const hours = dateObj.getHours();
-    const minutes = dateObj.getMinutes().toString().padStart(2, '0');
-    return `${day} ${month}, ${hours}h${minutes !== '00' ? minutes : ''}`;
-  } catch {
-    return isoString;
-  }
-}
-
-const { width } = Dimensions.get('window');
-const cardWidth = width * 0.75;
-
 const styles = StyleSheet.create({
-  safe: {
+  container: {
     flex: 1,
     backgroundColor: '#f2f2f7',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  // centraliza o logo
-  logoWrapper: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  logo: {
-    width: 200,
-    height: 100,
-    resizeMode: 'contain',
-  },
-  menuButtonPlaceholder: {
-    width: 32, // espaço fixo à esquerda para manter logo centralizado
-  },
-  logoutButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
   },
   content: {
-    flex: 1,
+    padding: 16,
   },
-  contentContainer: {
-    paddingBottom: 16,
-    alignItems: 'center',
+  welcome: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 24,
+    color: '#333',
   },
-
-  // ====== Busca ======
-  searchHeader: {
+  statsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderColor: '#e0e0e0',
+    justifyContent: 'space-between',
+    marginBottom: 32,
   },
-  searchInput: {
+  statCard: {
     flex: 1,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#f2f2f7',
-    paddingHorizontal: 12,
-    fontSize: 14,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchContainer: {
-    paddingTop: 16,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-  },
-  searchCard: {
-    flexDirection: 'row',
-    marginBottom: 12,
     backgroundColor: '#fff',
     borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    marginHorizontal: 4,
+    alignItems: 'center',
   },
-  searchImage: {
-    width: 80,
-    height: 80,
-  },
-  searchTextContainer: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'center',
-  },
-  searchTitleText: {
-    fontSize: 16,
-    fontWeight: '600',
+  statValue: {
+    fontSize: 28,
+    fontWeight: '800',
     color: '#111',
   },
-  searchDateText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  noResultsText: {
-    marginTop: 20,
-    color: '#666',
-    alignSelf: 'center',
-  },
-
-  // ====== Home ======
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
-    marginTop: 20,
-    marginLeft: 16,
-  },
-  noneText: {
-    marginLeft: 16,
-    color: '#666',
-  },
-  horizontalList: {
-    paddingLeft: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  featureCard: {
-    width: cardWidth,
-    marginRight: 16,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  featureImage: {
-    width: '100%',
-    height: cardWidth * 0.55,
-  },
-  cardTextContainer: {
-    padding: 12,
-  },
-  featureTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111',
-  },
-  featureDate: {
+  statLabel: {
     fontSize: 14,
     color: '#666',
     marginTop: 4,
+    textAlign: 'center',
   },
-  nextCard: {
-    width: cardWidth * 0.8,
-    marginRight: 16,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  modulesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  moduleCard: {
+    width: '48%',
+    height: 100,
+    borderRadius: 12,
+    marginBottom: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moduleText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  shadow: {
+    // sombra iOS
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowRadius: 4,
+    // sombra Android
+    elevation: 3,
   },
-  nextImage: {
-    width: '100%',
-    height: (cardWidth * 0.8) * 0.55,
-  },
-  nextTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111',
-  },
-  nextDate: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-
-  // ====== Tab Bar ======
-  tabBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 64,
-    borderTopWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#fff',
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabLabel: {
-    marginTop: 2,
-    fontSize: 12,
-    color: '#666',
-  },
-  tabLabelActive: {
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  centeredContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  flex1: {
-    flex: 1,
-  },
-  createButton: {
-  paddingHorizontal: 12,
-  paddingVertical: 6,
-},
-searchInfo: {
-  flex: 1,
-},
-toggleButton: {
-  marginTop: 8,
-  paddingVertical: 6,
-  paddingHorizontal: 12,
-  backgroundColor: '#E74C3C',
-  borderRadius: 6,
-},
-toggleText: {
-  color: '#fff',
-  fontWeight: '600',
-},
-adminButtons: {
-  alignItems: 'center',
-},
-iconButton: {
-  marginHorizontal: 8,
-  padding: 4,
-},
-
-
 });

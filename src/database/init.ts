@@ -62,6 +62,17 @@ export async function initDatabase() {
         );
     `);
 
+    // Tabela de perfil do usuário
+    await db.executeSql(`
+        CREATE TABLE IF NOT EXISTS user_profile (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        email TEXT,
+        cellphone TEXT,
+        phone TEXT
+        );
+    `);
+
     return db;
 }
 
@@ -72,5 +83,6 @@ export async function resetLocalDatabase() {
     await db.executeSql('DELETE FROM events');
     await db.executeSql('DELETE FROM sync_status');
     await db.executeSql('DELETE FROM sync_queue');
+    await db.executeSql('DELETE FROM user_profile');
     console.log('Banco local limpo!');
 }

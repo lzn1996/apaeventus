@@ -5,6 +5,7 @@ import { getUserSales } from '../services/saleService';
 import { Sale } from '../services/saleService';
 import { getUserProfile } from '../services/userService';
 import { logAllTicketsWithValidation } from './ticketService';
+import { setTicketUsed, setTicketUnused } from './ticketService.extra';
 
 // Busca atualizações do servidor e atualiza o SQLite
 export async function syncFromServer() {
@@ -142,6 +143,20 @@ export async function syncFromServer() {
             }
             // Log detalhado dos ingressos após sync
             await logAllTicketsWithValidation();
+            // Após atualizar tickets locais com dados do backend, sincroniza pendências offline
+            const pendentes = await getTicketsPendingSync();
+            for (const ticket of pendentes) {
+                try {
+                  if (ticket.used) {
+                    await setTicketUsed(ticket.id);
+                  } else {
+                    await setTicketUnused(ticket.id);
+                  }
+                  await updateTicketStatusLocal(ticket.id, { isSynced: 1 });
+                } catch (err) {
+                  console.error('[syncService] Falha ao sincronizar ticket pendente:', ticket.id, err);
+                }
+              }
             resolve();
         }
         );
@@ -178,4 +193,22 @@ export async function syncFromServer() {
 export async function syncAll(_userId: string, processQueueItem: (item: any) => Promise<boolean>, _lastSync: number | null = null) {
     await syncFromServer();
     await syncToServer(processQueueItem);
+}
+
+// Função para buscar tickets pendentes de sync
+async function getTicketsPendingSync() {
+  const db = await openDatabase();
+  const res = await db.executeSql('SELECT * FROM tickets WHERE isSynced = 0');
+  if (res[0] && res[0].rows && res[0].rows.length > 0) {
+    return res[0].rows.raw();
+  }
+  return [];
+}
+
+// Função para atualizar status de sync local
+async function updateTicketStatusLocal(ticketId: string, patch: Partial<any>) {
+  const db = await openDatabase();
+  const fields = Object.keys(patch).map(k => `${k} = ?`).join(', ');
+  const values = Object.values(patch);
+  await db.executeSql(`UPDATE tickets SET ${fields} WHERE id = ?`, [...values, ticketId]);
 }

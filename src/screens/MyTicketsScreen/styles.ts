@@ -96,4 +96,25 @@ export default StyleSheet.create({
         textDecorationLine: 'underline',
         fontWeight: 'bold',
     },
+    connectionBannerContainer: {
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    connectionBanner: {
+        fontSize: 13,
+        paddingHorizontal: 12,
+        paddingVertical: 2,
+        borderRadius: 8,
+        marginTop: 4,
+        opacity: 0.85,
+    },
+    connectionOnline: {
+        backgroundColor: '#C8E6C9',
+        color: '#256029',
+    },
+    connectionOffline: {
+        backgroundColor: '#FFCDD2',
+        color: '#B71C1C',
+    },
 });

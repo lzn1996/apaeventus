@@ -94,7 +94,10 @@ export default function LoginScreen({ navigation }: any) {
             returnKeyType="next"
             onSubmitEditing={() => senhaInputRef.current?.focus()}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={text => {
+              setEmail(text);
+              if (error) { setError(null); }
+            }}
           />
 
           <TextInput
@@ -105,7 +108,10 @@ export default function LoginScreen({ navigation }: any) {
             returnKeyType="done"
             onSubmitEditing={handleLogin}
             value={senha}
-            onChangeText={setSenha}
+            onChangeText={text => {
+              setSenha(text);
+              if (error) { setError(null); }
+            }}
           />
 
           {error && <Text style={styles.errorText}>{error}</Text>}

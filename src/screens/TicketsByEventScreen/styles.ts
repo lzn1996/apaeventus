@@ -160,4 +160,37 @@ export default StyleSheet.create({
     carouselSpacer: {
         height: 8,
     },
+    pendingSyncBadge: {
+        backgroundColor: '#FFF3CD',
+        borderRadius: 6,
+        padding: 4,
+        marginBottom: 4,
+        alignSelf: 'flex-start',
+    },
+    pendingSyncText: {
+        color: '#FFA500',
+        fontWeight: 'bold',
+        fontSize: 13,
+    },
+    buttonToggleUsed: {
+        backgroundColor: '#1976d2',
+        borderRadius: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        marginTop: 12,
+        alignSelf: 'center',
+    },
+    buttonToggleUsedDesfazer: {
+        backgroundColor: '#f44336',
+        borderRadius: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        marginTop: 12,
+        alignSelf: 'center',
+    },
+    buttonToggleUsedText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
 });
