@@ -11,6 +11,10 @@ import EventDetailScreen from '../screens/Public/EventDetailScreen'; // Public e
 import PurchaseScreen from '../screens/PurchaseScreen'; // Importing PurchaseScreen
 import MyTicketsScreen from '../screens/MyTicketsScreen';
 import TicketsByEventScreen from '../screens/TicketsByEventScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
+import CreateEventScreen from '../screens/CreateEventScreen';
+import AdminEventsScreen from '../screens/AdminEventsScreen';
+
 // import PrimeiroAcesso from '../screens/PrimeiroAcesso';
 // import CreateEventScreen from '../screens/CreateEventScreen';
 // import AdminEventsScreen from '../screens/AdminEventsScreen';
@@ -38,6 +42,9 @@ export default function AppNavigator() {
   <Stack.Screen name="Purchase" component={PurchaseScreen} options={{ headerShown: true, title: 'Finalizar Compra' }} />{/* Purchase screen for ticket buying */}
   <Stack.Screen name="MyTickets" component={MyTicketsScreen} options={{ headerShown: true, title: 'Meus Ingressos' }} />
   <Stack.Screen name="TicketsByEvent" component={TicketsByEventScreen} options={{ headerShown: true, title: 'Ingressos do Evento' }} />
+  <Stack.Screen name="ProfileEdit" component={EditProfileScreen} options={{ title: 'Meu Perfil' }}/>
+  <Stack.Screen name="AdminEvents" component={AdminEventsScreen} options={{ title: 'Gerenciar Eventos' }}/>
+  <Stack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Novo Evento' }} />
 </Stack.Navigator>
   );
 }

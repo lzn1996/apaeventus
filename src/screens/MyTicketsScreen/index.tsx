@@ -122,9 +122,19 @@ export default function MyTicketsScreen({ navigation }: any) {
             }
             wasConnected = state.isConnected;
         });
-        return () => unsubscribe();
+        // Atualização automática a cada 15 segundos enquanto online
+        let interval: any = null;
+        if (isConnected) {
+            interval = setInterval(() => {
+                syncFromServer().then(fetchData);
+            }, 15000); // 15 segundos
+        }
+        return () => {
+            unsubscribe();
+            if (interval) { clearInterval(interval); }
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isConnected]);
 
     const handleEventPress = (group: GroupedTickets) => {
         // Injeta os dados do usuário autenticado no campo buyer de cada ingresso
@@ -221,3 +231,16 @@ export default function MyTicketsScreen({ navigation }: any) {
         </View>
     );
 }
+/*const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#fff' },
+  header: { backgroundColor: '#007AFF', paddingVertical: 12, alignItems: 'center' },
+  headerTitle: { color: '#fff', fontSize: 20, fontWeight: '600' },
+  offlineBanner: { backgroundColor: '#FFC107', padding: 6, alignItems: 'center' },
+  bannerText: { color: '#333', fontSize: 12 },
+  list: { padding: 16 },
+  separator: { height: 12 },
+  empty: { textAlign: 'center', marginTop: 32, color: '#666', fontSize: 16 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  error: { color: 'red', fontSize: 16, marginBottom: 8 },
+  retry: { color: '#007AFF', fontWeight: '600' },
+}); */

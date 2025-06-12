@@ -46,21 +46,27 @@ export default function PurchaseScreen() {
             <View style={styles.paymentRow}>
                 <TouchableOpacity
                     style={[styles.paymentButton, paymentMethod === 'pix' && styles.paymentButtonSelected]}
-                    onPress={() => setPaymentMethod('pix')}
+                    onPress={() => {
+                        setPaymentMethod('pix');
+                    }}
                     disabled={loading}
                 >
                     <Text style={[styles.paymentText, paymentMethod === 'pix' && styles.paymentButtonSelectedText]}>PIX</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.paymentButton, paymentMethod === 'credito' && styles.paymentButtonSelected]}
-                    onPress={() => setPaymentMethod('credito')}
+                    onPress={() => {
+                        setPaymentMethod('credito');
+                    }}
                     disabled={loading}
                 >
                     <Text style={[styles.paymentText, paymentMethod === 'credito' && styles.paymentButtonSelectedText]}>Crédito</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.paymentButton, paymentMethod === 'debito' && styles.paymentButtonSelected]}
-                    onPress={() => setPaymentMethod('debito')}
+                    onPress={() => {
+                        setPaymentMethod('debito');
+                    }}
                     disabled={loading}
                 >
                     <Text style={[styles.paymentText, paymentMethod === 'debito' && styles.paymentButtonSelectedText]}>Débito</Text>
@@ -69,11 +75,20 @@ export default function PurchaseScreen() {
 
             <TouchableOpacity
                 style={[styles.confirmButton, !paymentMethod && styles.confirmButtonDisabled]}
-                onPress={handleConfirm}
+                onPress={() => {
+                    console.log('[PurchaseScreen] Botão Confirmar pressionado');
+                    handleConfirm();
+                }}
                 disabled={!paymentMethod || loading}
             >
                 <Text style={styles.confirmButtonText}>{loading ? 'Processando...' : 'Confirmar Compra'}</Text>
             </TouchableOpacity>
+            {/* Botão pequeno para voltar ao Dashboard */}
+            <View style={styles.backContainer}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Text style={styles.backText}>Voltar</Text>
+              </TouchableOpacity>
+            </View>
         </View>
     );
 }
@@ -174,5 +189,14 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         letterSpacing: 0.5,
+    },
+    backContainer: {
+    alignItems: 'center',
+    marginTop: 16,
+    },
+    backText: {
+      color: '#1976d2',
+      fontSize: 16,
+      fontWeight: '600',
     },
 });

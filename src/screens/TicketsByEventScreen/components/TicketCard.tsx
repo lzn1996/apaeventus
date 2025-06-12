@@ -68,11 +68,9 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, index, total, style }) 
                         <Text style={styles.buyerEmail}>{ticket.buyer.email}</Text>
                         <Text style={styles.buyerPhone}>{maskPhone(ticket.buyer.phone)}</Text>
                     </View>
-                    <View style={styles.ticketInfoRight}>
-                        <Text style={styles.boughtAt}>
-                            Comprado em:{' '}
-                            {new Date(ticket.boughtAt).toLocaleDateString('pt-BR')}
-                        </Text>
+                    <View style={styles.ticketInfoRightColumn}>
+                        <Text style={styles.boughtAt}>Comprado em:</Text>
+                        <Text style={styles.boughtAt}>{new Date(ticket.boughtAt).toLocaleDateString('pt-BR')}</Text>
                         <Text style={styles.price}>R$ {ticket.price?.toFixed(2)}</Text>
                     </View>
                 </View>

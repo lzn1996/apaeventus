@@ -55,7 +55,7 @@ export default function SplashScreen({ navigation }: { navigation: any }) {
                 useNativeDriver: true,
             }).start(() =>
                 InteractionManager.runAfterInteractions(() =>
-                    navigation.replace('Login')
+                    navigation.replace('Dashboard')
                 )
             );
         }, 2500);
