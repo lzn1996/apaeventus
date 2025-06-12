@@ -113,6 +113,13 @@ export default StyleSheet.create({
         flex: 1,
         alignItems: 'flex-end',
     },
+    ticketInfoRightColumn: {
+        flex: 1,
+        alignItems: 'flex-start',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        paddingInlineStart: 38,
+    },
     buyerName: {
         fontWeight: 'bold',
         fontSize: 15,
@@ -145,7 +152,8 @@ export default StyleSheet.create({
     qrCodeImage: {
         width: 180,
         height: 180,
-        marginVertical: 16,
+        marginVertical: -12,
+        marginBlockStart: 14,
     },
     ticketCountText: {
         fontWeight: 'bold',
@@ -192,5 +200,20 @@ export default StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    dotsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 12,
+    },
+    dot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        marginHorizontal: 4,
+        backgroundColor: '#d0d0d0',
+    },
+    dotActive: {
+        backgroundColor: '#007AFF',
     },
 });
