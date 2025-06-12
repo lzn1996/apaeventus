@@ -345,11 +345,14 @@ const onProfileOrAdminPress = useCallback(() => {
     <Image source={require('../assets/apae_logo.png')} style={styles.logo} />
   </View>
 
-  {isLogged && (
-    <Pressable onPress={() => handleLogout(navigation)} style={styles.logoutButton}>
-      <MaterialCommunityIcons name="logout" size={24} color="#E74C3C" />
-    </Pressable>
-  )}
+  {isLogged ? (
+  <Pressable onPress={() => handleLogout(navigation)} style={styles.logoutButton}>
+    <MaterialCommunityIcons name="logout" size={24} color="#E74C3C" />
+  </Pressable>
+) : (
+  <View style={styles.menuButtonPlaceholder} />
+)}
+
 </View>
 
       {/* ============ Conteúdo das abas ============ */}
