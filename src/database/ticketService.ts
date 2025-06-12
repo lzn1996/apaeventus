@@ -163,40 +163,40 @@ export async function resetLocalDatabase() {
 }
 
 export async function resetAllDatabaseTables() {
-  const db = await openDatabase();
-  await db.transaction(async (tx) => {
-    // Dropa todas as tabelas relevantes
-    await tx.executeSql('DROP TABLE IF EXISTS tickets');
-    await tx.executeSql('DROP TABLE IF EXISTS events');
-    await tx.executeSql('DROP TABLE IF EXISTS sync_queue');
-    await tx.executeSql('DROP TABLE IF EXISTS sync_status');
-  });
-  // Recria as tabelas
-  await import('./init').then(m => m.initDatabase());
-  console.log('[ticketService] Todas as tabelas do banco local foram resetadas e recriadas.');
+    const db = await openDatabase();
+    await db.transaction(async (tx) => {
+        // Dropa todas as tabelas relevantes
+        await tx.executeSql('DROP TABLE IF EXISTS tickets');
+        await tx.executeSql('DROP TABLE IF EXISTS events');
+        await tx.executeSql('DROP TABLE IF EXISTS sync_queue');
+        await tx.executeSql('DROP TABLE IF EXISTS sync_status');
+    });
+    // Recria as tabelas
+    await import('./init').then(m => m.initDatabase());
+    console.log('[ticketService] Todas as tabelas do banco local foram resetadas e recriadas.');
 }
 
 export async function testManualInsertTicketsSameEvent() {
-  const db = await openDatabase();
-  const eventId = 'TEST-EVENT-123';
-  // Cria evento fake
-  await db.executeSql(
-    `INSERT OR REPLACE INTO events (id, title, date, time, location, imageUrl, last_updated, isSynced)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-    [eventId, 'Evento Teste', '2025-06-10', '19:00', 'Local Teste', '', Date.now()]
-  );
-  // Insere dois tickets com IDs diferentes
-  await db.executeSql(
-    `INSERT OR REPLACE INTO tickets (id, event_id, type, code, used, qrCodeUrl, pdfUrl, qrCodeDataUrl, buyer_name, buyer_email, buyer_phone, boughtAt, price, last_updated, isSynced)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-    ['TICKET-1', eventId, 'TIPO1', 'CODE1', 0, '', '', '', 'Tester', 'tester@email.com', '999999999', '2025-06-10T19:00:00Z', 10, Date.now()]
-  );
-  await db.executeSql(
-    `INSERT OR REPLACE INTO tickets (id, event_id, type, code, used, qrCodeUrl, pdfUrl, qrCodeDataUrl, buyer_name, buyer_email, buyer_phone, boughtAt, price, last_updated, isSynced)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-    ['TICKET-2', eventId, 'TIPO2', 'CODE2', 0, '', '', '', 'Tester', 'tester@email.com', '999999999', '2025-06-10T19:00:00Z', 20, Date.now()]
-  );
-  // Consulta todos os tickets desse evento
-  const res = await db.executeSql('SELECT id, event_id, code FROM tickets WHERE event_id = ?', [eventId]);
-  console.log('[TESTE MANUAL] Tickets inseridos para event_id', eventId, ':', res[0].rows.raw());
+    const db = await openDatabase();
+    const eventId = 'TEST-EVENT-123';
+    // Cria evento fake
+    await db.executeSql(
+        `INSERT OR REPLACE INTO events (id, title, date, time, location, imageUrl, last_updated, isSynced)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+        [eventId, 'Evento Teste', '2025-06-10', '19:00', 'Local Teste', '', Date.now()]
+    );
+    // Insere dois tickets com IDs diferentes
+    await db.executeSql(
+        `INSERT OR REPLACE INTO tickets (id, event_id, type, code, used, qrCodeUrl, pdfUrl, qrCodeDataUrl, buyer_name, buyer_email, buyer_phone, boughtAt, price, last_updated, isSynced)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+        ['TICKET-1', eventId, 'TIPO1', 'CODE1', 0, '', '', '', 'Tester', 'tester@email.com', '999999999', '2025-06-10T19:00:00Z', 10, Date.now()]
+    );
+    await db.executeSql(
+        `INSERT OR REPLACE INTO tickets (id, event_id, type, code, used, qrCodeUrl, pdfUrl, qrCodeDataUrl, buyer_name, buyer_email, buyer_phone, boughtAt, price, last_updated, isSynced)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+        ['TICKET-2', eventId, 'TIPO2', 'CODE2', 0, '', '', '', 'Tester', 'tester@email.com', '999999999', '2025-06-10T19:00:00Z', 20, Date.now()]
+    );
+    // Consulta todos os tickets desse evento
+    const res = await db.executeSql('SELECT id, event_id, code FROM tickets WHERE event_id = ?', [eventId]);
+    console.log('[TESTE MANUAL] Tickets inseridos para event_id', eventId, ':', res[0].rows.raw());
 }

@@ -53,9 +53,9 @@ export const authService = {
      */
     async getAccessToken() {
         const token = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
-        if (__DEV__) {
-            console.log('[authService] getAccessToken:', token);
-        }
+        // if (__DEV__) {
+        //     console.log('[authService] getAccessToken:', token);
+        // }
         return token;
     },
 
@@ -80,14 +80,21 @@ export const authService = {
      * @returns true se o usuário estiver logado, false caso contrário.
      */
     async isLoggedIn() {
-    const token = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
-    if (!token) {return false;}
-
+        const token = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
+        if (!token) {
+            console.log('[authService.isLoggedIn] Nenhum token encontrado');
+            return false;
+        }
         try {
             const decoded: any = jwtDecode(token);
             const now = Math.floor(Date.now() / 1000);
-            return decoded.exp > now;
+            console.log('[authService.isLoggedIn] token:', token);
+            console.log('[authService.isLoggedIn] decoded.exp:', decoded.exp, '| agora:', now, '| expira em (s):', decoded.exp - now);
+            const valido = decoded.exp > now;
+            console.log('[authService.isLoggedIn] Token é válido?', valido);
+            return valido;
         } catch (error) {
+            console.log('[authService.isLoggedIn] Erro ao decodificar token:', error);
             return false;
         }
     },
