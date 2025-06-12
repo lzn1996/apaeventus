@@ -1,13 +1,30 @@
 import { StyleSheet } from 'react-native';
 
+/*
+Organized styles by grouping related components and layout elements together.
+Order: root/layout, containers, banners, titles, sections, boxes, buttons, counters, text, loading/error, navigation/back.
+No risk of style overwriting as all keys are unique.
+*/
 export default StyleSheet.create({
+    // Layout
+    root: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
     container: {
-        padding: 16,
+        padding: 24,
         backgroundColor: '#fff',
         alignItems: 'center',
-        flex: 1,
         justifyContent: 'flex-start',
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+
+    // Banner
     banner: {
         width: '100%',
         aspectRatio: 16 / 9,
@@ -19,16 +36,27 @@ export default StyleSheet.create({
         shadowOpacity: 0.15,
         shadowRadius: 6,
         elevation: 4,
-        maxHeight: 230,
+        maxHeight: 360, // Limit max height for better responsiveness
     },
+
+    // Titles
     title: {
-        fontSize: 26,
+        fontSize: 24,
         fontWeight: 'bold',
         textAlign: 'center',
-        marginBottom: 10,
+        marginBottom: 12,
         color: '#1a237e',
         letterSpacing: 0.5,
     },
+    sectionTitle: {
+        fontSize: 19,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        textAlign: 'center',
+        color: '#1a237e',
+    },
+
+    // Date Row
     dateRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -38,8 +66,10 @@ export default StyleSheet.create({
     dateText: {
         marginLeft: 8,
         color: '#555',
-        fontSize: 15,
+        fontSize: 14,
     },
+
+    // Price Box
     priceBox: {
         width: '100%',
         backgroundColor: '#f1f6fe',
@@ -61,6 +91,14 @@ export default StyleSheet.create({
         marginBottom: 12,
         color: '#1976d2',
     },
+    total: {
+        fontSize: 17,
+        fontWeight: '600',
+        marginTop: 10,
+        color: '#333',
+    },
+
+    // Counter
     counter: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -70,7 +108,8 @@ export default StyleSheet.create({
         marginVertical: 10,
     },
     counterButton: {
-        fontSize: 32,
+        fontSize: 20,
+        fontWeight: 'bold',
         paddingHorizontal: 18,
         color: '#1976d2',
     },
@@ -83,12 +122,8 @@ export default StyleSheet.create({
         fontWeight: 'bold',
         color: '#222',
     },
-    total: {
-        fontSize: 17,
-        fontWeight: '600',
-        marginTop: 10,
-        color: '#333',
-    },
+
+    // Buy Button
     buyButton: {
         backgroundColor: '#1976d2',
         paddingVertical: 14,
@@ -109,6 +144,8 @@ export default StyleSheet.create({
         fontWeight: 'bold',
         letterSpacing: 0.5,
     },
+
+    // Description Box
     descriptionBox: {
         width: '100%',
         backgroundColor: '#f9f9f9',
@@ -118,19 +155,14 @@ export default StyleSheet.create({
         borderWidth: 1,
         borderColor: '#e3eafc',
     },
-    sectionTitle: {
-        fontSize: 19,
-        fontWeight: 'bold',
-        marginBottom: 8,
-        textAlign: 'center',
-        color: '#1a237e',
-    },
     description: {
         fontSize: 16,
         lineHeight: 24,
         color: '#444',
         textAlign: 'center',
     },
+
+    // Address
     address: {
         textAlign: 'center',
         fontSize: 14,
@@ -139,19 +171,22 @@ export default StyleSheet.create({
         marginTop: 6,
         fontWeight: '500',
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f6f8fc',
-    },
+
+    // Error
     errorText: {
-        color: '#d32f2f',
+        color: 'red',
         fontSize: 16,
         fontWeight: 'bold',
     },
-    root: {
-        flex: 1,
-        backgroundColor: '#fff',
+
+    // Back/Navigation
+    backContainer: {
+        alignItems: 'center',
+        marginTop: 6,
+    },
+    backText: {
+        color: '#1976d2',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });

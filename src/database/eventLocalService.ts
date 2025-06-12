@@ -6,20 +6,29 @@ export async function initEventTable() {
         CREATE TABLE IF NOT EXISTS events (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
-            description TEXT,
             date TEXT NOT NULL,
-            quantity INTEGER,
-            price REAL,
-            imageUri TEXT,
-            last_updated INTEGER
+            time TEXT,
+            location TEXT,
+            imageUrl TEXT,
+            last_updated INTEGER,
+            isSynced INTEGER DEFAULT 1
         );
     `);
 }
 
+/*
+id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT,
+        location TEXT,
+        imageUrl TEXT,
+        last_updated INTEGER,
+        isSynced INTEGER DEFAULT 1
+*/
 export async function saveLocalEvent(event: {
     id?: string;
     title: string;
-    description?: string;
     date: string;
     quantity?: number;
     price?: number;
@@ -28,12 +37,11 @@ export async function saveLocalEvent(event: {
     const db = await openDatabase();
     const id = event.id || String(Date.now());
     await db.executeSql(
-        `INSERT OR REPLACE INTO events (id, title, description, date, quantity, price, imageUri, last_updated)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT OR REPLACE INTO events (id, title, date, quantity, price, imageUri, last_updated)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
             id,
             event.title,
-            event.description || '',
             event.date,
             event.quantity || 0,
             event.price || 0,

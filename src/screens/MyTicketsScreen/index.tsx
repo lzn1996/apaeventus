@@ -122,9 +122,19 @@ export default function MyTicketsScreen({ navigation }: any) {
             }
             wasConnected = state.isConnected;
         });
-        return () => unsubscribe();
+        // Atualização automática a cada 15 segundos enquanto online
+        let interval: any = null;
+        if (isConnected) {
+            interval = setInterval(() => {
+                syncFromServer().then(fetchData);
+            }, 15000); // 15 segundos
+        }
+        return () => {
+            unsubscribe();
+            if (interval) { clearInterval(interval); }
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isConnected]);
 
     const handleEventPress = (group: GroupedTickets) => {
         // Injeta os dados do usuário autenticado no campo buyer de cada ingresso
