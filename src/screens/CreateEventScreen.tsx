@@ -110,7 +110,6 @@ export default function CreateEventScreen({ navigation }: any) {
     if (!token) return Alert.alert('Sessão inválida', 'Faça login novamente.');
     if (!title.trim() || !description.trim()) return Alert.alert('Atenção', 'Título e descrição são obrigatórios.');
 
-    const pad = (n: number) => n.toString().padStart(2, '0');
     const isoDate = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
       `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 
@@ -131,9 +130,7 @@ export default function CreateEventScreen({ navigation }: any) {
     try {
       const res = await fetch(`${baseUrl}/ticket`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: form,
       });
 
@@ -152,38 +149,35 @@ export default function CreateEventScreen({ navigation }: any) {
         imageUri: imageFile?.uri,
       });
 
-      Alert.alert('Sucesso', `Evento criado! ID: ${json.id}`, [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      Alert.alert('Sucesso', `Evento criado! ID: ${json.id}`, [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     } catch (e: any) {
       Alert.alert('Erro Exceção', e.message);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe}> 
       <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.heading}>Criar Novo Evento</Text>
+
         <Text style={styles.label}>Título</Text>
         <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Nome do evento" />
 
         <Text style={styles.label}>Descrição</Text>
-        <TextInput style={[styles.input, { height: 100 }]} value={description} onChangeText={setDescription} placeholder="Detalhes do evento" multiline />
+        <TextInput style={[styles.input, styles.textArea]} value={description} onChangeText={setDescription} placeholder="Detalhes do evento" multiline />
 
         <Text style={styles.label}>Data e hora</Text>
-        <Pressable onPress={showDatePicker} style={styles.dateButton}>
-          <Text>Selecionar data: {date.toLocaleDateString()}</Text>
-        </Pressable>
-        <Pressable onPress={showTimePicker} style={styles.dateButton}>
-          <Text>Selecionar hora: {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-        </Pressable>
-        <Text style={styles.label}>Selecionado: {localDateString}</Text>
+        <View style={styles.rowButtons}>
+          <Pressable onPress={showDatePicker} style={styles.dateButton}><Text>📅 {date.toLocaleDateString()}</Text></Pressable>
+          <Pressable onPress={showTimePicker} style={styles.dateButton}><Text>🕒 {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text></Pressable>
+        </View>
 
-        {showDate && (
-          <DateTimePicker value={date} mode="date" display="default" onChange={handleDateChange} />
-        )}
-        {showTime && (
-          <DateTimePicker value={date} mode="time" display="default" onChange={handleTimeChange} />
-        )}
+        {showDate && <DateTimePicker value={date} mode="date" display="default" onChange={handleDateChange} />}
+        {showTime && <DateTimePicker value={date} mode="time" display="default" onChange={handleTimeChange} />}
 
-        <Text style={styles.label}>Quantidade</Text>
+        <Text style={styles.label}>Quantidade de Ingressos</Text>
         <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} placeholder="0" keyboardType="number-pad" />
 
         <Text style={styles.label}>Preço (R$)</Text>
@@ -206,22 +200,35 @@ export default function CreateEventScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f2f2f7' },
-  container: { padding: 16 },
-  label: { fontWeight: '600', marginTop: 12 },
+  safe: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { padding: 20 },
+  heading: { fontSize: 22, fontWeight: '700', marginBottom: 12, color: '#111827' },
+  label: { fontWeight: '600', marginTop: 16, color: '#374151' },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#D1D5DB',
+    fontSize: 16,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
   },
   dateButton: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  rowButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 8,
   },
   imagePickerContainer: {
@@ -230,9 +237,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   imageButton: {
-    backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 6,
+    backgroundColor: '#2563EB',
+    padding: 12,
+    borderRadius: 10,
   },
   imageButtonText: {
     color: '#fff',
@@ -241,19 +248,19 @@ const styles = StyleSheet.create({
   preview: {
     width: 60,
     height: 60,
-    borderRadius: 6,
+    borderRadius: 8,
     marginLeft: 12,
   },
   submitButton: {
-    backgroundColor: '#007AFF',
-    padding: 14,
-    borderRadius: 8,
+    backgroundColor: '#10B981',
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 32,
   },
   submitText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 16,
   },
 });
