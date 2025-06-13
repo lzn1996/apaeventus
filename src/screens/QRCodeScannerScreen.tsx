@@ -50,12 +50,12 @@ export default function App() {
     setScanned(true);
 
     // DEBUG #1: mostra em um alert o conteúdo bruto que o leitor retornou
-    Alert.alert(
+    /*Alert.alert(
       'DEBUG - QR Scan',
       `type: ${type}\n\ndata raw:\n${data}`,
       [{ text: 'OK', onPress: () => {} }],
       { cancelable: false }
-    );
+    );*/
 
     try {
       // busca accessToken novo
@@ -70,30 +70,53 @@ export default function App() {
       const body = JSON.stringify({ saleId: data });
 
       // DEBUG #2: mostra a requisição completa antes do fetch
-      Alert.alert(
+      /*Alert.alert(
         'DEBUG - Request',
         `POST ${url}\n\nHeaders:\n${JSON.stringify(headers, null, 2)}\n\nBody:\n${body}`,
         [{ text: 'OK', onPress: () => {} }],
         { cancelable: false }
-      );
+      );*/
+      // DEBUG #3: mostra o token usado
 
       // chama o endpoint marcando o saleId
-      const response = await fetch(url, { method: 'POST', headers, body });
+  const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body,
+      });
+      // lê como texto para evitar JSON parse vazio
+      const text = await response.text();
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        // tenta extrair mensagem do corpo
+        let msg = text;
+        try {
+          const err = JSON.parse(text);
+          msg = err.message || JSON.stringify(err);
+        } catch {}
+        throw new Error(`HTTP ${response.status}: ${msg}`);
       }
-      const result = await response.json();
+
+      // tenta parsear o JSON somente se houver algo
+      let result: any = null;
+      if (text) {
+        try {
+          result = JSON.parse(text);
+        } catch {
+          // não JSON = deixa result como texto bruto
+          result = text;
+        }
+      }
 
       Alert.alert(
         'QR Code Válido',
-        `Venda ${data} marcada como usada.\nResposta: ${JSON.stringify(result)}`,
+        `Venda ${data} marcada como usada.`,
         [{ text: 'OK', onPress: () => setScanned(false) }],
         { cancelable: false }
       );
     } catch (error: any) {
       Alert.alert(
         'Erro ao validar QR Code',
-        error.message,
+        'Ingresso já utilizado ou inválido ',
         [{ text: 'OK', onPress: () => setScanned(false) }],
         { cancelable: false }
       );
