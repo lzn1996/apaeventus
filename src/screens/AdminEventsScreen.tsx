@@ -18,7 +18,7 @@ export default function AdminEventsScreen() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Refresh token logic
+  // 1) refresh token
   async function refreshAccessToken(): Promise<string | null> {
     const old = await AsyncStorage.getItem('accessToken');
     const refresh = await AsyncStorage.getItem('refreshToken');
@@ -26,11 +26,13 @@ export default function AdminEventsScreen() {
 
     const res = await fetch(`${baseUrl}/auth/refresh-token`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${old}` },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${old}`,
+      },
       body: JSON.stringify({ refreshToken: refresh }),
     });
     if (!res.ok) return null;
-
     const json = await res.json();
     if (json.accessToken) {
       await AsyncStorage.setItem('accessToken', json.accessToken);
@@ -42,7 +44,7 @@ export default function AdminEventsScreen() {
     return null;
   }
 
-  // Fetch events with retry on 401
+  // 2) busca eventos (com retry em 401)
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     let token = await AsyncStorage.getItem('accessToken');
@@ -73,12 +75,15 @@ export default function AdminEventsScreen() {
     setLoading(false);
   }, []);
 
-  // Toggle active/inactive with retry
+  // 3) toggla ativo/inativo
   const toggleActive = async (id: string, isActive: boolean) => {
     let token = await AsyncStorage.getItem('accessToken');
     let res = await fetch(`${baseUrl}/ticket/enable-disable`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ id, isActive }),
     });
 
@@ -88,7 +93,10 @@ export default function AdminEventsScreen() {
       token = newToken;
       res = await fetch(`${baseUrl}/ticket/enable-disable`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ id, isActive }),
       });
     }
@@ -98,6 +106,49 @@ export default function AdminEventsScreen() {
       return Alert.alert('Erro', `Status ${res.status}\n${txt}`);
     }
     fetchEvents();
+  };
+
+  // 4) delete ticket
+  const deleteTicket = async (id: string) => {
+    Alert.alert(
+      'Confirmar remoção',
+      'Deseja realmente excluir este ingresso?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            let token = await AsyncStorage.getItem('accessToken');
+            let res = await fetch(`${baseUrl}/ticket/${id}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (res.status === 401) {
+              const newToken = await refreshAccessToken();
+              if (!newToken) {
+                return Alert.alert('Sessão expirada', 'Faça login novamente.');
+              }
+              token = newToken;
+              res = await fetch(`${baseUrl}/ticket/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+              });
+            }
+
+            if (!res.ok) {
+              const txt = await res.text();
+              return Alert.alert('Erro ao excluir', `Status ${res.status}\n${txt}`);
+            }
+
+            Alert.alert('Sucesso', 'Ingresso excluído.', [
+              { text: 'OK', onPress: fetchEvents },
+            ]);
+          },
+        },
+      ]
+    );
   };
 
   useEffect(() => {
@@ -120,22 +171,35 @@ export default function AdminEventsScreen() {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.image} />}
+            {item.imageUrl && (
+              <Image source={{ uri: item.imageUrl }} style={styles.image} />
+            )}
+
             <View style={styles.info}>
               <Text style={styles.title}>{item.title}</Text>
               <Text>{new Date(item.eventDate).toLocaleString()}</Text>
             </View>
-            <Pressable
-              style={[
-                styles.toggleButton,
-                item.isActive ? styles.btnDeactivate : styles.btnActivate,
-              ]}
-              onPress={() => toggleActive(item.id, !item.isActive)}
-            >
-              <Text style={styles.toggleText}>
-                {item.isActive ? 'Desativar' : 'Ativar'}
-              </Text>
-            </Pressable>
+
+            <View style={styles.buttons}>
+              <Pressable
+                style={[
+                  styles.toggleButton,
+                  item.isActive ? styles.btnDeactivate : styles.btnActivate,
+                ]}
+                onPress={() => toggleActive(item.id, !item.isActive)}
+              >
+                <Text style={styles.toggleText}>
+                  {item.isActive ? 'Desativar' : 'Ativar'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.deleteButton}
+                onPress={() => deleteTicket(item.id)}
+              >
+                <Text style={styles.deleteText}>Excluir</Text>
+              </Pressable>
+            </View>
           </View>
         )}
       />
@@ -158,8 +222,16 @@ const styles = StyleSheet.create({
   image: { width: 60, height: 60, borderRadius: 6, marginRight: 12 },
   info: { flex: 1 },
   title: { fontWeight: '600', marginBottom: 4 },
+  buttons: { flexDirection: 'row', alignItems: 'center' },
   toggleButton: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 6 },
-  btnActivate: { backgroundColor: '#27ae60' },
-  btnDeactivate: { backgroundColor: '#e74c3c' },
+  btnActivate: { backgroundColor: '#27ae60', marginRight: 8 },
+  btnDeactivate: { backgroundColor: '#e74c3c', marginRight: 8 },
   toggleText: { color: '#fff', fontWeight: '600' },
+  deleteButton: {
+    backgroundColor: '#c0392b',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  deleteText: { color: '#fff', fontWeight: '600' },
 });
