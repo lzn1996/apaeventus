@@ -1,3 +1,4 @@
+// src/screens/MyTicketsScreen.tsx
 import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
@@ -13,10 +14,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { baseUrl } from '../../config/api';
 import { getUserSales, Sale } from '../../services/saleService';
 import { getUserProfile } from '../../services/userService';
-import {
-  saveUserProfileLocal,
-  getUserProfileLocal,
-} from '../../database/profileLocalService';
 import EventCard from './components/EventCard';
 import { MyEvent } from './types';
 
@@ -36,21 +33,24 @@ export default function MyTicketsScreen({ navigation }: any) {
     const oldToken = await AsyncStorage.getItem('accessToken');
     const refreshToken = await AsyncStorage.getItem('refreshToken');
     if (!oldToken || !refreshToken) return null;
-    try {
-      const res = await fetch(`${baseUrl}/auth/refresh-token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldToken}` },
-        body: JSON.stringify({ refreshToken }),
-      });
-      if (!res.ok) return null;
-      const js = await res.json();
-      if (js.accessToken) {
-        await AsyncStorage.setItem('accessToken', js.accessToken);
-        if (js.refreshToken) await AsyncStorage.setItem('refreshToken', js.refreshToken);
-        return js.accessToken;
+
+    const res = await fetch(`${baseUrl}/auth/refresh-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${oldToken}`,
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return null;
+
+    const js = await res.json();
+    if (js.accessToken) {
+      await AsyncStorage.setItem('accessToken', js.accessToken);
+      if (js.refreshToken) {
+        await AsyncStorage.setItem('refreshToken', js.refreshToken);
       }
-    } catch {
-      return null;
+      return js.accessToken;
     }
     return null;
   };
@@ -67,14 +67,12 @@ export default function MyTicketsScreen({ navigation }: any) {
   const fetchData = async () => {
     setLoading(true);
     setError(null);
+
     try {
-      // renovar token se conectado
+      // renovar token e buscar perfil (sem gravação local via SQLite)
       if (isConnected) {
         await refreshAccessToken();
-        const profile = await getUserProfile();
-        if (profile?.id) await saveUserProfileLocal(profile);
-      } else {
-        await getUserProfileLocal();
+        await getUserProfile(); // apenas para manter sessão ativa
       }
 
       // buscar vendas do usuário
@@ -92,11 +90,19 @@ export default function MyTicketsScreen({ navigation }: any) {
               id,
               title: ev.title,
               date,
-              time: time?.slice(0,5) || '',
+              time: time?.slice(0, 5) || '',
               imageUrl: ev.imageUrl,
               location: ev.location || '',
-              displayDate: new Date(ev.eventDate).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }),
-              displayTime: new Date(ev.eventDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+              displayDate: new Date(ev.eventDate).toLocaleDateString('pt-BR', {
+                weekday: 'short',
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              }),
+              displayTime: new Date(ev.eventDate).toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
             },
             tickets: [],
           };
@@ -104,11 +110,11 @@ export default function MyTicketsScreen({ navigation }: any) {
         map[id].tickets.push(sale);
       });
 
-      // ordenar e setar estado
+      // ordenar decrescente por data
       const arr = Object.values(map).sort((a, b) => {
-        const da = new Date(`${a.event.date}T${a.event.time}`).getTime();
-        const db = new Date(`${b.event.date}T${b.event.time}`).getTime();
-        return db - da;
+        const ta = new Date(`${a.event.date}T${a.event.time}`).getTime();
+        const tb = new Date(`${b.event.date}T${b.event.time}`).getTime();
+        return tb - ta;
       });
       setGrouped(arr);
     } catch (e: any) {
@@ -139,7 +145,9 @@ export default function MyTicketsScreen({ navigation }: any) {
     return (
       <SafeAreaView style={styles.centered}>
         <Text style={styles.error}>{error}</Text>
-        <Text style={styles.retry} onPress={fetchData}>Tentar novamente</Text>
+        <Text style={styles.retry} onPress={fetchData}>
+          Tentar novamente
+        </Text>
       </SafeAreaView>
     );
   }
@@ -148,7 +156,9 @@ export default function MyTicketsScreen({ navigation }: any) {
     <SafeAreaView style={styles.safe}>
       {!isConnected && (
         <View style={styles.offlineBanner}>
-          <Text style={styles.bannerText}>Sem conexão, exibindo dados em cache</Text>
+          <Text style={styles.bannerText}>
+            Sem conexão, recarregue para atualizar.
+          </Text>
         </View>
       )}
       <View style={styles.header}>
@@ -162,7 +172,11 @@ export default function MyTicketsScreen({ navigation }: any) {
         )}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={<Text style={styles.empty}>Você ainda não possui ingressos.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            Você ainda não possui ingressos.
+          </Text>
+        }
       />
     </SafeAreaView>
   );
@@ -170,14 +184,32 @@ export default function MyTicketsScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
-  header: { backgroundColor: '#007AFF', paddingVertical: 12, alignItems: 'center' },
+  header: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
   headerTitle: { color: '#fff', fontSize: 20, fontWeight: '600' },
-  offlineBanner: { backgroundColor: '#FFC107', padding: 6, alignItems: 'center' },
+  offlineBanner: {
+    backgroundColor: '#FFC107',
+    padding: 6,
+    alignItems: 'center',
+  },
   bannerText: { color: '#333', fontSize: 12 },
   list: { padding: 16 },
   separator: { height: 12 },
-  empty: { textAlign: 'center', marginTop: 32, color: '#666', fontSize: 16 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  empty: {
+    textAlign: 'center',
+    marginTop: 32,
+    color: '#666',
+    fontSize: 16,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
   error: { color: 'red', fontSize: 16, marginBottom: 8 },
   retry: { color: '#007AFF', fontWeight: '600' },
 });

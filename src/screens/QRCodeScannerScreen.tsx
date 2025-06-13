@@ -1,20 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
-const refreshToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImY3MDJhZWY3LWM3YzktNGNmYy05NGQ0LWY1Y2U5ODk0MjBjMyIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc0OTY2MDk1OSwiZXhwIjoxNzUwMjY1NzU5fQ.HS6KYtx3E7990j8hKodkNcGwGaL79lsa_bDOSDnwCpg';
 let bearerToken = '';
 
 async function getNewToken() {
-  const response = await fetch('http://18.191.252.46/auth/refresh-token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-  });
+  // 1) busca os tokens no AsyncStorage
+  const oldAccess = await AsyncStorage.getItem('accessToken');
+  const refresh = await AsyncStorage.getItem('refreshToken');
+  if (!oldAccess || !refresh) {
+    throw new Error('Tokens não encontrados no armazenamento');
+  }
 
-  if (!response.ok) throw new Error(`Erro HTTP ao atualizar token: ${response.status}`);
+  // 2) chama o refresh-token
+  const response = await fetch(
+    'http://18.191.252.46/auth/refresh-token',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${oldAccess}`
+      },
+      body: JSON.stringify({ refreshToken: refresh })
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`Falha ao atualizar token: ${response.status}`);
+  }
 
+  // 3) atualiza no storage e retorna o novo access
   const result = await response.json();
+  await AsyncStorage.setItem('accessToken', result.accessToken);
+  if (result.refreshToken) {
+    await AsyncStorage.setItem('refreshToken', result.refreshToken);
+  }
   return result.accessToken;
 }
 
@@ -22,35 +42,46 @@ export default function App() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
 
-  const handleBarCodeScanned = async ({ type, data }) => {
-    setScanned(true);
+  // solicita permissão na montagem
+  useEffect(() => {
+    if (permission === null) {
+      requestPermission();
+    }
+  }, [permission]);
 
+  const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    setScanned(true);
     try {
+      // busca accessToken novo
       bearerToken = await getNewToken();
 
-      const response = await fetch('http://18.191.252.46/sale/set-used', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${bearerToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ saleId: data }),
-      });
-
-      if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-
+      // chama o endpoint marcando o saleId
+      const response = await fetch(
+        'http://18.191.252.46/sale/set-used',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${bearerToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ saleId: data })
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
       const result = await response.json();
 
       Alert.alert(
         'QR Code Válido',
-        `O QR Code foi marcado como utilizado.\nResposta: ${JSON.stringify(result)}`,
+        `Venda ${data} marcada como usada.\nResposta: ${JSON.stringify(result)}`,
         [{ text: 'OK', onPress: () => setScanned(false) }],
         { cancelable: false }
       );
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert(
         'Erro ao validar QR Code',
-        `Detalhes do erro: ${error.message}`,
+        error.message,
         [{ text: 'OK', onPress: () => setScanned(false) }],
         { cancelable: false }
       );
@@ -60,7 +91,9 @@ export default function App() {
   if (!permission?.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.permissionText}>Permissão da câmera não concedida.</Text>
+        <Text style={styles.permissionText}>
+          Permissão da câmera não concedida.
+        </Text>
         <Button title="Solicitar Permissão" onPress={requestPermission} />
       </View>
     );
@@ -101,15 +134,27 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   layerContainer: { flex: 1 },
-  layerTop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  layerTop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
   layerCenter: { flexDirection: 'row' },
-  layerLeft: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  layerLeft: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
   focused: {
     width: 200,
     height: 200,
     borderWidth: 2,
     borderColor: '#00FF00',
   },
-  layerRight: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
-  layerBottom: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  layerRight: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  layerBottom: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
 });
