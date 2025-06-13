@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Platform,
+  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { baseUrl } from '../config/api';
@@ -17,8 +18,8 @@ import { baseUrl } from '../config/api';
 export default function AdminEventsScreen() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const screenWidth = Dimensions.get('window').width;
 
-  // Refresh token helper
   async function refreshAccessToken(): Promise<string | null> {
     const old = await AsyncStorage.getItem('accessToken');
     const refresh = await AsyncStorage.getItem('refreshToken');
@@ -42,7 +43,6 @@ export default function AdminEventsScreen() {
     return null;
   }
 
-  // Fetch events
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     let token = await AsyncStorage.getItem('accessToken');
@@ -73,7 +73,6 @@ export default function AdminEventsScreen() {
     setLoading(false);
   }, []);
 
-  // Toggle active/inactive
   const toggleActive = async (id: string, isActive: boolean) => {
     let token = await AsyncStorage.getItem('accessToken');
     let res = await fetch(`${baseUrl}/ticket/enable-disable`, {
@@ -106,11 +105,10 @@ export default function AdminEventsScreen() {
     fetchEvents();
   };
 
-  // Delete ticket
   const deleteTicket = (id: string) => {
     Alert.alert(
-      'Excluir ingresso',
-      'Tem certeza que deseja excluir este ingresso permanentemente?',
+      'Excluir Evento',
+      'Tem certeza que deseja excluir este evento permanentemente?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -124,9 +122,7 @@ export default function AdminEventsScreen() {
             });
             if (res.status === 401) {
               const newToken = await refreshAccessToken();
-              if (!newToken) {
-                return Alert.alert('Sessão expirada', 'Faça login novamente.');
-              }
+              if (!newToken) return Alert.alert('Sessão expirada', 'Faça login novamente.');
               token = newToken;
               res = await fetch(`${baseUrl}/ticket/${id}`, {
                 method: 'DELETE',
@@ -169,16 +165,14 @@ export default function AdminEventsScreen() {
               <Image source={{ uri: item.imageUrl }} style={styles.image} />
             )}
             <View style={styles.info}>
-              <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+              <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
                 {item.title}
               </Text>
-              <Text style={styles.date} numberOfLines={1}>
-                {new Date(item.eventDate)
-                  .toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+              <Text style={styles.date}>
+                📅 {new Date(item.eventDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
               </Text>
-              <Text style={styles.time} numberOfLines={1}>
-                {new Date(item.eventDate)
-                  .toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              <Text style={styles.time}>
+                🕒 {new Date(item.eventDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </View>
             <View style={styles.buttons}>
@@ -191,7 +185,7 @@ export default function AdminEventsScreen() {
                 ]}
                 onPress={() => toggleActive(item.id, !item.isActive)}
               >
-                <Text style={styles.toggleText}>
+                <Text style={styles.toggleText} numberOfLines={1}>
                   {item.isActive ? 'Desativar' : 'Ativar'}
                 </Text>
               </Pressable>
@@ -203,7 +197,7 @@ export default function AdminEventsScreen() {
                 ]}
                 onPress={() => deleteTicket(item.id)}
               >
-                <Text style={styles.deleteText}>Excluir</Text>
+                <Text style={styles.deleteText} numberOfLines={1}>Excluir</Text>
               </Pressable>
             </View>
           </View>
@@ -235,32 +229,32 @@ const styles = StyleSheet.create({
     }),
   },
   image: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
-    marginRight: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 10,
+    marginRight: 12,
   },
   info: { flex: 1, justifyContent: 'center' },
-  title: { fontSize: 16, fontWeight: '700', marginBottom: 4, color: '#333' },
-  date: { fontSize: 14, color: '#555', marginBottom: 2 },
-  time: { fontSize: 12, color: '#888' },
-  buttons: { flexDirection: 'row', alignItems: 'center' },
+  title: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
+  date: { fontSize: 12, color: '#6B7280' },
+  time: { fontSize: 12, color: '#6B7280' },
+  buttons: { justifyContent: 'center' },
   toggleButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginRight: 8,
+    backgroundColor: '#4ADE80',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginBottom: 6,
   },
-  btnActivate: { backgroundColor: '#2ECC71' },
-  btnDeactivate: { backgroundColor: '#E74C3C' },
-  toggleText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
+  btnActivate: { backgroundColor: '#10B981' },
+  btnDeactivate: { backgroundColor: '#EF4444' },
+  toggleText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   deleteButton: {
-    backgroundColor: '#C0392B',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    backgroundColor: '#DC2626',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
   },
-  deleteText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
-  pressed: { opacity: 0.75 },
+  deleteText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  pressed: { opacity: 0.8 },
 });
-
