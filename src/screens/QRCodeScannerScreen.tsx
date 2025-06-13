@@ -14,17 +14,14 @@ async function getNewToken() {
   }
 
   // 2) chama o refresh-token
-  const response = await fetch(
-    'http://18.191.252.46/auth/refresh-token',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${oldAccess}`
-      },
-      body: JSON.stringify({ refreshToken: refresh })
-    }
-  );
+  const response = await fetch('http://18.191.252.46/auth/refresh-token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${oldAccess}`,
+    },
+    body: JSON.stringify({ refreshToken: refresh }),
+  });
   if (!response.ok) {
     throw new Error(`Falha ao atualizar token: ${response.status}`);
   }
@@ -51,22 +48,37 @@ export default function App() {
 
   const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
     setScanned(true);
+
+    // DEBUG #1: mostra em um alert o conteúdo bruto que o leitor retornou
+    Alert.alert(
+      'DEBUG - QR Scan',
+      `type: ${type}\n\ndata raw:\n${data}`,
+      [{ text: 'OK', onPress: () => {} }],
+      { cancelable: false }
+    );
+
     try {
       // busca accessToken novo
       bearerToken = await getNewToken();
 
-      // chama o endpoint marcando o saleId
-      const response = await fetch(
-        'http://18.191.252.46/sale/set-used',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${bearerToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ saleId: data })
-        }
+      // prepara detalhes da requisição
+      const url = 'http://18.191.252.46/sale/set-used';
+      const headers = {
+        Authorization: `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json',
+      };
+      const body = JSON.stringify({ saleId: data });
+
+      // DEBUG #2: mostra a requisição completa antes do fetch
+      Alert.alert(
+        'DEBUG - Request',
+        `POST ${url}\n\nHeaders:\n${JSON.stringify(headers, null, 2)}\n\nBody:\n${body}`,
+        [{ text: 'OK', onPress: () => {} }],
+        { cancelable: false }
       );
+
+      // chama o endpoint marcando o saleId
+      const response = await fetch(url, { method: 'POST', headers, body });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
