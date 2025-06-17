@@ -121,5 +121,7 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+      implementation project(':react-native-gesture-handler')
+
 }
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"

@@ -14,7 +14,7 @@ async function getNewToken() {
   }
 
   // 2) chama o refresh-token
-  const response = await fetch('http://18.191.252.46/auth/refresh-token', {
+  const response = await fetch('https://apaeventus.rafaelcostadev.com/auth/refresh-token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -62,7 +62,7 @@ export default function App() {
       bearerToken = await getNewToken();
 
       // prepara detalhes da requisição
-      const url = 'http://18.191.252.46/sale/set-used';
+      const url = 'https://apaeventus.rafaelcostadev.com/sale/set-used';
       const headers = {
         Authorization: `Bearer ${bearerToken}`,
         'Content-Type': 'application/json',
