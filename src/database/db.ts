@@ -1,9 +1,32 @@
 // src/database/db.ts
-// Função utilitária para abrir conexão SQLite
-import SQLite from 'react-native-sqlite-storage';
+import SQLite, { Transaction, ResultSet } from 'react-native-sqlite-storage';
 
-SQLite.enablePromise(true);
+// Troque para true quando quiser usar o banco de verdade
+const USE_DB = false;
 
-export function openDatabase() {
-    return SQLite.openDatabase({ name: 'apaeventus.db', location: 'default' });
-}
+type DbMock = {
+  transaction: (cb: (tx: Transaction) => void) => void;
+};
+
+const dbMock: DbMock = {
+  transaction: cb => {
+    const txStub = {
+      executeSql: (
+        _sql: string,
+        _params: any[] = [],
+        success: (tx: Transaction, rs: ResultSet) => void = () => {},
+        _error: (tx: Transaction, err: any) => boolean = () => true
+      ) => {
+        success(
+          txStub as unknown as Transaction,
+          { rows: { length: 0, item: (_i: number) => ({}) } } as unknown as ResultSet
+        );
+      }
+    } as unknown as Transaction;
+    cb(txStub);
+  }
+};
+
+export const db = USE_DB
+  ? (SQLite.openDatabase({ name: 'app.db', location: 'default' }) as SQLite.SQLiteDatabase)
+  : (dbMock as unknown as SQLite.SQLiteDatabase);

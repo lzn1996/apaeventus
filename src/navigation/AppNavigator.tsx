@@ -14,6 +14,7 @@ import TicketsByEventScreen from '../screens/TicketsByEventScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
 import AdminEventsScreen from '../screens/AdminEventsScreen';
+import RecoverPasswordScreen from '../screens/ResetPassword';
 
 // import PrimeiroAcesso from '../screens/PrimeiroAcesso';
 // import CreateEventScreen from '../screens/CreateEventScreen';
@@ -45,6 +46,7 @@ export default function AppNavigator() {
   <Stack.Screen name="ProfileEdit" component={EditProfileScreen} options={{ title: 'Meu Perfil' }}/>
   <Stack.Screen name="AdminEvents" component={AdminEventsScreen} options={{ title: 'Gerenciar Eventos' }}/>
   <Stack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Novo Evento' }} />
+   <Stack.Screen name="Reset" component={RecoverPasswordScreen} options={{ title: 'Recuperar Senha' }} />
 </Stack.Navigator>
   );
 }

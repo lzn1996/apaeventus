@@ -13,85 +13,10 @@ import {
   PermissionsAndroid,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { DevSettings } from 'react-native'; // Dev button hidden
 import { launchImageLibrary, Asset } from 'react-native-image-picker';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { baseUrl } from '../config/api';
 import { initEventTable, saveLocalEvent } from '../database/editprofile';
-
-// ─── In-app Network Logger (intercept only /ticket) ─────────────────────────────
-// ─── In-app Network Logger (disabled alerts, only console) ─────────────────────────────
-if (__DEV__) {
-  const originalFetch = global.fetch;
-  global.fetch = async (url: string, options?: any) => {
-    if (typeof url === 'string' && url.includes('/ticket')) {
-      try {
-        const parts = (options.body as any)?._parts as Array<[string, any]> || [];
-        const token = options.headers?.Authorization || '';
-        let curl = `curl -X POST "${url}" \
-  -H 'Authorization: ${token}' \
-`;
-        parts.forEach(([k, v]) => {
-          if (typeof v === 'string') curl += `  -F '${k}=${v}' \
-`;
-          else curl += `  -F '${k}=@${v.uri};type=${v.type}' \
-`;
-        });
-        // // Alert.alert('cURL (/ticket)', curl); // debug alert commented out
-        console.group('[NetworkLogger] /ticket Request');
-        console.log('URL:', url);
-        console.log('Headers:', options.headers);
-        console.log('Body parts:', parts);
-        console.groupEnd();
-      } catch (err) {
-        console.warn('NetworkLogger error:', err);
-      }
-    }
-    return originalFetch(url, options);
-  };
-}
-// ────────────────────────────────────────────────────────────────────────────────
-
-// ─── Helpers de API ──────────────────────────────────────────────────────────── ────────────────────────────────────────────────────────────
-async function refreshTokens(oldToken: string): Promise<string> {
-  const refresh = await AsyncStorage.getItem('refreshToken');
-  if (!refresh) throw new Error('Sem refresh token');
-
-  const res = await fetch(`${baseUrl}/auth/refresh-token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldToken}` },
-    body: JSON.stringify({ refreshToken: refresh }),
-  });
-  if (!res.ok) throw new Error('Refresh expirou: ' + res.status);
-
-  const { accessToken, refreshToken } = await res.json();
-  await AsyncStorage.setItem('accessToken', accessToken);
-  if (refreshToken) await AsyncStorage.setItem('refreshToken', refreshToken);
-  return accessToken;
-}
-
-async function apiFetch(
-  endpoint: string,
-  method: string,
-  formData: FormData
-): Promise<Response> {
-  let token = await AsyncStorage.getItem('accessToken');
-  if (!token) throw new Error('Usuário não autenticado');
-
-  // Remove o header Content-Type para permitir que o fetch defina o boundary automaticamente
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
-  };
-
-  let res = await fetch(`${baseUrl}${endpoint}`, { method, headers, body: formData });
-  if (res.status === 401) {
-    token = await refreshTokens(token);
-    headers.Authorization = `Bearer ${token}`;
-    res = await fetch(`${baseUrl}${endpoint}`, { method, headers, body: formData });
-  }
-  return res;
-}
-// ────────────────────────────────────────────────────────────────────────────────
 
 export default function CreateEventScreen({ navigation }: any) {
   useEffect(() => { initEventTable(); }, []);
@@ -99,33 +24,60 @@ export default function CreateEventScreen({ navigation }: any) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date());
-  const [showPicker, setShowPicker] = useState(false);
+  const [showDate, setShowDate] = useState(false);
+  const [showTime, setShowTime] = useState(false);
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
   const [imageFile, setImageFile] = useState<Asset | null>(null);
 
-  // Gera string de data para envio e exibição
   const pad = (n: number) => n.toString().padStart(2, '0');
-  const localDateString =
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  const localDateString = `${date.toLocaleDateString()} às ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+
+  const handleDateChange = (_: any, sel?: Date) => {
+    setShowDate(false);
+    if (sel) {
+      const updated = new Date(date);
+      updated.setFullYear(sel.getFullYear());
+      updated.setMonth(sel.getMonth());
+      updated.setDate(sel.getDate());
+      setDate(updated);
+    }
+  };
+
+  const handleTimeChange = (_: any, sel?: Date) => {
+    setShowTime(false);
+    if (sel) {
+      const updated = new Date(date);
+      updated.setHours(sel.getHours());
+      updated.setMinutes(sel.getMinutes());
+      setDate(updated);
+    }
+  };
 
   const showDatePicker = () => {
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
         value: date,
-        onChange: (_e, sel) => sel && setDate(sel),
-        mode: 'datetime',
-        is24Hour: false,
+        onChange: handleDateChange,
+        mode: 'date',
+        is24Hour: true,
       });
     } else {
-      setShowPicker(true);
+      setShowDate(true);
     }
   };
 
-  const handleDateChange = (_: any, sel?: Date) => {
-    if (Platform.OS === 'ios') setShowPicker(false);
-    if (sel) setDate(sel);
+  const showTimePicker = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: date,
+        onChange: handleTimeChange,
+        mode: 'time',
+        is24Hour: true,
+      });
+    } else {
+      setShowTime(true);
+    }
   };
 
   async function requestGalleryPermission(): Promise<boolean> {
@@ -153,33 +105,18 @@ export default function CreateEventScreen({ navigation }: any) {
     });
   };
 
-  const handleRegenerateToken = async () => {
-    try {
-      const old = await AsyncStorage.getItem('accessToken');
-      if (!old) throw new Error('Nenhum token encontrado');
-      await refreshTokens(old);
-      const refresh = await AsyncStorage.getItem('refreshToken');
-      Alert.alert('Novo Refresh Token', refresh || 'Indisponível');
-    } catch (e: any) {
-      Alert.alert('Erro', e.message);
-    }
-  };
-
   const handleSubmit = async () => {
-    // Recupera token para cURL e requisição
     const token = await AsyncStorage.getItem('accessToken');
-    if (!token) {
-      return Alert.alert('Sessão inválida', 'Faça login novamente.');
-    }
-    if (!title.trim() || !description.trim()) {
-      return Alert.alert('Atenção', 'Título e descrição são obrigatórios.');
-    }
+    if (!token) return Alert.alert('Sessão inválida', 'Faça login novamente.');
+    if (!title.trim() || !description.trim()) return Alert.alert('Atenção', 'Título e descrição são obrigatórios.');
+
+    const isoDate = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+      `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 
     const form = new FormData();
     form.append('title', title);
     form.append('description', description);
-    // Append Z to match ISO format expected by backend
-    form.append('eventDate', localDateString);
+    form.append('eventDate', isoDate);
     form.append('quantity', quantity || '0');
     form.append('price', price || '0');
     if (imageFile) {
@@ -190,35 +127,18 @@ export default function CreateEventScreen({ navigation }: any) {
       } as any);
     }
 
-    // Build cURL command for bash export
-    const parts = (form as any)._parts as Array<[string, any]>;
-    const tokenHeader = `Bearer ${token}`;
-    let curlCmd = `curl -X POST "${baseUrl}/ticket"
--H 'Authorization: ${tokenHeader}'
-`;
-    parts.forEach(([k, v]) => {
-      if (typeof v === 'string') {
-        curlCmd += `-F '${k}=${v}'
-`;
-      } else {
-        curlCmd += `-F '${k}=@${v.uri};type=${v.type}'
-`;
-      }
-    });
-    // Alert.alert('cURL', curlCmd); // comentado para não exibir em produção
-    // Continue sending request
-
     try {
-      const res = await apiFetch('/ticket', 'POST', form);
+      const res = await fetch(`${baseUrl}/ticket`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: form,
+      });
+
       if (!res.ok) {
-        let errBody: any;
-        try { errBody = await res.json(); } catch { errBody = await res.text(); }
-        console.error('Erro Detalhado:', errBody);
-        return Alert.alert(
-          'Erro Detalhado',
-          `Status ${res.status}\n${JSON.stringify(errBody, null, 2)}`
-        );
+        const errBody = await res.text();
+        return Alert.alert('Erro', `Status ${res.status}\n${errBody}`);
       }
+
       const json = await res.json();
       saveLocalEvent({
         title,
@@ -228,86 +148,48 @@ export default function CreateEventScreen({ navigation }: any) {
         price: Number(price) || 0,
         imageUri: imageFile?.uri,
       });
-      Alert.alert(
-        'Sucesso',
-        `Evento criado! ID: ${json.id}`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+
+      Alert.alert('Sucesso', `Evento criado! ID: ${json.id}`, [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     } catch (e: any) {
-      console.error('Exceção no submit:', e);
-      Alert.alert('Erro Exceção', e.message + '\n' + (e.stack || ''));
+      Alert.alert('Erro Exceção', e.message);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe}> 
       <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.heading}>Criar Novo Evento</Text>
+
         <Text style={styles.label}>Título</Text>
-        <TextInput
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Nome do evento"
-        />
+        <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Nome do evento" />
 
         <Text style={styles.label}>Descrição</Text>
-        <TextInput
-          style={[styles.input, { height: 100 }]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Detalhes do evento"
-          multiline
-        />
+        <TextInput style={[styles.input, styles.textArea]} value={description} onChangeText={setDescription} placeholder="Detalhes do evento" multiline />
 
         <Text style={styles.label}>Data e hora</Text>
-        <Pressable onPress={showDatePicker} style={styles.dateButton}>
-          <Text>{localDateString}</Text>
-        </Pressable>
-        {showPicker && Platform.OS === 'ios' && (
-          <DateTimePicker
-            value={date}
-            mode="datetime"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )}
+        <View style={styles.rowButtons}>
+          <Pressable onPress={showDatePicker} style={styles.dateButton}><Text>📅 {date.toLocaleDateString()}</Text></Pressable>
+          <Pressable onPress={showTimePicker} style={styles.dateButton}><Text>🕒 {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text></Pressable>
+        </View>
 
-        <Text style={styles.label}>Quantidade</Text>
-        <TextInput
-          style={styles.input}
-          value={quantity}
-          onChangeText={setQuantity}
-          placeholder="0"
-          keyboardType="number-pad"
-        />
+        {showDate && <DateTimePicker value={date} mode="date" display="default" onChange={handleDateChange} />}
+        {showTime && <DateTimePicker value={date} mode="time" display="default" onChange={handleTimeChange} />}
+
+        <Text style={styles.label}>Quantidade de Ingressos</Text>
+        <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} placeholder="0" keyboardType="number-pad" />
 
         <Text style={styles.label}>Preço (R$)</Text>
-        <TextInput
-          style={styles.input}
-          value={price}
-          onChangeText={setPrice}
-          placeholder="0"
-          keyboardType="decimal-pad"
-        />
+        <TextInput style={styles.input} value={price} onChangeText={setPrice} placeholder="0" keyboardType="decimal-pad" />
 
         <Text style={styles.label}>Imagem do evento</Text>
         <View style={styles.imagePickerContainer}>
           <Pressable style={styles.imageButton} onPress={pickImage}>
-            <Text style={styles.imageButtonText}>
-              {imageFile ? 'Trocar Imagem' : 'Escolher Imagem'}
-            </Text>
+            <Text style={styles.imageButtonText}>{imageFile ? 'Trocar Imagem' : 'Escolher Imagem'}</Text>
           </Pressable>
-          {imageFile && (
-            <Image source={{ uri: imageFile.uri }} style={styles.preview} />
-          )}
+          {imageFile && <Image source={{ uri: imageFile.uri }} style={styles.preview} />}
         </View>
-
-        <Pressable style={styles.regenButton} onPress={handleRegenerateToken}>
-          <Text style={styles.regenText}>Regenerar Token</Text>
-        </Pressable>
-
-        {/* Botão para abrir o Dev Menu manualmente */}
-        
 
         <Pressable style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitText}>Criar Evento</Text>
@@ -318,22 +200,36 @@ export default function CreateEventScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f2f2f7' },
-  container: { padding: 16 },
-  label: { fontWeight: '600', marginTop: 12 },
+  safe: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { padding: 20 },
+  heading: { fontSize: 22, fontWeight: '700', marginBottom: 12, color: '#111827' },
+  label: { fontWeight: '600', marginTop: 16, color: '#374151' },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#D1D5DB',
+    fontSize: 16,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
   },
   dateButton: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  rowButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
   },
   imagePickerContainer: {
     flexDirection: 'row',
@@ -341,9 +237,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   imageButton: {
-    backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 6,
+    backgroundColor: '#2563EB',
+    padding: 12,
+    borderRadius: 10,
   },
   imageButtonText: {
     color: '#fff',
@@ -352,41 +248,19 @@ const styles = StyleSheet.create({
   preview: {
     width: 60,
     height: 60,
-    borderRadius: 6,
+    borderRadius: 8,
     marginLeft: 12,
   },
-  regenButton: {
-    backgroundColor: '#34C759',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  regenText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
   submitButton: {
-    backgroundColor: '#007AFF',
-    padding: 14,
-    borderRadius: 8,
+    backgroundColor: '#10B981',
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 32,
   },
   submitText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 16,
-  },
-  devMenuButton: {
-    backgroundColor: '#FFD60A',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  devMenuText: {
-    color: '#000',
-    fontWeight: '600',
   },
 });
