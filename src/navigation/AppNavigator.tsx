@@ -27,7 +27,7 @@ const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
   return (
-<Stack.Navigator initialRouteName="Dashboard">
+<Stack.Navigator initialRouteName="Splash">
   <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />{/* Splash screen for initial loading */}
   <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
   <Stack.Screen name="Events" component={EventListScreen} />

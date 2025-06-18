@@ -10,8 +10,20 @@ import { authService } from './authService';
  */
 
 export async function createSaleProtected(data: { ticketId: string; quantity: number }) {
-    const response = await api.post('/sale', data);
-    return response.data;
+    const accessToken = await authService.getAccessToken();
+    console.log('[createSaleProtected] accessToken atual:', accessToken);
+    if (!accessToken) {
+        console.warn('[createSaleProtected] Nenhum accessToken encontrado. Usuário provavelmente deslogado.');
+    }
+    try {
+        console.log('[createSaleProtected] Enviando requisição para /sale com dados:', data);
+        const response = await api.post('/sale', data);
+        console.log('[createSaleProtected] Resposta recebida:', response.data);
+        return response.data;
+    } catch (err) {
+        console.error('[createSaleProtected] Erro ao criar venda:', err);
+        throw err;
+    }
 }
 
 // Todas as funções devem usar apenas o api (axios) para requisições HTTP.
@@ -19,24 +31,42 @@ export async function createSaleProtected(data: { ticketId: string; quantity: nu
 
 export async function refreshToken() {
     try {
-        console.log('[refreshToken] Iniciando refresh do token...');
+        if (__DEV__) {
+            console.log('[refreshToken] Iniciando refresh do token...');
+        }
         const storedRefreshToken = await authService.getRefreshToken();
         if (!storedRefreshToken) {
-            console.log('[refreshToken] Nenhum refreshToken encontrado.');
+            if (__DEV__) {
+                console.log('[refreshToken] Nenhum refreshToken encontrado.');
+            }
             throw new Error('Sem refresh token');
         }
         const response = await api.post(
             '/auth/refresh-token',
             { refreshToken: storedRefreshToken }
         );
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
-        console.log('[refreshToken] Novo accessToken:', newAccessToken);
-        console.log('[refreshToken] Novo refreshToken:', newRefreshToken);
+        if (__DEV__) {
+            console.log('--- Resposta COMPLETA do refresh-token ---');
+            console.log(response.data); // Verifique o que vem aqui
+            console.log('--- Fim da Resposta COMPLETA ---');
+        }
+
+        // Ajuste para aceitar diferentes formatos de resposta
+        const newAccessToken = response.data.accessToken || response.data.access_token;
+        const newRefreshToken = response.data.refreshToken || response.data.refresh_token;
+
+        if (__DEV__) {
+            console.log('[refreshToken] Novo accessToken recebido:', newAccessToken ? 'SIM' : 'NÃO');
+            console.log('[refreshToken] Novo refreshToken recebido:', newRefreshToken ? 'SIM' : 'NÃO');
+        }
+
         await authService.setTokens(newAccessToken, newRefreshToken);
         // Retorne ambos!
         return { accessToken: newAccessToken, refreshToken: newRefreshToken };
     } catch (error) {
-        console.error('[refreshToken] Erro ao tentar renovar o token:', error);
+        if (__DEV__) {
+            console.error('[refreshToken] Erro ao tentar renovar o token:', error);
+        }
         throw error;
     }
 }
