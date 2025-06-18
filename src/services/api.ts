@@ -3,7 +3,7 @@ import { authService } from './authService';
 import { refreshToken } from './saleService';
 import { baseUrl } from '../config/api';
 import { Alert } from 'react-native';
-import { navigate } from '../navigation/navigationService';
+import { navigate, navigationRef } from '../navigation/navigationService';
 
 const api = axios.create({
     baseURL: baseUrl,
@@ -19,6 +19,14 @@ api.interceptors.request.use(async (config) => {
     if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Log padrão para debug
+    if (__DEV__) {
+        console.log(
+            `URL: ${config.baseURL || ''}${config.url}\n` +
+            `Headers: ${JSON.stringify(config.headers)}\n` +
+            `Body parts: ${config.data ? JSON.stringify(config.data) : '[]'}`
+        );
     }
     return config;
 });
@@ -78,8 +86,14 @@ api.interceptors.response.use(
                 processQueue(refreshError, null);
                 await authService.clearTokens();
                 if (!error.config._fromRefresh) {
-                    console.log('[api.interceptor] Falha ao renovar token, redirecionando para login.');
-                    Alert.alert('Sessão expirada', 'Faça login novamente para continuar.');
+                    // Só mostra alerta se não estiver na tela de Login
+                    const currentRoute = navigationRef.current?.getCurrentRoute?.();
+                    if (!currentRoute || currentRoute.name !== 'Login') {
+                        console.log('[api.interceptor] Falha ao renovar token, redirecionando para login. Exibindo alerta.');
+                        Alert.alert('Sessão expirada', 'Faça login novamente para continuar.');
+                    } else {
+                        console.log('[api.interceptor] Falha ao renovar token, mas já está na tela de Login. Não exibe alerta.');
+                    }
                     navigate('Login');
                     error.config._fromRefresh = true;
                 }

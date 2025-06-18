@@ -19,7 +19,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { baseUrl } from '../config/api';
-
+import { resetLocalDatabase } from '../database/ticketService';
+import { syncAll } from '../database/syncService';
+import { initDatabase } from '../database/init';
 
 // Definição do formato de resposta do login
 interface AuthResponse {
@@ -76,24 +78,21 @@ export default function LoginScreen({ navigation }: any) {
   // Integração com /auth/login
  const handleLogin = async () => {
     if (!email.trim() || !senha.trim()) {
-      // animação de shake, ou apenas:
       return Alert.alert('Ops', 'Preencha e-mail e senha');
     }
-
     setLoading(true);
     try {
+      // Reset do banco local ANTES de logar (garante isolamento de dados)
+      await resetLocalDatabase();
+      await initDatabase();
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: senha }), // e não senha: senha!
+        body: JSON.stringify({ email, password: senha }),
       });
-
-      // **LEIA JSON UMA ÚNICA VEZ**
       const json = await response.json().catch(() => null);
       console.log('[DEBUG] login response:', response.status, json);
-
       if (!response.ok) {
-        // backend pode devolver { message: [...] } ou erro simples
         const msg =
           typeof json?.message === 'string'
             ? json.message
@@ -102,20 +101,16 @@ export default function LoginScreen({ navigation }: any) {
             : 'Credenciais inválidas';
         throw new Error(msg);
       }
-
-      // agora é seguro fazer cast
       const data = json as AuthResponse;
       const { accessToken, refreshToken, user } = data;
       if (!accessToken || !refreshToken || !user?.role) {
         throw new Error('Resposta de login incompleta');
       }
-
-      // **Salva tokens e role**
       await AsyncStorage.setItem('accessToken', accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
       await AsyncStorage.setItem('userRole', user.role);
-
-      // navega
+      // Sincroniza dados do usuário autenticado
+      await syncAll('', async () => true);
       navigation.replace('Dashboard');
     } catch (err: any) {
       console.warn('[DEBUG] login erro:', err);

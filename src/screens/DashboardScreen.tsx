@@ -18,7 +18,8 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons          from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Event } from '../types';
+
+import { Event } from '../types/Event';
 import { baseUrl } from '../config/api';
 
 
@@ -111,7 +112,7 @@ export default function DashboardScreen({ navigation }: any) {
 
       const accessToken = await AsyncStorage.getItem('accessToken');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+      if (accessToken) {headers.Authorization = `Bearer ${accessToken}`;}
 
       const res = await fetch(`${baseUrl}/ticket?showInactive=false`, {
         method: 'GET',
@@ -166,7 +167,7 @@ export default function DashboardScreen({ navigation }: any) {
 
     async function initialize() {
       await loadUserRole();
-      if (!isActive) return;
+      if (!isActive) {return;}
       await fetchEventsFromBackend();
     }
 
@@ -228,7 +229,7 @@ const onProfileOrAdminPress = useCallback(() => {
   if (loadingEvents) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={[styles.centeredContainer, { flex: 1 }]}>
+        <View style={[styles.centeredContainer, styles.fullFlex]}>
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
       </SafeAreaView>
@@ -765,6 +766,9 @@ const styles = StyleSheet.create({
   centeredContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  fullFlex: {
+    flex: 1,
   },
   createButton: {
   paddingHorizontal: 12,

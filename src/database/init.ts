@@ -69,7 +69,8 @@ export async function initDatabase() {
         name TEXT,
         email TEXT,
         cellphone TEXT,
-        phone TEXT
+        phone TEXT,
+        rg TEXT
         );
     `);
 
@@ -79,10 +80,23 @@ export async function initDatabase() {
 // Função utilitária para limpar todas as tabelas do banco local (apenas para depuração)
 export async function resetLocalDatabase() {
     const db = await openDatabase();
+    // Limpa todas as tabelas
     await db.executeSql('DELETE FROM tickets');
     await db.executeSql('DELETE FROM events');
     await db.executeSql('DELETE FROM sync_status');
     await db.executeSql('DELETE FROM sync_queue');
     await db.executeSql('DELETE FROM user_profile');
-    console.log('Banco local limpo!');
+    // Garante estrutura correta da tabela user_profile (com coluna rg)
+    await db.executeSql('DROP TABLE IF EXISTS user_profile');
+    await db.executeSql(`
+        CREATE TABLE IF NOT EXISTS user_profile (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        email TEXT,
+        cellphone TEXT,
+        phone TEXT,
+        rg TEXT
+        );
+    `);
+    console.log('Banco local limpo e tabela user_profile recriada com coluna rg!');
 }

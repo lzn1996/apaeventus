@@ -147,16 +147,16 @@ export async function syncFromServer() {
             const pendentes = await getTicketsPendingSync();
             for (const ticket of pendentes) {
                 try {
-                  if (ticket.used) {
+                    if (ticket.used) {
                     await setTicketUsed(ticket.id);
-                  } else {
+                    } else {
                     await setTicketUnused(ticket.id);
-                  }
-                  await updateTicketStatusLocal(ticket.id, { isSynced: 1 });
+                    }
+                    await updateTicketStatusLocal(ticket.id, { isSynced: 1 });
                 } catch (err) {
-                  console.error('[syncService] Falha ao sincronizar ticket pendente:', ticket.id, err);
+                    console.error('[syncService] Falha ao sincronizar ticket pendente:', ticket.id, err);
                 }
-              }
+            }
             resolve();
         }
         );
