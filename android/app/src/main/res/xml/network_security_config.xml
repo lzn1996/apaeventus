@@ -2,7 +2,7 @@
 <network-security-config>
   <domain-config cleartextTrafficPermitted="false">
     <domain includeSubdomains="true">18.191.252.46</domain>
-    <!-- confia nos certificados do sistema -->
+    <domain includeSubdomains="true">apaeventus.rafaelcostadev.com</domain>
     <trust-anchors>
       <certificates src="system"/>
     </trust-anchors>

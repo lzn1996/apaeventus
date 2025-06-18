@@ -226,6 +226,11 @@ export default function LoginScreen({ navigation }: any) {
                 </Pressable>
               </View>
               <View style={styles.footer}>
+                <Pressable onPress={() => navigation.navigate('Reset')}>
+                  <Text style={styles.register}>Recuperar Senha</Text>
+                </Pressable>
+              </View>
+              <View style={styles.footer}>
                 <Pressable onPress={() => navigation.navigate('Dashboard')}>
                   <Text style={styles.link}>Voltar para Tela inicial</Text>
                 </Pressable>
