@@ -195,4 +195,10 @@ eventImage: {
         fontWeight: 'bold',
         fontSize: 16,
     },
+    hintText: {
+        fontSize: 16,
+        color: '#888',
+        textAlign: 'center',
+        marginBottom: 12,
+    },
 });

@@ -78,7 +78,7 @@ export default function RecoverPasswordScreen({ navigation }: any) {
         <Text style={styles.buttonText}>{loading ? 'Enviando...' : 'Recuperar'}</Text>
       </Pressable>
 
-      <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+      <Pressable style={styles.backButton} onPress={() => navigation.navigate('Dashboard')}>
         <Text style={styles.backButtonText}>Voltar</Text>
       </Pressable>
 

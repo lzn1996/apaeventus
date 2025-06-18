@@ -220,21 +220,19 @@ export default function LoginScreen({ navigation }: any) {
               </Pressable>
 
               {/* Voltar para Tela inicial */}
-              <View style={styles.footer}>
-                <Pressable onPress={() => navigation.navigate('Cadastro')}>
-                  <Text style={styles.register}>Registre-Se</Text>
-                </Pressable>
-              </View>
-              <View style={styles.footer}>
-                <Pressable onPress={() => navigation.navigate('Reset')}>
-                  <Text style={styles.recuperar}>Recuperar Senha</Text>
-                </Pressable>
-              </View>
-              <View style={styles.footer}>
-                <Pressable onPress={() => navigation.navigate('Dashboard')}>
-                  <Text style={styles.link}>Voltar para Tela inicial</Text>
-                </Pressable>
-              </View>
+             <View style={styles.footerContainer}>
+  <View style={styles.linkRow}>
+    <Pressable onPress={() => navigation.navigate('Cadastro')} style={({ pressed }) => [styles.linkWrapper, pressed && styles.linkPressed]}>
+      <Text style={styles.linkTextPrimary}>Registre-se</Text>
+    </Pressable>
+    <Pressable onPress={() => navigation.navigate('Reset')} style={({ pressed }) => [styles.linkWrapper, pressed && styles.linkPressed]}>
+      <Text style={styles.linkTextSecondary}>Recuperar Senha</Text>
+    </Pressable>
+  </View>
+  <Pressable onPress={() => navigation.navigate('Dashboard')} style={({ pressed }) => [styles.buttonBack, pressed && styles.buttonBackPressed]}>
+    <Text style={styles.buttonBackText}>Voltar para Tela Inicial</Text>
+  </Pressable>
+</View>
             </View>
           </Animated.View>
         </TouchableWithoutFeedback>
@@ -284,8 +282,52 @@ const styles = StyleSheet.create({
   buttonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
   footer: { flexDirection: 'row', justifyContent: 'center' },
   link: { color: '#3982b8', fontSize: 14 },
-  register: { color: '#6eaa5e', fontSize: 18, marginBottom: 16, textAlign: 'center' },
-  recuperar: { color: '#6d8ce8', fontSize: 18, marginBottom: 16, textAlign: 'center' },
+   footerContainer: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderColor: '#eee',
+    backgroundColor: '#fafafa',
+  },
+  linkRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  linkWrapper: {
+    marginHorizontal: 12,
+    paddingVertical: 4,
+  },
+  linkPressed: {
+    opacity: 0.6,
+  },
+  linkTextPrimary: {
+    color: '#6eaa5e',      // verde de destaque
+    fontSize: 16,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  linkTextSecondary: {
+    color: '#6d8ce8',      // azul suave
+    fontSize: 16,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  buttonBack: {
+    alignSelf: 'center',
+    backgroundColor: '#1976d2',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 24,
+  },
+  buttonBackPressed: {
+    backgroundColor: '#155a9c',
+  },
+  buttonBackText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
 /*import React, { useState, useRef } from 'react';

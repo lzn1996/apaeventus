@@ -158,7 +158,7 @@ export default function MyTicketsScreen({ navigation }: any) {
 
 <View style={styles.header}>
   <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-    <Text style={styles.backButtonText}>←</Text>
+    <Text style={styles.backButtonText}>⬅️</Text>
   </TouchableOpacity>
   <Text style={styles.headerTitle}>Meus Ingressos</Text>
 </View>
