@@ -8,20 +8,28 @@ export default StyleSheet.create({
         paddingHorizontal: 0,
         paddingTop: 0,
     },
-    header: {
-        paddingTop: 21,
-        paddingBottom: 18,
-        backgroundColor: '#1976d2',
-        alignItems: 'center',
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
-        marginBottom: 12,
-        shadowColor: '#1976d2',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        elevation: 6,
-    },
+    backButton: {
+  marginRight: 12,
+},
+
+backButtonText: {
+  color: '#fff',
+  fontSize: 24,
+  fontWeight: 'bold',
+},
+header: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  paddingVertical: 16,
+  paddingHorizontal: 16,
+  backgroundColor: '#007AFF',
+  borderBottomLeftRadius: 24,
+  borderBottomRightRadius: 24,
+  elevation: 6,
+  marginBottom: 16,
+},
+
     headerTitle: {
         color: '#fff',
         fontSize: 28,
@@ -30,6 +38,8 @@ export default StyleSheet.create({
         textShadowColor: '#1565c0',
         textShadowOffset: { width: 0, height: 2 },
         textShadowRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     list: {
         paddingHorizontal: 18,

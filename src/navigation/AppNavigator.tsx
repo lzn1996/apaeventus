@@ -41,7 +41,7 @@ export default function AppNavigator() {
   <Stack.Screen name="Cadastro" component={RegisterScreen} />{/* Registration screen for new users */}
   <Stack.Screen name="EventDetail" component={EventDetailScreen} options={{ headerShown: false }}/>{/* Public event detail screen */}
   <Stack.Screen name="Purchase" component={PurchaseScreen} options={{ headerShown: true, title: 'Finalizar Compra' }} />{/* Purchase screen for ticket buying */}
-  <Stack.Screen name="MyTickets" component={MyTicketsScreen} options={{ headerShown: true, title: 'Meus Ingressos' }} />
+  <Stack.Screen name="MyTickets" component={MyTicketsScreen}  options={{ headerShown: false }} />
   <Stack.Screen name="TicketsByEvent" component={TicketsByEventScreen} options={{ headerShown: true, title: 'Ingressos do Evento' }} />
   <Stack.Screen name="ProfileEdit" component={EditProfileScreen} options={{ title: 'Meu Perfil' }}/>
   <Stack.Screen name="AdminEvents" component={AdminEventsScreen} options={{ title: 'Gerenciar Eventos' }}/>

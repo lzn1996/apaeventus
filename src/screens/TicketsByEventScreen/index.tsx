@@ -26,8 +26,9 @@ export default function TicketsByEventScreen({ route }: any) {
         <View style={styles.container}>
             <View style={styles.carouselSpacer} />
             <Carousel
-                width={width * 0.85}
-                height={720}
+  width={400}
+  height={900} // ajuste conforme necessário
+  style={styles.carousel}
                 data={tickets}
                 renderItem={({ item, index }: { item: any; index: number }) => (
                     <TicketCard

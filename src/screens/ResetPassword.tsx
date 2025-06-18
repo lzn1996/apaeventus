@@ -1,5 +1,3 @@
-// src/screens/RecoverPasswordScreen.tsx
-
 import React, { useState } from 'react';
 import {
   View,
@@ -7,56 +5,57 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  Alert,
 } from 'react-native';
+import AwesomeAlert from 'react-native-awesome-alerts';
 
 export default function RecoverPasswordScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(true);
 
- const handleRecover = async () => {
-  if (!email) {
-    return Alert.alert('Erro', 'Digite um e-mail válido.');
-  }
+  const showAlert = (title: string, message: string, success: boolean = true) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setIsSuccess(success);
+    setAlertVisible(true);
+  };
 
- /* const curlExample = `curl --location 'https://apaeventus.rafaelcostadev.com/recover-password/generate' \\
---header 'Content-Type: application/json' \\
---data-raw '{ "email": "${email}" }'`;
-
-  Alert.alert('Requisição enviada', curlExample);
-  */
-
-  try {
-    setLoading(true);
-    const response = await fetch('https://apaeventus.rafaelcostadev.com/recover-password/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    let data: any = null;
-
-    // Tenta ler o corpo apenas se houver conteúdo
-    const contentLength = response.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > 0) {
-      data = await response.json();
+  const handleRecover = async () => {
+    if (!email) {
+      return showAlert('Erro', 'Digite um e-mail válido.', false);
     }
 
-    if (response.ok) {
-      Alert.alert('Sucesso', 'Se o e-mail existir, você receberá instruções para recuperar sua senha.');
-    } else {
-      Alert.alert('Erro', data?.message || 'Não foi possível enviar a solicitação.');
-    }
-  } catch (error) {
-    console.error('Erro ao recuperar senha:', error);
-    Alert.alert('Erro', 'Falha na requisição de rede.');
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      const response = await fetch('https://apaeventus.rafaelcostadev.com/recover-password/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
 
+      let data: any = null;
+      const contentLength = response.headers.get('content-length');
+      if (contentLength && parseInt(contentLength) > 0) {
+        data = await response.json();
+      }
+
+      if (response.ok) {
+        showAlert('Sucesso', 'Se o e-mail existir, você receberá instruções para recuperar sua senha.');
+      } else {
+        showAlert('Erro', data?.message || 'Não foi possível enviar a solicitação.', false);
+      }
+    } catch (error) {
+      console.error('Erro ao recuperar senha:', error);
+      showAlert('Erro', 'Falha na requisição de rede.', false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -82,6 +81,19 @@ export default function RecoverPasswordScreen({ navigation }: any) {
       <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
         <Text style={styles.backButtonText}>Voltar</Text>
       </Pressable>
+
+      <AwesomeAlert
+        show={alertVisible}
+        showProgress={false}
+        title={alertTitle}
+        message={alertMessage}
+        closeOnTouchOutside={true}
+        closeOnHardwareBackPress={true}
+        showConfirmButton={true}
+        confirmText="OK"
+        confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
+        onConfirmPressed={() => setAlertVisible(false)}
+      />
     </View>
   );
 }

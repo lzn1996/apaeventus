@@ -1,4 +1,3 @@
-// src/screens/MyTicketsScreen.tsx
 import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
@@ -6,8 +5,7 @@ import {
   FlatList,
   Text,
   ActivityIndicator,
-  Alert,
-  StyleSheet,
+  TouchableOpacity,
 } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,6 +14,7 @@ import { getUserSales, Sale } from '../../services/saleService';
 import { getUserProfile } from '../../services/userService';
 import EventCard from './components/EventCard';
 import { MyEvent } from './types';
+import styles from './styles';
 
 interface GroupedTickets {
   event: MyEvent;
@@ -28,7 +27,6 @@ export default function MyTicketsScreen({ navigation }: any) {
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(true);
 
-  // tenta renovar o accessToken com o refreshToken
   const refreshAccessToken = async (): Promise<string | null> => {
     const oldToken = await AsyncStorage.getItem('accessToken');
     const refreshToken = await AsyncStorage.getItem('refreshToken');
@@ -69,16 +67,13 @@ export default function MyTicketsScreen({ navigation }: any) {
     setError(null);
 
     try {
-      // renovar token e buscar perfil (sem gravação local via SQLite)
       if (isConnected) {
         await refreshAccessToken();
-        await getUserProfile(); // apenas para manter sessão ativa
+        await getUserProfile();
       }
 
-      // buscar vendas do usuário
       const sales = await getUserSales();
 
-      // agrupar por evento
       const map: Record<string, GroupedTickets> = {};
       sales.forEach(sale => {
         const ev = sale.ticket;
@@ -110,7 +105,6 @@ export default function MyTicketsScreen({ navigation }: any) {
         map[id].tickets.push(sale);
       });
 
-      // ordenar decrescente por data
       const arr = Object.values(map).sort((a, b) => {
         const ta = new Date(`${a.event.date}T${a.event.time}`).getTime();
         const tb = new Date(`${b.event.date}T${b.event.time}`).getTime();
@@ -144,8 +138,8 @@ export default function MyTicketsScreen({ navigation }: any) {
   if (error) {
     return (
       <SafeAreaView style={styles.centered}>
-        <Text style={styles.error}>{error}</Text>
-        <Text style={styles.retry} onPress={fetchData}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.retryText} onPress={fetchData}>
           Tentar novamente
         </Text>
       </SafeAreaView>
@@ -153,17 +147,24 @@ export default function MyTicketsScreen({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.container}>
       {!isConnected && (
-        <View style={styles.offlineBanner}>
-          <Text style={styles.bannerText}>
+        <View style={styles.connectionBannerContainer}>
+          <Text style={[styles.connectionBanner, styles.connectionOffline]}>
             Sem conexão, recarregue para atualizar.
           </Text>
         </View>
       )}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Meus Ingressos</Text>
-      </View>
+
+<View style={styles.header}>
+  <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+    <Text style={styles.backButtonText}>←</Text>
+  </TouchableOpacity>
+  <Text style={styles.headerTitle}>Meus Ingressos</Text>
+</View>
+
+
+
       <FlatList
         data={grouped}
         keyExtractor={item => item.event.id}
@@ -171,45 +172,11 @@ export default function MyTicketsScreen({ navigation }: any) {
           <EventCard event={item.event} onPress={() => handleEventPress(item)} />
         )}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            Você ainda não possui ingressos.
-          </Text>
+          <Text style={styles.emptyText}>Você ainda não possui ingressos.</Text>
         }
       />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#fff' },
-  header: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  headerTitle: { color: '#fff', fontSize: 20, fontWeight: '600' },
-  offlineBanner: {
-    backgroundColor: '#FFC107',
-    padding: 6,
-    alignItems: 'center',
-  },
-  bannerText: { color: '#333', fontSize: 12 },
-  list: { padding: 16 },
-  separator: { height: 12 },
-  empty: {
-    textAlign: 'center',
-    marginTop: 32,
-    color: '#666',
-    fontSize: 16,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  error: { color: 'red', fontSize: 16, marginBottom: 8 },
-  retry: { color: '#007AFF', fontWeight: '600' },
-});

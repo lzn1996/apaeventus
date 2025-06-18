@@ -227,7 +227,7 @@ export default function LoginScreen({ navigation }: any) {
               </View>
               <View style={styles.footer}>
                 <Pressable onPress={() => navigation.navigate('Reset')}>
-                  <Text style={styles.register}>Recuperar Senha</Text>
+                  <Text style={styles.recuperar}>Recuperar Senha</Text>
                 </Pressable>
               </View>
               <View style={styles.footer}>
@@ -285,6 +285,7 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center' },
   link: { color: '#3982b8', fontSize: 14 },
   register: { color: '#6eaa5e', fontSize: 18, marginBottom: 16, textAlign: 'center' },
+  recuperar: { color: '#6d8ce8', fontSize: 18, marginBottom: 16, textAlign: 'center' },
 });
 
 /*import React, { useState, useRef } from 'react';
