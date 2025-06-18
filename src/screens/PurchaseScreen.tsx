@@ -1,7 +1,15 @@
+// src/screens/PurchaseScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AwesomeAlert from 'react-native-awesome-alerts';
 import { createSaleProtected } from '../services/saleService';
 import { RootStackParamList } from '../types/navigation';
 
@@ -9,23 +17,38 @@ export default function PurchaseScreen() {
   const route = useRoute();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { ticketId, eventTitle, price, quantity } = route.params as any;
+
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+
+  // estados do AwesomeAlert
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(true);
+
+  // helper para exibir alertas
+  const showAlert = (title: string, message: string, success = true) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setIsSuccess(success);
+    setAlertVisible(true);
+  };
 
   const total = Number(price) * Number(quantity);
 
   const handleConfirm = async () => {
     if (!paymentMethod) {
-      Alert.alert('Selecione uma forma de pagamento!');
-      return;
+      return showAlert('Atenção', 'Selecione uma forma de pagamento!', false);
     }
+
     setLoading(true);
     try {
       await createSaleProtected({ ticketId, quantity });
-      Alert.alert('Compra realizada com sucesso!');
-      navigation.goBack();
+      showAlert('Sucesso', 'Compra realizada com sucesso!', true);
     } catch (err: any) {
-      // Interceptor trata sessão expirada
+      // seu interceptor já trata sessão expirada
+      showAlert('Erro', err.message || 'Não foi possível processar a compra.', false);
     } finally {
       setLoading(false);
     }
@@ -34,52 +57,75 @@ export default function PurchaseScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Finalizar Compra</Text>
+
       <Text style={styles.label}>Evento:</Text>
       <Text style={styles.value}>{eventTitle}</Text>
+
       <Text style={styles.label}>Quantidade:</Text>
       <Text style={styles.value}>{quantity}</Text>
+
       <Text style={styles.label}>Total:</Text>
       <Text style={styles.value}>R${total.toFixed(2)}</Text>
 
       <Text style={styles.label}>Forma de Pagamento:</Text>
       <View style={styles.paymentRow}>
-        <TouchableOpacity
-          style={[styles.paymentButton, paymentMethod === 'pix' && styles.paymentButtonSelected]}
-          onPress={() => setPaymentMethod('pix')}
-          disabled={loading}
-        >
-          <Text style={[styles.paymentText, paymentMethod === 'pix' && styles.paymentButtonSelectedText]}>PIX</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.paymentButton, paymentMethod === 'credito' && styles.paymentButtonSelected]}
-          onPress={() => setPaymentMethod('credito')}
-          disabled={loading}
-        >
-          <Text style={[styles.paymentText, paymentMethod === 'credito' && styles.paymentButtonSelectedText]}>Crédito</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.paymentButton, paymentMethod === 'debito' && styles.paymentButtonSelected]}
-          onPress={() => setPaymentMethod('debito')}
-          disabled={loading}
-        >
-          <Text style={[styles.paymentText, paymentMethod === 'debito' && styles.paymentButtonSelectedText]}>Débito</Text>
-        </TouchableOpacity>
+        {['pix','credito','debito'].map(method => (
+          <TouchableOpacity
+            key={method}
+            style={[
+              styles.paymentButton,
+              paymentMethod === method && styles.paymentButtonSelected,
+            ]}
+            onPress={() => setPaymentMethod(method)}
+            disabled={loading}
+          >
+            <Text
+              style={[
+                styles.paymentText,
+                paymentMethod === method && styles.paymentButtonSelectedText,
+              ]}
+            >
+              {method.toUpperCase()}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <TouchableOpacity
-        style={[styles.confirmButton, !paymentMethod && styles.confirmButtonDisabled]}
+        style={[
+          styles.confirmButton,
+          (!paymentMethod || loading) && styles.confirmButtonDisabled,
+        ]}
         onPress={handleConfirm}
         disabled={!paymentMethod || loading}
       >
-        <Text style={styles.confirmButtonText}>{loading ? 'Processando...' : 'Confirmar Compra'}</Text>
+        {loading
+          ? <ActivityIndicator color="#fff" />
+          : <Text style={styles.confirmButtonText}>Confirmar Compra</Text>
+        }
       </TouchableOpacity>
 
-      {/* Botão pequeno para voltar ao Dashboard */}
       <View style={styles.backContainer}>
         <TouchableOpacity onPress={() => navigation.navigate('Dashboard')}>
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
       </View>
+
+      <AwesomeAlert
+        show={alertVisible}
+        showProgress={false}
+        title={alertTitle}
+        message={alertMessage}
+        closeOnTouchOutside
+        closeOnHardwareBackPress
+        showConfirmButton
+        confirmText="OK"
+        confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
+        onConfirmPressed={() => {
+          setAlertVisible(false);
+          if (isSuccess) navigation.navigate('MyTickets'); // redireciona para Meus Ingressos
+        }}
+      />
     </View>
   );
 }
@@ -136,7 +182,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 28,
-    marginHorizontal: 6,
     backgroundColor: '#e3eafc',
     shadowColor: '#1976d2',
     shadowOffset: { width: 0, height: 2 },

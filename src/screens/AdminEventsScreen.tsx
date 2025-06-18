@@ -1,3 +1,4 @@
+// src/screens/AdminEventsScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -13,13 +14,15 @@ import {
   Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 import { baseUrl } from '../config/api';
 
 export default function AdminEventsScreen() {
+  const navigation = useNavigation();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const screenWidth = Dimensions.get('window').width;
 
+  // Renova access token usando o refreshToken
   async function refreshAccessToken(): Promise<string | null> {
     const old = await AsyncStorage.getItem('accessToken');
     const refresh = await AsyncStorage.getItem('refreshToken');
@@ -34,15 +37,19 @@ export default function AdminEventsScreen() {
       body: JSON.stringify({ refreshToken: refresh }),
     });
     if (!res.ok) return null;
+
     const json = await res.json();
     if (json.accessToken) {
       await AsyncStorage.setItem('accessToken', json.accessToken);
-      if (json.refreshToken) await AsyncStorage.setItem('refreshToken', json.refreshToken);
+      if (json.refreshToken) {
+        await AsyncStorage.setItem('refreshToken', json.refreshToken);
+      }
       return json.accessToken;
     }
     return null;
   }
 
+  // Busca lista de eventos
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     let token = await AsyncStorage.getItem('accessToken');
@@ -50,6 +57,7 @@ export default function AdminEventsScreen() {
       headers: { Authorization: `Bearer ${token}` },
     });
 
+    // se token expirou, tenta renovar e refazer fetch
     if (res.status === 401) {
       const newToken = await refreshAccessToken();
       if (!newToken) {
@@ -73,6 +81,7 @@ export default function AdminEventsScreen() {
     setLoading(false);
   }, []);
 
+  // Alterna ativo/inativo
   const toggleActive = async (id: string, isActive: boolean) => {
     let token = await AsyncStorage.getItem('accessToken');
     let res = await fetch(`${baseUrl}/ticket/enable-disable`, {
@@ -105,6 +114,7 @@ export default function AdminEventsScreen() {
     fetchEvents();
   };
 
+  // Exclui permanentemente
   const deleteTicket = (id: string) => {
     Alert.alert(
       'Excluir Evento',
@@ -133,7 +143,7 @@ export default function AdminEventsScreen() {
               const txt = await res.text();
               return Alert.alert('Erro ao excluir', `Status ${res.status}\n${txt}`);
             }
-            Alert.alert('Sucesso', 'Ingresso excluído.', [{ text: 'OK', onPress: fetchEvents }]);
+            Alert.alert('Sucesso', 'Evento excluído.', [{ text: 'OK', onPress: fetchEvents }]);
           },
         },
       ]
@@ -154,25 +164,36 @@ export default function AdminEventsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      {/* Botão de voltar */}
+      <Pressable style={styles.backButton} onPress={() => navigation.navigate('Dashboard')}>
+        <Text style={styles.backButtonText}>← Voltar</Text>
+      </Pressable>
+
       <FlatList
         data={events}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            {item.imageUrl && (
-              <Image source={{ uri: item.imageUrl }} style={styles.image} />
-            )}
+            {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.image} />}
             <View style={styles.info}>
               <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
                 {item.title}
               </Text>
               <Text style={styles.date}>
-                📅 {new Date(item.eventDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                📅{' '}
+                {new Date(item.eventDate).toLocaleDateString('pt-BR', {
+                  day: '2-digit',
+                  month: 'short',
+                })}
               </Text>
               <Text style={styles.time}>
-                🕒 {new Date(item.eventDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                🕒{' '}
+                {new Date(item.eventDate).toLocaleTimeString('pt-BR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
               </Text>
             </View>
             <View style={styles.buttons}>
@@ -185,19 +206,16 @@ export default function AdminEventsScreen() {
                 ]}
                 onPress={() => toggleActive(item.id, !item.isActive)}
               >
-                <Text style={styles.toggleText} numberOfLines={1}>
+                <Text style={styles.toggleText}>
                   {item.isActive ? 'Desativar' : 'Ativar'}
                 </Text>
               </Pressable>
               <Pressable
                 android_ripple={{ color: '#FCC' }}
-                style={({ pressed }) => [
-                  styles.deleteButton,
-                  pressed && styles.pressed,
-                ]}
+                style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
                 onPress={() => deleteTicket(item.id)}
               >
-                <Text style={styles.deleteText} numberOfLines={1}>Excluir</Text>
+                <Text style={styles.deleteText}>Excluir</Text>
               </Pressable>
             </View>
           </View>
@@ -210,7 +228,20 @@ export default function AdminEventsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F0F2F5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list: { padding: 16 },
+  backButton: {
+    alignSelf: 'flex-start',
+    margin: 16,
+    backgroundColor: '#1976d2',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  list: { paddingHorizontal: 16, paddingBottom: 16 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

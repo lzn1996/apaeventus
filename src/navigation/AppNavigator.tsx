@@ -32,7 +32,7 @@ export default function AppNavigator() {
   <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
   <Stack.Screen name="Events" component={EventListScreen} />
   <Stack.Screen name="Tickets" component={TicketScreen} />
-  <Stack.Screen name="Scanner" component={QRCodeScannerScreen} />
+  <Stack.Screen name="Scanner" component={QRCodeScannerScreen} options={{ headerShown: false }} />
   <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
   {/* <Stack.Screen name="PrimeiroAcesso" component={PrimeiroAcesso} options={{ headerShown: false }} /> */}
   {/* <Stack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Novo Evento' }} /> */}
@@ -40,13 +40,13 @@ export default function AppNavigator() {
   {/* <Stack.Screen name="ProfileEdit" component={EditProfileScreen} options={{ title: 'Meu Perfil' }}/> */}
   <Stack.Screen name="Cadastro" component={RegisterScreen} />{/* Registration screen for new users */}
   <Stack.Screen name="EventDetail" component={EventDetailScreen} options={{ headerShown: false }}/>{/* Public event detail screen */}
-  <Stack.Screen name="Purchase" component={PurchaseScreen} options={{ headerShown: true, title: 'Finalizar Compra' }} />{/* Purchase screen for ticket buying */}
+  <Stack.Screen name="Purchase" component={PurchaseScreen} options={{ headerShown: false }} />{/* Purchase screen for ticket buying */}
   <Stack.Screen name="MyTickets" component={MyTicketsScreen}  options={{ headerShown: false }} />
   <Stack.Screen name="TicketsByEvent" component={TicketsByEventScreen} options={{ headerShown: true, title: 'Ingressos do Evento' }} />
-  <Stack.Screen name="ProfileEdit" component={EditProfileScreen} options={{ title: 'Meu Perfil' }}/>
-  <Stack.Screen name="AdminEvents" component={AdminEventsScreen} options={{ title: 'Gerenciar Eventos' }}/>
-  <Stack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Novo Evento' }} />
-   <Stack.Screen name="Reset" component={RecoverPasswordScreen} options={{ title: 'Recuperar Senha' }} />
+  <Stack.Screen name="ProfileEdit" component={EditProfileScreen} options={{ headerShown: false }}/>
+  <Stack.Screen name="AdminEvents" component={AdminEventsScreen} options={{ headerShown: false }}/>
+  <Stack.Screen name="CreateEvent" component={CreateEventScreen}options={{ headerShown: false }} />
+   <Stack.Screen name="Reset" component={RecoverPasswordScreen} options={{ headerShown: false }} />
 </Stack.Navigator>
   );
 }

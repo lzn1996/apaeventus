@@ -7,18 +7,16 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AwesomeAlert from 'react-native-awesome-alerts';
 import { baseUrl } from '../config/api';
-
 import {
   initProfileTable,
   getLocalProfile,
   saveLocalProfile,
-} from '../database/editprofile.ts';    // vê só: ../db e não ../db.ts
+} from '../database/editprofile'; // verifique apenas o caminho
 
 export default function EditProfileScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
@@ -27,6 +25,19 @@ export default function EditProfileScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [rg, setRg] = useState('');
   const [cellphone, setCellphone] = useState('');
+
+  // estados do AwesomeAlert
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(true);
+
+  const showAlert = (title: string, message: string, success = true) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setIsSuccess(success);
+    setAlertVisible(true);
+  };
 
   /** 0) Logout forçado */
   const doLogout = async () => {
@@ -73,9 +84,8 @@ export default function EditProfileScreen({ navigation }: any) {
     return null;
   };
 
-  /** 2) Inicializa tabela e carrega perfil (local + remoto) */
+  /** 2) Inicializa tabela e carrega perfil */
   useEffect(() => {
-    // cria tabela e tenta ler cache SQLite
     initProfileTable();
     getLocalProfile(row => {
       if (row) {
@@ -86,7 +96,6 @@ export default function EditProfileScreen({ navigation }: any) {
       }
     });
 
-    // então busca no servidor para atualizar cache
     (async () => {
       try {
         let token = await AsyncStorage.getItem('accessToken');
@@ -110,26 +119,28 @@ export default function EditProfileScreen({ navigation }: any) {
         setRg(js.rg || '');
         setCellphone(js.cellphone || '');
 
-        // atualiza cache local
         saveLocalProfile({
           name: js.name || '',
           email: js.email || '',
           rg: js.rg || '',
           cellphone: js.cellphone || '',
         });
+
+        // mensagem de orientação
+        showAlert('Atualização cadastral', 'Atualize seus dados se necessário.', true);
       } catch (e: any) {
-Alert.alert('Atualização cadastral!', 'Atualize seus dados se necessário.');      } finally {
+        showAlert('Atualização cadastral', 'Atualize seus dados se necessário.', true);
+      } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  /** 3) Salva alterações no servidor e SQLite, depois força logout */
+  /** 3) Salva alterações */
   const handleSave = async () => {
     if (!name.trim() || !email.trim()) {
-      return Alert.alert('Atenção', 'Nome e e-mail são obrigatórios.');
+      return showAlert('Atenção', 'Nome e e-mail são obrigatórios.', false);
     }
-
     try {
       let token = await AsyncStorage.getItem('accessToken');
       if (!token) throw new Error('Token inválido');
@@ -146,7 +157,7 @@ Alert.alert('Atualização cadastral!', 'Atualize seus dados se necessário.'); 
       if (res.status === 401) {
         token = (await refreshAccessToken())!;
         if (!token) {
-          return Alert.alert('Sessão expirada', 'Faça login novamente.');
+          return showAlert('Sessão expirada', 'Faça login novamente.', false);
         }
         res = await fetch(`${baseUrl}/user`, {
           method: 'PATCH',
@@ -160,20 +171,16 @@ Alert.alert('Atualização cadastral!', 'Atualize seus dados se necessário.'); 
 
       const text = await res.text();
       if (!res.ok) {
-        return Alert.alert('Erro ao salvar', `Status ${res.status}\n${text}`);
+        return showAlert('Erro ao salvar', `Status ${res.status}\n${text}`, false);
       }
 
-      // grava cache local
       saveLocalProfile({ name, email, rg, cellphone });
+      showAlert('Sucesso', 'Dados atualizados! Você será deslogado para segurança.', true);
 
-      Alert.alert(
-        'Sucesso',
-        'Dados atualizados! Você será deslogado para segurança.',
-        [{ text: 'OK', onPress: doLogout }]
-      );
+      // no confirm do alert, força logout
+      setTimeout(doLogout, 1000);
     } catch (e: any) {
-      console.warn(e);
-      Alert.alert('Erro de rede', e.message || String(e));
+      showAlert('Erro de rede', e.message || String(e), false);
     }
   };
 
@@ -236,7 +243,29 @@ Alert.alert('Atualização cadastral!', 'Atualize seus dados se necessário.'); 
         <Pressable style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveText}>Salvar Alterações</Text>
         </Pressable>
+         <Pressable
+        style={styles.buttonBack}
+        onPress={() => navigation.navigate('Dashboard')}
+      >
+        <Text style={styles.buttonBackText}>← Voltar</Text>
+      </Pressable>
       </ScrollView>
+
+      {/* AwesomeAlert comum a todas as telas */}
+      <AwesomeAlert
+        show={alertVisible}
+        showProgress={false}
+        title={alertTitle}
+        message={alertMessage}
+        closeOnTouchOutside
+        closeOnHardwareBackPress
+        showConfirmButton
+        confirmText="OK"
+        confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
+        onConfirmPressed={() => {
+          setAlertVisible(false);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -265,5 +294,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
+  },
+    buttonBack: {
+    marginTop: 16,
+    alignSelf: 'center',
+    backgroundColor: '#1976d2',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 24,
+  },
+  buttonBackPressed: {
+    backgroundColor: '#155a9c',
+  },
+  buttonBackText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

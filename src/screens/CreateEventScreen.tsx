@@ -1,3 +1,4 @@
+// src/screens/CreateEventScreen.tsx
 import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
@@ -7,14 +8,15 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  Alert,
   Platform,
   Image,
   PermissionsAndroid,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary, Asset } from 'react-native-image-picker';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import AwesomeAlert from 'react-native-awesome-alerts';
 import { baseUrl } from '../config/api';
 import { initEventTable, saveLocalEvent } from '../database/editprofile';
 
@@ -29,9 +31,22 @@ export default function CreateEventScreen({ navigation }: any) {
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
   const [imageFile, setImageFile] = useState<Asset | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // estados do AwesomeAlert
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(true);
+
+  const showAlert = (title: string, message: string, success = true) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setIsSuccess(success);
+    setAlertVisible(true);
+  };
 
   const pad = (n: number) => n.toString().padStart(2, '0');
-  const localDateString = `${date.toLocaleDateString()} às ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
   const handleDateChange = (_: any, sel?: Date) => {
     setShowDate(false);
@@ -96,21 +111,26 @@ export default function CreateEventScreen({ navigation }: any) {
 
   const pickImage = async () => {
     if (!(await requestGalleryPermission())) {
-      return Alert.alert('Permissão negada');
+      return showAlert('Permissão negada', 'Não foi possível acessar a galeria.', false);
     }
     launchImageLibrary({ mediaType: 'photo', quality: 0.8 }, resp => {
       if (resp.didCancel) return;
-      if (resp.errorMessage) return Alert.alert('Erro', resp.errorMessage!);
+      if (resp.errorMessage) return showAlert('Erro', resp.errorMessage, false);
       if (resp.assets?.[0]) setImageFile(resp.assets[0]);
     });
   };
 
   const handleSubmit = async () => {
     const token = await AsyncStorage.getItem('accessToken');
-    if (!token) return Alert.alert('Sessão inválida', 'Faça login novamente.');
-    if (!title.trim() || !description.trim()) return Alert.alert('Atenção', 'Título e descrição são obrigatórios.');
+    if (!token) {
+      return showAlert('Sessão inválida', 'Faça login novamente.', false);
+    }
+    if (!title.trim() || !description.trim()) {
+      return showAlert('Atenção', 'Título e descrição são obrigatórios.', false);
+    }
 
-    const isoDate = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    const isoDate =
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
       `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 
     const form = new FormData();
@@ -128,15 +148,16 @@ export default function CreateEventScreen({ navigation }: any) {
     }
 
     try {
+      setLoading(true);
       const res = await fetch(`${baseUrl}/ticket`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
 
       if (!res.ok) {
         const errBody = await res.text();
-        return Alert.alert('Erro', `Status ${res.status}\n${errBody}`);
+        return showAlert('Erro', `Status ${res.status}\n${errBody}`, false);
       }
 
       const json = await res.json();
@@ -149,52 +170,121 @@ export default function CreateEventScreen({ navigation }: any) {
         imageUri: imageFile?.uri,
       });
 
-      Alert.alert('Sucesso', `Evento criado! ID: ${json.id}`, [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      showAlert('Sucesso', `Evento criado! ID: ${json.id}`, true);
     } catch (e: any) {
-      Alert.alert('Erro Exceção', e.message);
+      showAlert('Erro Exceção', e.message, false);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safe}> 
+    <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.heading}>Criar Novo Evento</Text>
 
         <Text style={styles.label}>Título</Text>
-        <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Nome do evento" />
+        <TextInput
+          style={styles.input}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Nome do evento"
+        />
 
         <Text style={styles.label}>Descrição</Text>
-        <TextInput style={[styles.input, styles.textArea]} value={description} onChangeText={setDescription} placeholder="Detalhes do evento" multiline />
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Detalhes do evento"
+          multiline
+        />
 
         <Text style={styles.label}>Data e hora</Text>
         <View style={styles.rowButtons}>
-          <Pressable onPress={showDatePicker} style={styles.dateButton}><Text>📅 {date.toLocaleDateString()}</Text></Pressable>
-          <Pressable onPress={showTimePicker} style={styles.dateButton}><Text>🕒 {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text></Pressable>
+          <Pressable onPress={showDatePicker} style={styles.dateButton}>
+            <Text>📅 {date.toLocaleDateString()}</Text>
+          </Pressable>
+          <Pressable onPress={showTimePicker} style={styles.dateButton}>
+            <Text>🕒 {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+          </Pressable>
         </View>
 
-        {showDate && <DateTimePicker value={date} mode="date" display="default" onChange={handleDateChange} />}
-        {showTime && <DateTimePicker value={date} mode="time" display="default" onChange={handleTimeChange} />}
+        {showDate && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+          />
+        )}
+        {showTime && (
+          <DateTimePicker
+            value={date}
+            mode="time"
+            display="default"
+            onChange={handleTimeChange}
+          />
+        )}
 
         <Text style={styles.label}>Quantidade de Ingressos</Text>
-        <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} placeholder="0" keyboardType="number-pad" />
+        <TextInput
+          style={styles.input}
+          value={quantity}
+          onChangeText={setQuantity}
+          placeholder="0"
+          keyboardType="number-pad"
+        />
 
         <Text style={styles.label}>Preço (R$)</Text>
-        <TextInput style={styles.input} value={price} onChangeText={setPrice} placeholder="0" keyboardType="decimal-pad" />
+        <TextInput
+          style={styles.input}
+          value={price}
+          onChangeText={setPrice}
+          placeholder="0"
+          keyboardType="decimal-pad"
+        />
 
         <Text style={styles.label}>Imagem do evento</Text>
         <View style={styles.imagePickerContainer}>
           <Pressable style={styles.imageButton} onPress={pickImage}>
-            <Text style={styles.imageButtonText}>{imageFile ? 'Trocar Imagem' : 'Escolher Imagem'}</Text>
+            <Text style={styles.imageButtonText}>
+              {imageFile ? 'Trocar Imagem' : 'Escolher Imagem'}
+            </Text>
           </Pressable>
           {imageFile && <Image source={{ uri: imageFile.uri }} style={styles.preview} />}
         </View>
 
-        <Pressable style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitText}>Criar Evento</Text>
+        <Pressable
+          style={styles.submitButton}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.submitText}>Criar Evento</Text>
+          }
         </Pressable>
+        <Pressable onPress={() => navigation.navigate('Dashboard')} style={({ pressed }) => [styles.buttonBack, pressed && styles.buttonBackPressed]}>
+            <Text style={styles.buttonBackText}>Voltar</Text>
+          </Pressable>
       </ScrollView>
+
+      <AwesomeAlert
+        show={alertVisible}
+        showProgress={false}
+        title={alertTitle}
+        message={alertMessage}
+        closeOnTouchOutside
+        closeOnHardwareBackPress
+        showConfirmButton
+        confirmText="OK"
+        confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
+        onConfirmPressed={() => {
+          setAlertVisible(false);
+          if (isSuccess) navigation.goBack();
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -262,5 +352,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
+  },
+  buttonBack: {
+    marginTop: 16,
+    alignSelf: 'center',
+    backgroundColor: '#1976d2',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 24,
+  },
+  buttonBackPressed: {
+    backgroundColor: '#155a9c',
+  },
+  buttonBackText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

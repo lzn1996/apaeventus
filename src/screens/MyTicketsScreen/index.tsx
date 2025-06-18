@@ -15,6 +15,8 @@ import { getUserProfile } from '../../services/userService';
 import EventCard from './components/EventCard';
 import { MyEvent } from './types';
 import styles from './styles';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
 
 interface GroupedTickets {
   event: MyEvent;
@@ -124,6 +126,7 @@ export default function MyTicketsScreen({ navigation }: any) {
       eventId: group.event.id,
       eventTitle: group.event.title,
       tickets: group.tickets,
+      event: group.event,      // aqui você carrega título, date, time, displayDate…
     });
   };
 
@@ -156,12 +159,15 @@ export default function MyTicketsScreen({ navigation }: any) {
         </View>
       )}
 
-<View style={styles.header}>
-  <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-    <Text style={styles.backButtonText}>⬅️</Text>
-  </TouchableOpacity>
-  <Text style={styles.headerTitle}>Meus Ingressos</Text>
-</View>
+ <View style={styles.header}>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Dashboard')}
+        style={styles.backButton}
+      >
+        <Icon name="arrow-back" size={24} color="#fff" />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle}>Meus Ingressos</Text>
+    </View>
 
 
 
