@@ -282,7 +282,7 @@ export default function CreateEventScreen({ navigation }: any) {
         confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
         onConfirmPressed={() => {
           setAlertVisible(false);
-          if (isSuccess) navigation.goBack();
+          if (isSuccess) navigation.navigate('Dashboard');
         }}
       />
     </SafeAreaView>
