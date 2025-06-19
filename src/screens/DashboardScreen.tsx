@@ -13,12 +13,12 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
+  /*Alert,*/
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons          from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
+import AwesomeAlert from 'react-native-awesome-alerts';
 import { Event } from '../types/Event';
 import { baseUrl } from '../config/api';
 
@@ -36,31 +36,6 @@ interface EventRaw {
   createdAt: string;
   updatedAt: string;
   sold: number;
-}
-
-/** ----------------------
- *   FUNÇÃO DE LOGOUT
- *  ----------------------
- */
-async function handleLogout(navigation: any) {
-  try {
-    const accessToken = await AsyncStorage.getItem('accessToken');
-    if (accessToken) {
-      await fetch(`${baseUrl}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-    }
-    await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
-    navigation.replace('Login');
-  } catch (error) {
-    console.warn('Erro ao tentar deslogar:', error);
-    await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
-    navigation.replace('Login');
-  }
 }
 
 export default function DashboardScreen({ navigation }: any) {
@@ -82,6 +57,49 @@ export default function DashboardScreen({ navigation }: any) {
 
   // Busca
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(true);
+  const [onConfirmAction, setOnConfirmAction] = useState<() => void>(() => () => {});
+
+  const showAlert = (
+    title: string,
+    message: string,
+    success: boolean = true,
+    onConfirm: () => void = () => {}
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setIsSuccess(success);
+    setOnConfirmAction(() => onConfirm);
+    setAlertVisible(true);
+  };
+
+  const handleLogout = useCallback(async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      if (accessToken) {
+        await fetch(`${baseUrl}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+      }
+    } catch (err) {
+      console.warn('Erro no logout remoto:', err);
+    } finally {
+      // limpa tudo local
+      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
+      // simplesmente atualiza o estado para “deslogado”
+      setIsLogged(false);
+      setUserRole(null);
+      // opcional: voltar para a tab Home
+      setActiveTab('Home');
+    }
+  }, []);
 
   /**
    * Lê o “userRole” do AsyncStorage e atualiza isLogged / userRole.
@@ -180,10 +198,8 @@ export default function DashboardScreen({ navigation }: any) {
     };
   }, [navigation, loadUserRole, fetchEventsFromBackend]);
 
-  /**
-   * Tratamento ao clicar em “Perfil/Admin”:
-   */
-// src/screens/DashboardScreen.tsx
+  /* Tratamento ao clicar em “Perfil/Admin”*/
+
 
 const onProfileOrAdminPress = useCallback(() => {
     if (!isLogged) {
@@ -194,13 +210,6 @@ const onProfileOrAdminPress = useCallback(() => {
     setActiveTab('Profile');
   }, [isLogged, navigation]);
 
-
-
-  /**
-   * Ao clicar nas abas:
-   * - “Tickets” exige login
-   * - “Profile/Admin” chama onProfileOrAdminPress()
-   */
   const handleTabPress = (tabName: TabName) => {
     switch (tabName) {
       case 'Search':
@@ -209,7 +218,12 @@ const onProfileOrAdminPress = useCallback(() => {
 
       case 'Tickets':
         if (!isLogged) {
-          Alert.alert('Atenção', 'Faça login para ver os ingressos.');
+          showAlert(
+            'Atenção',
+            'Faça login para ver os ingressos.',
+            false,
+            () => navigation.navigate('Login')
+          );
           return;
         }
         navigation.navigate('MyTickets');
@@ -241,89 +255,36 @@ const onProfileOrAdminPress = useCallback(() => {
     ev.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
   );
 
-  /**
-   * Ao tocar em cima de um evento, navega para a tela de compra.
-   * Passamos o ticketId (event.id) e o title (para exibir opcionalmente) como params.
-   */
   const goToPurchase = (ticketId: string, title: string) => {
     navigation.navigate('EventDetail', { ticketId, title });
   };
-/*
-  // 1) Função para dar refresh no accessToken
-  const refreshAccessToken = async (): Promise<string | null> => {
-    const old = await AsyncStorage.getItem('accessToken');
-    const refresh = await AsyncStorage.getItem('refreshToken');
-    if (!old || !refresh) return null;
-    const res = await fetch(`${BASE_URL}/auth/refresh-token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${old}`,
-      },
-      body: JSON.stringify({ refreshToken: refresh }),
-    });
-    if (!res.ok) return null;
-    const js = await res.json();
-    if (js.accessToken) {
-      await AsyncStorage.setItem('accessToken', js.accessToken);
-      if (js.refreshToken) await AsyncStorage.setItem('refreshToken', js.refreshToken);
-      return js.accessToken;
-    }
-    return null;
-  };
-*/
-  /**
-   * Função para ativar/desativar evento.
-   * (Comentada pois não está sendo usada atualmente)
-   */
-  /*
-  // 2) Função para ativar/desativar evento
-  const toggleActive = async (id: string, isActive: boolean) => {
-    // tenta refresh antes de tudo
-    let token = (await refreshAccessToken()) || (await AsyncStorage.getItem('accessToken'));
-    if (!token) return Alert.alert('Sessão inválida', 'Faça login novamente.');
-    // dispara o POST
-    let res = await fetch(`${BASE_URL}/ticket/enable-disable`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ id, isActive }),
-    });
-    // se 401, refresh e retry
-    if (res.status === 401) {
-      token = (await refreshAccessToken()) || token;
-      res = await fetch(`${BASE_URL}/ticket/enable-disable`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ id, isActive }),
-      });
-    }
-    if (!res.ok) {
-      const txt = await res.text();
-      return Alert.alert('Erro', `Status ${res.status}\n${txt}`);
-    }
-    // recarrega
-    await fetchEventsFromBackend();
-  };*/
-
-
 
   return (
-    <SafeAreaView style={styles.safe}>
+     <SafeAreaView style={styles.safe}>
+      <AwesomeAlert
+        show={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        showCancelButton={false}
+        showConfirmButton
+        confirmText="OK"
+        confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
+        closeOnTouchOutside
+        closeOnHardwareBackPress
+        onConfirmPressed={() => {
+          setAlertVisible(false);
+          onConfirmAction();
+        }}
+      />
       {/* ================== Header ================== */}
-     <View style={styles.header}>
+<View style={styles.header}>
   {isLogged && userRole === 'ADMIN' ? (
     <View style={styles.adminButtons}>
       <Pressable
         onPress={() => navigation.navigate('CreateEvent')}
         style={styles.iconButton}
       >
-           <MaterialIcons name="add" size={28} color="#007AFF" />
+        <MaterialIcons name="add" size={28} color="#007AFF" />
       </Pressable>
       <Pressable
         onPress={() => navigation.navigate('AdminEvents')}
@@ -331,11 +292,11 @@ const onProfileOrAdminPress = useCallback(() => {
       >
         <MaterialIcons name="event" size={24} color="#007AFF" />
       </Pressable>
-       <Pressable
+      <Pressable
         onPress={() => navigation.navigate('Scanner')}
         style={styles.iconButton}
       >
-    <MaterialCommunityIcons name="qrcode-scan" size={24} color="#007AFF" />
+        <MaterialCommunityIcons name="qrcode-scan" size={24} color="#007AFF" />
       </Pressable>
     </View>
   ) : (
@@ -345,11 +306,12 @@ const onProfileOrAdminPress = useCallback(() => {
   <View style={styles.logoWrapper}>
     <Image source={require('../assets/apae_logo.png')} style={styles.logo} />
   </View>
-
   {isLogged ? (
-  <Pressable onPress={() => handleLogout(navigation)} style={styles.logoutButton}>
-    <MaterialCommunityIcons name="logout" size={24} color="#E74C3C" />
-  </Pressable>
+ <Pressable onPress={handleLogout} style={styles.logoutButton}>
+      <MaterialCommunityIcons name="logout" size={24} color="#E74C3C" />
+    </Pressable>
+
+
 ) : (
   <View style={styles.menuButtonPlaceholder} />
 )}
@@ -363,7 +325,7 @@ const onProfileOrAdminPress = useCallback(() => {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.searchHeader}>
-            <MaterialIcons name="search" size={24} color="#666" style={{ marginRight: 8 }} />
+            <MaterialIcons name="search" size={24} color="#90b1db" style={{ marginRight: 8 }} />
             <TextInput
               style={styles.searchInput}
               placeholder="Pesquisar por nome..."
@@ -590,9 +552,6 @@ const styles = StyleSheet.create({
     height: 100,
     resizeMode: 'contain',
   },
-  menuButtonPlaceholder: {
-    width: 32, // espaço fixo à esquerda para manter logo centralizado
-  },
   logoutButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -620,7 +579,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     borderRadius: 8,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#8c8c8c',
     paddingHorizontal: 12,
     fontSize: 14,
   },
@@ -795,6 +754,10 @@ iconButton: {
   marginHorizontal: 8,
   padding: 4,
 },
-
-
+rightPlaceholder: {
+  width: 48,
+},
+menuButtonPlaceholder: {
+  width: 48, 
+},
 });

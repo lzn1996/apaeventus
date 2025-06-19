@@ -180,7 +180,7 @@ export default function EventDetailScreen() {
                 </Text>
                 {/* Pequeno botão para voltar ao Dashboard */}
                 <View style={styles.backContainer}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Dashboard')}>
                         <Text style={styles.backText}>Voltar</Text>
                     </TouchableOpacity>
                 </View>

@@ -21,6 +21,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { baseUrl } from '../config/api';
 
 
+
 // Definição do formato de resposta do login
 interface AuthResponse {
   accessToken: string;
@@ -118,7 +119,6 @@ export default function LoginScreen({ navigation }: any) {
       // navega
       navigation.replace('Dashboard');
     } catch (err: any) {
-      console.warn('[DEBUG] login erro:', err);
       Alert.alert('Erro ao entrar', err.message || 'Não foi possível fazer login');
     } finally {
       setLoading(false);
