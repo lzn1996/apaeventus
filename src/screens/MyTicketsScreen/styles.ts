@@ -9,27 +9,20 @@ export default StyleSheet.create({
         paddingTop: 0,
     },
     backButton: {
-  marginRight: 12,
-},
-
-backButtonText: {
-  color: '#fff',
-  fontSize: 24,
-  fontWeight: 'bold',
-},
-header: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'flex-start',
-  paddingVertical: 16,
-  paddingHorizontal: 16,
-  backgroundColor: '#007AFF',
-  borderBottomLeftRadius: 24,
-  borderBottomRightRadius: 24,
-  elevation: 6,
-  marginBottom: 16,
-},
-
+    marginRight: 12,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingVertical: 16,
+        paddingHorizontal: 16,
+        backgroundColor: '#007AFF',
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+        elevation: 6,
+        marginBottom: 16,
+    },
     headerTitle: {
         color: '#fff',
         fontSize: 28,
@@ -58,8 +51,8 @@ header: {
         overflow: 'hidden',
     },
     cardImage: {
-        width: 100,
-        height: 100,
+        width: 85,
+        height: 85,
         borderTopLeftRadius: 18,
         borderBottomLeftRadius: 18,
         backgroundColor: '#e3eafc',
@@ -70,7 +63,7 @@ header: {
         justifyContent: 'center',
     },
     cardTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
         color: '#1976d2',
         marginBottom: 6,
@@ -79,6 +72,12 @@ header: {
         fontSize: 15,
         color: '#607d8b',
         marginBottom: 2,
+    },
+    eventStatus: {
+        marginTop: 4,
+        fontSize: 13,
+        color: '#1976d2',
+        fontWeight: 'bold',
     },
     cardLocation: {
         fontSize: 14,

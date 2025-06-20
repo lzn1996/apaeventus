@@ -39,8 +39,8 @@ export default function CreateEventScreen({ navigation }: any) {
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
 
-  const showAlert = (title: string, message: string, success = true) => {
-    setAlertTitle(title);
+  const showAlert = (alertTitleParam: string, message: string, success = true) => {
+    setAlertTitle(alertTitleParam);
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
@@ -96,7 +96,7 @@ export default function CreateEventScreen({ navigation }: any) {
   };
 
   async function requestGalleryPermission(): Promise<boolean> {
-    if (Platform.OS !== 'android') return true;
+    if (Platform.OS !== 'android') {return true;}
     const perm = Platform.Version >= 33
       ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
       : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
@@ -114,9 +114,9 @@ export default function CreateEventScreen({ navigation }: any) {
       return showAlert('Permissão negada', 'Não foi possível acessar a galeria.', false);
     }
     launchImageLibrary({ mediaType: 'photo', quality: 0.8 }, resp => {
-      if (resp.didCancel) return;
-      if (resp.errorMessage) return showAlert('Erro', resp.errorMessage, false);
-      if (resp.assets?.[0]) setImageFile(resp.assets[0]);
+      if (resp.didCancel) {return;}
+      if (resp.errorMessage) {return showAlert('Erro', resp.errorMessage, false);}
+      if (resp.assets?.[0]) {setImageFile(resp.assets[0]);}
     });
   };
 
@@ -282,7 +282,7 @@ export default function CreateEventScreen({ navigation }: any) {
         confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
         onConfirmPressed={() => {
           setAlertVisible(false);
-          if (isSuccess) navigation.navigate('Dashboard');
+          if (isSuccess) {navigation.navigate('Dashboard');}
         }}
       />
     </SafeAreaView>
