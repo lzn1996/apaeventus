@@ -8,15 +8,14 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  BackHandler,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import AwesomeAlert from 'react-native-awesome-alerts';
 import { baseUrl } from '../config/api';
-import {
-  initProfileTable,
-  getLocalProfile,
-  saveLocalProfile,
-} from '../database/editprofile'; // verifique apenas o caminho
+import api from '../services/api';
+import { getUserProfileLocal, saveUserProfileLocal } from '../database/profileLocalService';
+import { jwtDecode } from 'jwt-decode';
+import AwesomeAlert from 'react-native-awesome-alerts';
 
 export default function EditProfileScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
@@ -25,7 +24,6 @@ export default function EditProfileScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [rg, setRg] = useState('');
   const [cellphone, setCellphone] = useState('');
-
   // estados do AwesomeAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
@@ -57,77 +55,62 @@ export default function EditProfileScreen({ navigation }: any) {
     }
   };
 
-  /** 1) Refresh de token */
-  const refreshAccessToken = async (): Promise<string | null> => {
-    const old = await AsyncStorage.getItem('accessToken');
-    const refresh = await AsyncStorage.getItem('refreshToken');
-    if (!old || !refresh) return null;
-
-    const res = await fetch(`${baseUrl}/auth/refresh-token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${old}`,
-      },
-      body: JSON.stringify({ refreshToken: refresh }),
-    });
-    if (!res.ok) return null;
-
-    const js = await res.json();
-    if (js.accessToken) {
-      await AsyncStorage.setItem('accessToken', js.accessToken);
-      if (js.refreshToken) {
-        await AsyncStorage.setItem('refreshToken', js.refreshToken);
-      }
-      return js.accessToken;
-    }
-    return null;
-  };
-
-  /** 2) Inicializa tabela e carrega perfil */
+  /** 2) Inicializa tabela e carrega perfil (local + remoto) */
   useEffect(() => {
-    initProfileTable();
-    getLocalProfile(row => {
-      if (row) {
-        setName(row.name);
-        setEmail(row.email);
-        setRg(row.rg);
-        setCellphone(row.cellphone);
-      }
-    });
-
     (async () => {
+      setLoading(true);
       try {
-        let token = await AsyncStorage.getItem('accessToken');
-        if (!token) throw new Error('Token inválido');
-
-        let res = await fetch(`${baseUrl}/user`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 401) {
-          token = (await refreshAccessToken())!;
-          if (!token) throw new Error('Sessão expirada');
-          res = await fetch(`${baseUrl}/user`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+        // Busca o id do usuário autenticado
+        let userId = '';
+        const accessToken = await AsyncStorage.getItem('accessToken');
+        if (accessToken) {
+          try {
+            const decoded: any = jwtDecode(accessToken);
+            userId = decoded.id || '';
+          } catch (e) {
+            console.log('[EditProfileScreen] Erro ao decodificar accessToken:', e);
+          }
         }
-        if (!res.ok) throw new Error(`Status ${res.status}`);
-
-        const js = await res.json();
+        // Busca perfil local pelo id do usuário
+        let local = null;
+        if (userId) {
+          const db = await require('../database/db').openDatabase();
+          const res = await db.executeSql('SELECT * FROM user_profile WHERE id = ? LIMIT 1', [userId]);
+          if (res[0].rows.length > 0) {
+            local = res[0].rows.item(0);
+          }
+        } else {
+          local = await getUserProfileLocal();
+        }
+        if (local) {
+          setName(local.name || '');
+          setEmail(local.email || '');
+          setRg(local.rg || '');
+          setCellphone(local.cellphone || local.phone || '');
+        }
+        // Log extra: headers da requisição /user
+        api.interceptors.request.use(config => {
+          if (config.url?.includes('/user')) {
+            console.log('[EditProfileScreen] Header Authorization enviado:', config.headers?.Authorization);
+          }
+          return config;
+        });
+        // Busca do backend e atualiza local
+        const res = await api.get('/user');
+        const js = res.data;
         setName(js.name || '');
         setEmail(js.email || '');
         setRg(js.rg || '');
-        setCellphone(js.cellphone || '');
-
-        saveLocalProfile({
+        setCellphone(js.cellphone || js.phone || '');
+        // Salva perfil atualizado localmente com id correto
+        await saveUserProfileLocal({
+          id: js.id || userId || '1',
           name: js.name || '',
           email: js.email || '',
+          cellphone: js.cellphone || js.phone || '',
+          phone: js.phone || '',
           rg: js.rg || '',
-          cellphone: js.cellphone || '',
         });
-
-        // mensagem de orientação
-        showAlert('Atualização cadastral', 'Atualize seus dados se necessário.', true);
       } catch (e: any) {
         showAlert('Atualização cadastral', 'Atualize seus dados se necessário.', true);
       } finally {
@@ -136,53 +119,58 @@ export default function EditProfileScreen({ navigation }: any) {
     })();
   }, []);
 
-  /** 3) Salva alterações */
+  /** 3) Salva alterações no servidor e SQLite, depois força logout */
   const handleSave = async () => {
     if (!name.trim() || !email.trim()) {
       return showAlert('Atenção', 'Nome e e-mail são obrigatórios.', false);
     }
     try {
-      let token = await AsyncStorage.getItem('accessToken');
-      if (!token) throw new Error('Token inválido');
-
-      let res = await fetch(`${baseUrl}/user`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name, email, password, rg, cellphone }),
+      // Monta objeto apenas com campos preenchidos e permitidos
+      const payload: any = { name, rg, cellphone };
+      // Só envia password se preenchido
+      if (password && password.trim().length > 0) {
+        payload.password = password;
+      }
+      // Só envia e-mail se o backend permitir alteração (remova se não for permitido)
+      payload.email = email;
+      await api.patch('/user', payload);
+      // Atualiza perfil local (sem senha) com id correto
+      let userId = '';
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      if (accessToken) {
+        try {
+          const decoded: any = jwtDecode(accessToken);
+          userId = decoded.id || '';
+        } catch {}
+      }
+      await saveUserProfileLocal({
+        id: userId || '1',
+        name,
+        email,
+        cellphone,
+        phone: cellphone,
+        rg,
       });
-
-      if (res.status === 401) {
-        token = (await refreshAccessToken())!;
-        if (!token) {
-          return showAlert('Sessão expirada', 'Faça login novamente.', false);
-        }
-        res = await fetch(`${baseUrl}/user`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ name, email, password, rg, cellphone }),
-        });
-      }
-
-      const text = await res.text();
-      if (!res.ok) {
-        return showAlert('Erro ao salvar', `Status ${res.status}\n${text}`, false);
-      }
-
-      saveLocalProfile({ name, email, rg, cellphone });
       showAlert('Sucesso', 'Dados atualizados! Você será deslogado para segurança.', true);
-
-      // no confirm do alert, força logout
       setTimeout(doLogout, 1000);
     } catch (e: any) {
-      showAlert('Erro de rede', e.message || String(e), false);
+      let msg = 'Erro ao salvar.';
+      if (e?.response) {
+        msg += `\nStatus ${e.response.status}`;
+        if (typeof e.response.data === 'string') { msg += `\n${e.response.data}`; }
+      }
+      showAlert('Erro de rede', e.message || String(msg), false);
     }
   };
+
+  useEffect(() => {
+    const onBackPress = () => {
+      navigation.replace('Dashboard');
+      return true;
+    };
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [navigation]);
 
   if (loading) {
     return (
@@ -243,15 +231,13 @@ export default function EditProfileScreen({ navigation }: any) {
         <Pressable style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveText}>Salvar Alterações</Text>
         </Pressable>
-         <Pressable
+        <Pressable
         style={styles.buttonBack}
         onPress={() => navigation.navigate('Dashboard')}
-      >
+        >
         <Text style={styles.buttonBackText}>← Voltar</Text>
       </Pressable>
       </ScrollView>
-
-      {/* AwesomeAlert comum a todas as telas */}
       <AwesomeAlert
         show={alertVisible}
         showProgress={false}

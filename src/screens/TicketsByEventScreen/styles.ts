@@ -2,14 +2,14 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
-   container: {
-  flex: 1,
-  backgroundColor: '#f6f8fc',
-  padding: 16,
-  alignItems: 'center',
-  justifyContent: 'flex-start',
-},
-
+    container: {
+        flex: 1,
+        backgroundColor: '#f6f8fc',
+        padding: 0,
+        alignItems: 'center',
+        justifyContent: 'center', // Centraliza verticalmente
+        minHeight: '100%',
+    },
     carousel: {
         marginTop: 0,
         width: '100%',
@@ -53,28 +53,26 @@ export default StyleSheet.create({
     ticketUnused: {
         color: '#43a047',
     },
-  ticketCardContainer: {
-  backgroundColor: '#fff',
-  borderRadius: 18,
-  padding: 18,
-  marginVertical: 20,
-  alignItems: 'center',
-  width: '100%',
-  maxWidth: 340,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.08,
-  shadowRadius: 6,
-  elevation: 3,
-  alignSelf: 'center',
-},
-eventImage: {
-  width: '100%',
-  height: 160,
-  borderRadius: 12,
-  marginBottom: 12,
-  resizeMode: 'cover',
-},
+    ticketCardContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 18,
+        padding: 18,
+        marginBottom: 16,
+        alignItems: 'center',
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+        elevation: 2,
+    },
+    eventImage: {
+        width: '100%',
+        height: 140,
+        borderRadius: 12,
+        marginBottom: 12,
+        resizeMode: 'cover',
+    },
     eventInfoRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -195,10 +193,19 @@ eventImage: {
         fontWeight: 'bold',
         fontSize: 16,
     },
-    hintText: {
-        fontSize: 16,
-        color: '#888',
-        textAlign: 'center',
-        marginBottom: 12,
+    dotsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 12,
+    },
+    dot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        marginHorizontal: 4,
+        backgroundColor: '#d0d0d0',
+    },
+    dotActive: {
+        backgroundColor: '#007AFF',
     },
 });

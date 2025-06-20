@@ -1,4 +1,4 @@
-// src/screens/LoginScreen.tsxMore actions
+// src/screens/LoginScreen.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import {
   SafeAreaView,
@@ -19,30 +19,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { baseUrl } from '../config/api';
-
-
-
-// Definição do formato de resposta do login
-interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: 'ADMIN' | 'USER';
-    rg: string | null;
-    cpf: string | null;
-    cellphone: string | null;
-    createdAt: string;
-    updatedAt: string;
-  };
-}
-
-// Definição do formato de resposta do refresh
-/*interface RefreshResponse {
-  accessToken: string;
-}*/
+import { resetLocalDatabase } from '../database/ticketService';
+import { syncAll } from '../database/syncService';
+import { initDatabase } from '../database/init';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -50,6 +29,7 @@ export default function LoginScreen({ navigation }: any) {
   const [showSenha, setShowSenha] = useState(false);
   const [focusField, setFocusField] = useState<'email' | 'senha' | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const senhaInputRef = useRef<TextInput>(null);
 
   // Animações
@@ -64,61 +44,47 @@ export default function LoginScreen({ navigation }: any) {
     }).start();
   }, [logoScale]);
 
- /* function runShake() {
-    Animated.sequence([
-      Animated.timing(shakeAnim, { toValue: -8, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -6, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 6, duration: 50, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
-    ]).start();
-  }*/
-
   // Integração com /auth/login
- const handleLogin = async () => {
+  const handleLogin = async () => {
     if (!email.trim() || !senha.trim()) {
-      // animação de shake, ou apenas:
       return Alert.alert('Ops', 'Preencha e-mail e senha');
     }
-
     setLoading(true);
+    setError(null);
     try {
+      await resetLocalDatabase();
+      await initDatabase();
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: senha }), // e não senha: senha!
+        body: JSON.stringify({ email, password: senha }),
       });
-
-      // **LEIA JSON UMA ÚNICA VEZ**
       const json = await response.json().catch(() => null);
-      console.log('[DEBUG] login response:', response.status, json);
-
       if (!response.ok) {
-        // backend pode devolver { message: [...] } ou erro simples
-        const msg =
+        let msg =
           typeof json?.message === 'string'
             ? json.message
             : Array.isArray(json?.message)
             ? json.message.join('\n')
             : 'Credenciais inválidas';
+        // Força mensagem em português para erro de credenciais
+        if (response.status === 401 || response.status === 400) {
+          msg = 'E-mail ou senha inválidos!';
+        }
         throw new Error(msg);
       }
-
-      // agora é seguro fazer cast
-      const data = json as AuthResponse;
+      const data = json;
       const { accessToken, refreshToken, user } = data;
       if (!accessToken || !refreshToken || !user?.role) {
         throw new Error('Resposta de login incompleta');
       }
-
-      // **Salva tokens e role**
       await AsyncStorage.setItem('accessToken', accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
       await AsyncStorage.setItem('userRole', user.role);
-
-      // navega
+      await syncAll('', async () => true);
       navigation.replace('Dashboard');
     } catch (err: any) {
+      setError(err.message || 'Não foi possível fazer login');
       Alert.alert('Erro ao entrar', err.message || 'Não foi possível fazer login');
     } finally {
       setLoading(false);
@@ -144,7 +110,6 @@ export default function LoginScreen({ navigation }: any) {
               source={require('../assets/apae_logo.png')}
               style={[styles.logo, { transform: [{ scale: logoScale }] }]}
             />
-
             <View style={styles.card}>
               {/* E-mail */}
               <View
@@ -169,7 +134,6 @@ export default function LoginScreen({ navigation }: any) {
                   onSubmitEditing={() => senhaInputRef.current?.focus()}
                 />
               </View>
-
               {/* Senha */}
               <View
                 style={[
@@ -199,7 +163,8 @@ export default function LoginScreen({ navigation }: any) {
                   />
                 </Pressable>
               </View>
-
+              {/* Erro */}
+              {error && <Text style={styles.errorText}>{error}</Text>}
               {/* Botão Entrar */}
               <Pressable
                 style={({ pressed }) => [
@@ -218,21 +183,20 @@ export default function LoginScreen({ navigation }: any) {
                   <Text style={styles.buttonText}>Entrar</Text>
                 )}
               </Pressable>
-
-              {/* Voltar para Tela inicial */}
-             <View style={styles.footerContainer}>
-  <View style={styles.linkRow}>
-    <Pressable onPress={() => navigation.navigate('Cadastro')} style={({ pressed }) => [styles.linkWrapper, pressed && styles.linkPressed]}>
-      <Text style={styles.linkTextPrimary}>Registre-se</Text>
-    </Pressable>
-    <Pressable onPress={() => navigation.navigate('Reset')} style={({ pressed }) => [styles.linkWrapper, pressed && styles.linkPressed]}>
-      <Text style={styles.linkTextSecondary}>Recuperar Senha</Text>
-    </Pressable>
-  </View>
-  <Pressable onPress={() => navigation.navigate('Dashboard')} style={({ pressed }) => [styles.buttonBack, pressed && styles.buttonBackPressed]}>
-    <Text style={styles.buttonBackText}>Voltar para Tela Inicial</Text>
-  </Pressable>
-</View>
+              {/* Footer com links e voltar */}
+              <View style={styles.footerContainer}>
+                <View style={styles.linkRow}>
+                  <Pressable onPress={() => navigation.navigate('Cadastro')} style={({ pressed }) => [styles.linkWrapper, pressed && styles.linkPressed]}>
+                    <Text style={styles.linkTextPrimary}>Registre-se</Text>
+                  </Pressable>
+                  <Pressable onPress={() => navigation.navigate('Reset')} style={({ pressed }) => [styles.linkWrapper, pressed && styles.linkPressed]}>
+                    <Text style={styles.linkTextSecondary}>Recuperar Senha</Text>
+                  </Pressable>
+                </View>
+                <Pressable onPress={() => navigation.navigate('Dashboard')} style={({ pressed }) => [styles.buttonBack, pressed && styles.buttonBackPressed]}>
+                  <Text style={styles.buttonBackText}>Voltar para Tela Inicial</Text>
+                </Pressable>
+              </View>
             </View>
           </Animated.View>
         </TouchableWithoutFeedback>
@@ -280,11 +244,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
-  footer: { flexDirection: 'row', justifyContent: 'center' },
-  link: { color: '#3982b8', fontSize: 14 },
-  register: { color: '#6eaa5e', fontSize: 18, marginBottom: 16, textAlign: 'center' },
-  recuperar: { color: '#6d8ce8', fontSize: 18, marginBottom: 16, textAlign: 'center' },
-   footerContainer: {
+  footerContainer: {
     paddingVertical: 24,
     paddingHorizontal: 16,
     borderTopWidth: 1,
@@ -304,13 +264,13 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   linkTextPrimary: {
-    color: '#6eaa5e',      // verde de destaque
+    color: '#6eaa5e',
     fontSize: 16,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
   linkTextSecondary: {
-    color: '#6d8ce8',      // azul suave
+    color: '#6d8ce8',
     fontSize: 16,
     fontWeight: '600',
     textDecorationLine: 'underline',
@@ -330,4 +290,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  errorText: { color: 'red', marginBottom: 12 },
 });
