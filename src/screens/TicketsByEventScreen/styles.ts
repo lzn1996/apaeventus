@@ -113,6 +113,13 @@ export default StyleSheet.create({
         flex: 1,
         alignItems: 'flex-end',
     },
+    ticketInfoRightColumn: {
+        flex: 1,
+        alignItems: 'flex-start',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        paddingInlineStart: 38,
+    },
     buyerName: {
         fontWeight: 'bold',
         fontSize: 15,
@@ -145,7 +152,8 @@ export default StyleSheet.create({
     qrCodeImage: {
         width: 180,
         height: 180,
-        marginVertical: 16,
+        marginVertical: -16,
+        marginBlockStart: 14,
     },
     ticketCountText: {
         fontWeight: 'bold',

@@ -42,7 +42,7 @@ export default function TicketsByEventScreen({ route }: any) {
                     />
                 )}
                 mode="horizontal-stack"
-                modeConfig={{ showLength: 1 }}
+                modeConfig={{ showLength: 1, snapDirection: 'left', stackInterval: 10 }}
                 autoPlay={false}
                 onSnapToItem={setCurrentIndex}
             />
