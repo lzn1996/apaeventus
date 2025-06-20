@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,13 +22,11 @@ export default function PurchaseScreen() {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
 
-  // estados do AwesomeAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
 
-  // helper para exibir alertas
   const showAlert = (title: string, message: string, success = true) => {
     setAlertTitle(title);
     setAlertMessage(message);
@@ -41,13 +40,11 @@ export default function PurchaseScreen() {
     if (!paymentMethod) {
       return showAlert('Atenção', 'Selecione uma forma de pagamento!', false);
     }
-
     setLoading(true);
     try {
       await createSaleProtected({ ticketId, quantity });
       showAlert('Sucesso', 'Compra realizada com sucesso!', true);
     } catch (err: any) {
-      // seu interceptor já trata sessão expirada
       showAlert('Erro', err.message || 'Não foi possível processar a compra.', false);
     } finally {
       setLoading(false);
@@ -69,12 +66,13 @@ export default function PurchaseScreen() {
 
       <Text style={styles.label}>Forma de Pagamento:</Text>
       <View style={styles.paymentRow}>
-        {['pix','credito','debito'].map(method => (
-          <TouchableOpacity
+        {['pix', 'credito', 'debito'].map((method) => (
+          <Pressable
             key={method}
-            style={[
+            style={({ pressed }) => [
               styles.paymentButton,
               paymentMethod === method && styles.paymentButtonSelected,
+              pressed && styles.paymentButtonPressed,
             ]}
             onPress={() => setPaymentMethod(method)}
             disabled={loading}
@@ -87,7 +85,7 @@ export default function PurchaseScreen() {
             >
               {method.toUpperCase()}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
 
@@ -99,10 +97,11 @@ export default function PurchaseScreen() {
         onPress={handleConfirm}
         disabled={!paymentMethod || loading}
       >
-        {loading
-          ? <ActivityIndicator color="#fff" />
-          : <Text style={styles.confirmButtonText}>Confirmar Compra</Text>
-        }
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.confirmButtonText}>Confirmar Compra</Text>
+        )}
       </TouchableOpacity>
 
       <View style={styles.backContainer}>
@@ -123,7 +122,7 @@ export default function PurchaseScreen() {
         confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
         onConfirmPressed={() => {
           setAlertVisible(false);
-          if (isSuccess) navigation.navigate('MyTickets'); // redireciona para Meus Ingressos
+          if (isSuccess) navigation.navigate('MyTickets');
         }}
       />
     </View>
@@ -154,11 +153,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     color: '#607d8b',
     letterSpacing: 0.2,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   value: {
     fontSize: 20,
-    marginBottom: 4,
+    marginBottom: 12,
     color: '#222',
     fontWeight: '500',
     backgroundColor: '#fff',
@@ -173,34 +172,33 @@ const styles = StyleSheet.create({
   },
   paymentRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 26,
+    justifyContent: 'center',    // centraliza o grupo
+    marginVertical: 24,
   },
   paymentButton: {
     borderWidth: 2,
     borderColor: '#1976d2',
     borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 28,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     backgroundColor: '#e3eafc',
-    shadowColor: '#1976d2',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 2,
-    minWidth: 100,
+    marginHorizontal: 8,          // espaçamento igual entre botões
+    minWidth: 90,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paymentButtonPressed: {
+    opacity: 0.7,
   },
   paymentButtonSelected: {
     backgroundColor: '#1976d2',
     borderColor: '#1976d2',
-    shadowOpacity: 0.18,
-    transform: [{ scale: 1.06 }],
+    transform: [{ scale: 1.03 }],
   },
   paymentText: {
     color: '#1976d2',
     fontWeight: 'bold',
-    fontSize: 17,
+    fontSize: 16,
   },
   paymentButtonSelectedText: {
     color: '#fff',

@@ -51,7 +51,7 @@ export default function EditProfileScreen({ navigation }: any) {
       console.warn('Erro no logout:', e);
     } finally {
       await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
-      navigation.replace('Login');
+      navigation.navigate('Login');
     }
   };
 
@@ -151,8 +151,8 @@ export default function EditProfileScreen({ navigation }: any) {
         phone: cellphone,
         rg,
       });
-      showAlert('Sucesso', 'Dados atualizados! Você será deslogado para segurança.', true);
-      setTimeout(doLogout, 1000);
+      showAlert('Sucesso', 'Dados atualizados! Você será deslogado para segurança em 5 segundos, entre no aplicativo novamente! ', true);
+      setTimeout(doLogout, 7000);
     } catch (e: any) {
       let msg = 'Erro ao salvar.';
       if (e?.response) {

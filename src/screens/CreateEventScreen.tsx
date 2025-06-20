@@ -1,4 +1,4 @@
-// src/screens/CreateEventScreen.tsx
+// src/screens/CreateEventScreen.tsxMore actions
 import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
@@ -18,10 +18,8 @@ import { launchImageLibrary, Asset } from 'react-native-image-picker';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import AwesomeAlert from 'react-native-awesome-alerts';
 import { baseUrl } from '../config/api';
-import { initEventTable, saveLocalEvent } from '../database/editprofile';
 
 export default function CreateEventScreen({ navigation }: any) {
-  useEffect(() => { initEventTable(); }, []);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -39,8 +37,8 @@ export default function CreateEventScreen({ navigation }: any) {
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
 
-  const showAlert = (alertTitleParam: string, message: string, success = true) => {
-    setAlertTitle(alertTitleParam);
+  const showAlert = (title: string, message: string, success = true) => {
+    setAlertTitle(title);
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
@@ -96,8 +94,8 @@ export default function CreateEventScreen({ navigation }: any) {
   };
 
   async function requestGalleryPermission(): Promise<boolean> {
-    if (Platform.OS !== 'android') {return true;}
-    const perm = Platform.Version >= 33
+    if (Platform.OS !== 'android') return true;
+        const perm = Platform.Version >= 33
       ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
       : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
     const granted = await PermissionsAndroid.request(perm, {
@@ -160,17 +158,9 @@ export default function CreateEventScreen({ navigation }: any) {
         return showAlert('Erro', `Status ${res.status}\n${errBody}`, false);
       }
 
-      const json = await res.json();
-      saveLocalEvent({
-        title,
-        description,
-        date: date.toISOString(),
-        quantity: Number(quantity) || 0,
-        price: Number(price) || 0,
-        imageUri: imageFile?.uri,
-      });
+    
 
-      showAlert('Sucesso', `Evento criado! ID: ${json.id}`, true);
+      showAlert('Sucesso', `Evento criado!`, true);
     } catch (e: any) {
       showAlert('Erro Exceção', e.message, false);
     } finally {
@@ -282,7 +272,7 @@ export default function CreateEventScreen({ navigation }: any) {
         confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
         onConfirmPressed={() => {
           setAlertVisible(false);
-          if (isSuccess) {navigation.navigate('Dashboard');}
+          if (isSuccess) navigation.navigate('Dashboard');
         }}
       />
     </SafeAreaView>
