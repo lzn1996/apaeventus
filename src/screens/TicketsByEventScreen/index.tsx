@@ -21,7 +21,7 @@ export default function TicketsByEventScreen({ route }: any) {
       </View>
     );
   }
-  if (!tickets || tickets.length === 0) {
+  if (!tickets.length) {
     return (
       <View style={styles.container}>
         <Text>Não foi possível carregar os ingressos.</Text>
@@ -48,17 +48,14 @@ export default function TicketsByEventScreen({ route }: any) {
             total={tickets.length}
           />
         )}
-        mode="horizontal-stack"
-        modeConfig={{
-          showLength: 1,     // apenas 1 cartão visível
-          stackInterval: 0,  // sem sobreposição do anterior
-        }}
+        // modo padrão, sem stack nem triângulos:
+        pagingEnabled
+        snapEnabled
         autoPlay={false}
         loop={false}
         onSnapToItem={setCurrentIndex}
       />
 
-      {/* Indicador de página (dots) */}
       {tickets.length > 1 && (
         <View style={styles.dotsContainer}>
           {tickets.map((_, idx) => (
