@@ -1,97 +1,130 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# ApaEventus
 
-# Getting Started
+**ApaEventus** é uma aplicação mobile desenvolvida para a gestão de eventos da **APAE de Itapira**, permitindo o controle de ingressos, validação por QR Code e organização de eventos sociais e culturais.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 📌 Finalidade
 
-## Step 1: Start Metro
+Este projeto tem como objetivo proporcionar uma solução prática e eficiente para o gerenciamento de eventos da APAE, oferecendo uma experiência moderna e acessível via aplicativo.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 🧭 Escopo
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+ApaEventus é uma solução SaaS híbrida, acessada por dispositivos móveis, que permite:
 
-```sh
-# Using npm
-npm start
+- Compra de ingressos
+- Validação por QR Code
+- Controle de participantes
+- Gerenciamento de eventos por administradores
 
-# OR using Yarn
-yarn start
+---
+
+## ✅ Requisitos Funcionais
+
+- RF01: Cadastro de novos usuários
+- RF02: Autenticação por e-mail e senha
+- RF03: Atualização de dados do usuário
+- RF04: Exibição de eventos organizados por data
+- RF05: Compra de ingressos por usuários autenticados
+- RF06: Geração de QR Code único por ingresso
+- RF07: Envio do ingresso por e-mail e exibição no perfil
+- RF08: Bloqueio de compra após atingir o limite de ingressos
+- RF09: Administração de eventos (criar, ativar, desativar, excluir)
+- RF10: Validação de entrada via QR Code
+- RF11: Busca de eventos por nome ou descrição
+- RF12: Criação de eventos apenas com data futura (mínimo 1 dia)
+
+---
+
+## 🚫 Requisitos Não Funcionais
+
+- RNF01: Aplicativo mobile híbrido com **React Native**
+- RNF02: Backend em **NestJS (Node.js e TypeScript)**
+- RNF03: Banco de dados **PostgreSQL na nuvem**
+- RNF04: Infraestrutura hospedada na **AWS (EC2, S3, Lambda)**
+- RNF05: Autenticação via **JWT**
+- RNF06: Interface responsiva e amigável
+- RNF07: Alta disponibilidade e escalabilidade
+
+---
+
+## 🧩 Casos de Uso Principais
+
+| Caso de Uso                | Atores        | Descrição                                        |
+|---------------------------|---------------|--------------------------------------------------|
+| Cadastro de Usuário       | Visitante     | Registro na plataforma                          |
+| Autenticação              | Usuário       | Login com e-mail e senha                        |
+| Compra de Ingresso        | Usuário       | Seleção de evento e compra de ingressos         |
+| Geração de QR Code        | Sistema       | Envio do ingresso por e-mail com QR Code        |
+| Validação de Ingresso     | Administrador | Leitura do QR Code para validação               |
+| Gerenciamento de Evento   | Administrador | Administração completa de eventos               |
+
+---
+
+## 📌 Restrições
+
+- Limite de ingressos por evento
+- QR Code válido apenas uma vez
+- Somente administradores gerenciam eventos
+
+---
+
+## ✅ Critérios de Aceitação
+
+- Bloqueio de login com credenciais inválidas
+- Exibição dos eventos em ordem cronológica
+- Bloqueio da compra de ingressos esgotados
+- Validação bem-sucedida do QR Code na entrada
+- Envio do ingresso por e-mail após pagamento
+
+---
+
+## 🖥️ Frontend (Mobile Híbrido)
+
+Este repositório contém a parte **frontend mobile** do ApaEventus, desenvolvida em **React Native** junto com **TypeScript**, seguindo boas práticas de estrutura:
+
+### 📁 Estrutura de Pastas
+
+```
+/src
+├─ /components       # Componentes reutilizáveis (Botões, Listas, Modais...)
+├─ /screens          # Telas principais (Login, Lista de Eventos, Perfil, Validação QR)
+├─ /navigation       # Configuração de navegação via React Navigation
+├─ /services         # Integração com API (axios/fetch, autenticação JWT)
+├─ /assets           # Ícones, imagens e fontes
+├─ /styles           # Estilos globais e tema (cores, fontes, espaçamentos)
 ```
 
-## Step 2: Build and run your app
+### ⚙️ Principais Tecnologias e Configurações
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+- **React Native + TypeScript**
+- **React Navigation** para navegação entre as telas
+- **Context API** ou **Redux** (dependendo da implementação) para gerenciamento de estado
+- **Axios ou Fetch API** com headers JWT para chamadas à backend
+- **Componentização** de telas e elementos visuais
+- **react-hook-form** para inputs, validações e controle de formulários
+- **QRCode**: geração e leitura com bibliotecas específicas (como `react-native-qrcode-svg`, `react-native-camera`)
 
-### Android
+### 🎨 UI e Estilo
 
-```sh
-# Using npm
-npm run android
+- Interface responsiva com tema padronizado
+- Cores institucionais da APAE
+- Feedback visual com mensagens, spinners e modais
 
-# OR using Yarn
-yarn android
-```
+### 🔁 Fluxo de Navegação
 
-### iOS
+1. Login/Registro com e-mail e senha
+2. Listagem de eventos disponíveis
+3. Compra e recebimento de ingresso com QR Code
+4. Acesso ao histórico e dados do usuário no perfil
+5. Validação de QR Code por administradores na entrada
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+---
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## 📚 Referências
 
-```sh
-bundle install
-```
+- Sommerville, Ian. *Engenharia de Software*. Pearson.
+- [DevMedia - Engenharia de Requisitos](https://www.devmedia.com.br/introducao-a-engenharia-de-requisitos/8034)
+- [Como Escrever Requisitos de Software](https://medium.com/lfdev-blog/como-escrever-requisitos-de-software-de-forma-simples-e-garantir-o-m%C3%ADnimo-de-erros-no-sistema-app-74df2ee241cc)
 
-Then, and every time you update your native dependencies, run:
+---
 
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+📍 *Itapira - 2025*
