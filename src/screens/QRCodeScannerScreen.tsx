@@ -101,10 +101,7 @@ export default function QrScannerScreen() {
       showAlert('QR Code Válido', `Venda ${data} marcada como usada.`, true);
     } catch (error: any) {
       showAlert(
-        'Erro ao validar QR Code',
-        error.message.includes('HTTP')
-          ? error.message
-          : 'Ingresso já utilizado ou inválido.',
+        'Erro ao validar QR Code','Ingresso já utilizado ou inválido.',
         false
       );
     }
