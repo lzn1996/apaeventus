@@ -1,12 +1,8 @@
-/**
- * @format
- */
-
-// Registra o Gesture Handler antes de qualquer outra importação
 import 'react-native-gesture-handler';
-
-import {AppRegistry} from 'react-native';
+import { registerRootComponent } from 'expo';
 import App from './App';
-import {name as appName} from './app.json';
 
-AppRegistry.registerComponent(appName, () => App);
+// registerRootComponent chama AppRegistry.registerComponent('main', () => App);
+// e garante que o ambiente seja configurado corretamente.
+registerRootComponent(App);
+

@@ -1,16 +1,43 @@
 {
-  "name": "ApaEventus",
-  "displayName": "ApaEventus",
   "expo": {
+    "name": "apaeventus",
+    "slug": "apaeventus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/apae_logo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/apae_logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.apaeventus"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/apae_logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.apaeventus"
+    },
+    "web": {
+      "favicon": "./src/assets/apae_logo.png"
+    },
     "plugins": [
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+          "cameraPermission": "Permitir que $(PRODUCT_NAME) acesse sua câmera",
+          "microphonePermission": "Permitir que $(PRODUCT_NAME) acesse seu microfone",
           "recordAudioAndroid": true
         }
       ]
     ]
   }
 }
+

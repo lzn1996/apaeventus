@@ -5,7 +5,7 @@ import {
     Animated,
     InteractionManager,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SplashScreen({ navigation }: { navigation: any }) {
     const fadeAnim = useRef(new Animated.Value(0)).current;
