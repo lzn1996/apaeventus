@@ -36,9 +36,7 @@ export default function MyTicketsScreen({ navigation }: any) {
                 setUserProfile(profile);
                 // Salva perfil localmente
                 if (profile && profile.id) {
-                    console.log('Aqui');
                     await saveUserProfileLocal(profile);
-                    console.log('Passou');
                 }
             } else {
                 // Busca perfil do SQLite local

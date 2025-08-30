@@ -74,10 +74,10 @@ export default function EditProfileScreen({ navigation }: any) {
         // Busca perfil local pelo id do usuário
         let local = null;
         if (userId) {
-          const db = await require('../database/db').openDatabase();
-          const res = await db.executeSql('SELECT * FROM user_profile WHERE id = ? LIMIT 1', [userId]);
-          if (res[0].rows.length > 0) {
-            local = res[0].rows.item(0);
+          const db = require('../database/db').openDatabase();
+          const res = db.getAllSync('SELECT * FROM user_profile WHERE id = ? LIMIT 1', [userId]);
+          if (res.length > 0) {
+            local = res[0];
           }
         } else {
           local = await getUserProfileLocal();

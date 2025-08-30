@@ -1,8 +1,8 @@
 import { openDatabase } from './db';
 
 export async function initEventTable() {
-    const db = await openDatabase();
-    await db.executeSql(`
+    const db = openDatabase();
+    db.runSync(`
         CREATE TABLE IF NOT EXISTS events (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
@@ -16,16 +16,6 @@ export async function initEventTable() {
     `);
 }
 
-/*
-id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        date TEXT NOT NULL,
-        time TEXT,
-        location TEXT,
-        imageUrl TEXT,
-        last_updated INTEGER,
-        isSynced INTEGER DEFAULT 1
-*/
 export async function saveLocalEvent(event: {
     id?: string;
     title: string;
@@ -34,9 +24,9 @@ export async function saveLocalEvent(event: {
     price?: number;
     imageUri?: string;
 }) {
-    const db = await openDatabase();
+    const db = openDatabase();
     const id = event.id || String(Date.now());
-    await db.executeSql(
+    db.runSync(
         `INSERT OR REPLACE INTO events (id, title, date, quantity, price, imageUri, last_updated)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -52,10 +42,7 @@ export async function saveLocalEvent(event: {
 }
 
 export async function getAllEvents() {
-    const db = await openDatabase();
-    const res = await db.executeSql('SELECT * FROM events ORDER BY date DESC');
-    if (res[0] && res[0].rows && res[0].rows.length > 0) {
-        return res[0].rows.raw();
-    }
-    return [];
+    const db = openDatabase();
+    const res = db.getAllSync('SELECT * FROM events ORDER BY date DESC');
+    return res;
 }
