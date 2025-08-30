@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { syncAll } from '../database/syncService';
+import { syncFromServer } from '../database/syncService';
 
 export default function NetInfoSyncListener() {
     useEffect(() => {
@@ -13,7 +13,8 @@ export default function NetInfoSyncListener() {
         if (accessToken && userRole) {
             unsubscribe = NetInfo.addEventListener(state => {
             if (state.isConnected) {
-                syncAll('', async () => true);
+                // Usa sincronização inteligente (com cooldown)
+                syncFromServer();
             }
             });
         }

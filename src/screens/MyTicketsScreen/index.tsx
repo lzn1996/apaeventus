@@ -8,7 +8,7 @@ import type { TicketDB } from '../../database/ticketService';
 import { MyEvent } from './types';
 import { getUserProfile } from '../../services/userService';
 import NetInfo from '@react-native-community/netinfo';
-import { syncFromServer } from '../../database/syncService';
+import { syncFromServer, forceSyncFromServer } from '../../database/syncService';
 import { getUserProfileLocal, saveUserProfileLocal } from '../../database/profileLocalService';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -109,7 +109,8 @@ export default function MyTicketsScreen({ navigation }: any) {
     useFocusEffect(
         React.useCallback(() => {
             if (isConnected) {
-                syncFromServer().then(fetchData);
+                // Usa sincronização inteligente (com cooldown)
+                syncFromServer().then(() => fetchData());
             } else {
                 fetchData();
             }
@@ -121,8 +122,8 @@ export default function MyTicketsScreen({ navigation }: any) {
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(!!state.isConnected);
             if (wasConnected === false && state.isConnected) {
-                // Só sincroniza se acabou de voltar para online
-                syncFromServer().then(fetchData);
+                // Força sincronização quando voltar online
+                forceSyncFromServer().then(() => fetchData());
                 setShowOnlineBanner(true);
                 setTimeout(() => setShowOnlineBanner(false), 5000);
             }
@@ -197,7 +198,8 @@ export default function MyTicketsScreen({ navigation }: any) {
                 <Text style={styles.emptyText}>Verifique sua conexão ou faça login novamente.</Text>
                 <Text style={styles.retryText} onPress={() => {
                     if (isConnected) {
-                        syncFromServer().then(fetchData);
+                        // Força sincronização no "tentar novamente"
+                        forceSyncFromServer().then(() => fetchData());
                     } else {
                         fetchData();
                     }
