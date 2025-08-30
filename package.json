@@ -21,7 +21,6 @@
     "expo": "53.0.22",
     "expo-camera": "^16.1.8",
     "expo-linear-gradient": "~14.1.5",
-    "expo-sqlite": "~15.2.14",
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
     "react": "19.0.0",

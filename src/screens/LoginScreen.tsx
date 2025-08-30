@@ -19,9 +19,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { baseUrl } from '../config/api';
-import { resetLocalDatabase } from '../database/ticketService';
-import { syncAll } from '../database/syncService';
-import { initDatabase } from '../database/init';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -54,10 +51,6 @@ export default function LoginScreen({ navigation }: any) {
     setError(null);
 
     try {
-      await resetLocalDatabase();
-
-      await initDatabase();
-
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,7 +93,7 @@ export default function LoginScreen({ navigation }: any) {
       await AsyncStorage.setItem('accessToken', accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
       await AsyncStorage.setItem('userRole', user.role);
-      await syncAll('', async () => true);
+
       navigation.replace('Dashboard');
     } catch (err: any) {
       setError(err.message || 'Não foi possível fazer login');

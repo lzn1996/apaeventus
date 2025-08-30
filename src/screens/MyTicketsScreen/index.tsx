@@ -3,19 +3,17 @@ import React, { useEffect, useState } from 'react';
 import { View, FlatList, Text, TouchableOpacity, BackHandler } from 'react-native';
 import styles from './styles';
 import EventCard from './components/EventCard';
-import { getAllEvents, getTicketsByEvent } from '../../database/ticketService';
-import type { TicketDB } from '../../database/ticketService';
 import { MyEvent } from './types';
 import { getUserProfile } from '../../services/userService';
+import { getUserSales } from '../../services/saleService';
+import { Sale } from '../../services/saleService';
 import NetInfo from '@react-native-community/netinfo';
-import { syncFromServer, forceSyncFromServer } from '../../database/syncService';
-import { getUserProfileLocal, saveUserProfileLocal } from '../../database/profileLocalService';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 
 interface GroupedTickets {
     event: MyEvent;
-    tickets: TicketDB[];
+    tickets: any[];
 }
 
 export default function MyTicketsScreen({ navigation }: any) {
@@ -24,48 +22,66 @@ export default function MyTicketsScreen({ navigation }: any) {
     const [userProfile, setUserProfile] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [isConnected, setIsConnected] = useState(true);
-    const [showOnlineBanner, setShowOnlineBanner] = useState(false);
 
     const fetchData = React.useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            let profile = userProfile;
-            if (isConnected) {
-                profile = await getUserProfile();
-                setUserProfile(profile);
-                // Salva perfil localmente
-                if (profile && profile.id) {
-                    await saveUserProfileLocal(profile);
-                }
-            } else {
-                // Busca perfil do SQLite local
-                profile = await getUserProfileLocal();
-                setUserProfile(profile);
-            }
-            // Busca todos os ingressos do SQLite (de todos os eventos)
-            const events = await getAllEvents();
-            let allTickets: TicketDB[] = [];
-            for (const event of events) {
-                const tickets = await getTicketsByEvent(event.id);
-                allTickets = allTickets.concat(tickets);
+            if (!isConnected) {
+                setError('Sem conexão com a internet. Conecte-se para ver seus ingressos.');
+                setLoading(false);
+                return;
             }
 
-            // Agrupa os ingressos por ticket.event_id
+            // Busca perfil do usuário
+            const profile = await getUserProfile();
+            setUserProfile(profile);
+
+            // Busca vendas/ingressos do usuário na API
+            const sales: Sale[] = await getUserSales();
+
+            const buyer_name = profile?.name || '';
+            const buyer_email = profile?.email || '';
+            const buyer_phone = profile?.cellphone || profile?.phone || '';
+
+            // Agrupa os ingressos por evento
             const groupedMap: { [eventId: string]: GroupedTickets } = {};
-            for (const ticket of allTickets) {
-                const event = events.find(e => e.id === ticket.event_id);
-                if (!event) {
-                    continue;
-                }
-                if (!groupedMap[event.id]) {
-                    groupedMap[event.id] = {
-                        event: { ...event, location: event.location || '' },
+
+            for (const sale of sales) {
+                const eventId = sale.ticket.id;
+                const ticketId = sale.id;
+
+                if (!groupedMap[eventId]) {
+                    groupedMap[eventId] = {
+                        event: {
+                            id: eventId,
+                            title: sale.ticket.title || '',
+                            date: sale.ticket.eventDate.split('T')[0],
+                            time: sale.ticket.eventDate.split('T')[1]?.slice(0, 5) || '',
+                            location: sale.ticket.description || '',
+                            imageUrl: sale.ticket.imageUrl || '',
+                        },
                         tickets: [],
                     };
                 }
-                groupedMap[event.id].tickets.push(ticket);
+
+                groupedMap[eventId].tickets.push({
+                    id: ticketId,
+                    event_id: eventId,
+                    type: sale.ticket.title || '',
+                    code: ticketId,
+                    used: sale.used,
+                    qrCodeUrl: sale.qrCodeUrl || '',
+                    pdfUrl: sale.pdfUrl || '',
+                    qrCodeDataUrl: sale.qrCodeDataUrl || '',
+                    buyer_name,
+                    buyer_email,
+                    buyer_phone,
+                    boughtAt: sale.createdAt || '',
+                    price: sale.ticket.price || 0,
+                });
             }
+
             // Mapeia para array e ordena por data
             const groupedArr: GroupedTickets[] = Object.values(groupedMap);
             groupedArr.sort((a, b) => {
@@ -73,6 +89,7 @@ export default function MyTicketsScreen({ navigation }: any) {
                 const dateB = new Date(`${b.event.date}${b.event.time ? 'T' + b.event.time : ''}`).getTime();
                 return dateB - dateA;
             });
+
             // Formata a data e o horário para exibição amigável no card
             groupedArr.forEach(group => {
                 const dateStr = group.event.date;
@@ -92,45 +109,28 @@ export default function MyTicketsScreen({ navigation }: any) {
                     hour: '2-digit', minute: '2-digit',
                 });
             });
+
             setGrouped(groupedArr);
         } catch (e: any) {
-            console.log(e);
-            // Só exibe erro se estiver online; se offline, ignora erro de rede
-            if (isConnected) {
-                setError('Erro ao carregar seus ingressos ou perfil. Tente novamente.');
-            }
+            console.log('Erro ao buscar dados:', e);
+            setError('Erro ao carregar seus ingressos. Tente novamente.');
         } finally {
             setLoading(false);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isConnected]);
 
     // Atualiza os ingressos sempre que a tela ganhar foco
     useFocusEffect(
         React.useCallback(() => {
-            if (isConnected) {
-                // Usa sincronização inteligente (com cooldown)
-                syncFromServer().then(() => fetchData());
-            } else {
-                fetchData();
-            }
-        }, [isConnected, fetchData])
+            fetchData();
+        }, [fetchData])
     );
 
     useEffect(() => {
-        let wasConnected: boolean | null = null;
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(!!state.isConnected);
-            if (wasConnected === false && state.isConnected) {
-                // Força sincronização quando voltar online
-                forceSyncFromServer().then(() => fetchData());
-                setShowOnlineBanner(true);
-                setTimeout(() => setShowOnlineBanner(false), 5000);
-            }
-            wasConnected = state.isConnected;
         });
         return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Garante que o botão físico de voltar do Android leve para o Dashboard
@@ -152,9 +152,10 @@ export default function MyTicketsScreen({ navigation }: any) {
                     phone: userProfile.cellphone || userProfile.phone || '',
                 }
             : { name: '', email: '', phone: '' };
+
         // Passa todos os ingressos daquele evento
         const tickets = group.tickets.map((ticket) => ({
-            eventImageUrl: group.event.imageUrl, // do evento
+            eventImageUrl: group.event.imageUrl,
             id: ticket.id,
             type: ticket.type,
             code: ticket.code,
@@ -169,7 +170,7 @@ export default function MyTicketsScreen({ navigation }: any) {
             boughtAt: ticket.boughtAt,
             price: ticket.price,
         }));
-        // Log para depuração: quantos ingressos estão sendo enviados para o carrossel
+
         navigation.navigate('TicketsByEvent', {
             eventId: group.event.id,
             eventTitle: group.event.title,
@@ -196,14 +197,7 @@ export default function MyTicketsScreen({ navigation }: any) {
                 </View>
                 <Text style={styles.errorText}>{error}</Text>
                 <Text style={styles.emptyText}>Verifique sua conexão ou faça login novamente.</Text>
-                <Text style={styles.retryText} onPress={() => {
-                    if (isConnected) {
-                        // Força sincronização no "tentar novamente"
-                        forceSyncFromServer().then(() => fetchData());
-                    } else {
-                        fetchData();
-                    }
-                }}>Tentar novamente</Text>
+                <Text style={styles.retryText} onPress={fetchData}>Tentar novamente</Text>
             </View>
         );
     }
@@ -222,10 +216,10 @@ export default function MyTicketsScreen({ navigation }: any) {
     return (
         <View style={styles.container}>
             {/* Banner de status de conexão */}
-            {(!isConnected || showOnlineBanner) && (
+            {!isConnected && (
                 <View style={styles.connectionBannerContainer}>
-                    <Text style={[styles.connectionBanner, isConnected ? styles.connectionOnline : styles.connectionOffline]}>
-                        {isConnected ? 'Conectado' : 'Sem conexão - exibindo dados offline'}
+                    <Text style={[styles.connectionBanner, styles.connectionOffline]}>
+                        Sem conexão - conecte-se para ver seus ingressos
                     </Text>
                 </View>
             )}

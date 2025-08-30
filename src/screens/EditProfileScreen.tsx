@@ -13,8 +13,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { baseUrl } from '../config/api';
 import api from '../services/api';
-import { getUserProfileLocal, saveUserProfileLocal } from '../database/profileLocalService';
-import { jwtDecode } from 'jwt-decode';
 import AwesomeAlert from 'react-native-awesome-alerts';
 
 export default function EditProfileScreen({ navigation }: any) {
@@ -55,59 +53,18 @@ export default function EditProfileScreen({ navigation }: any) {
     }
   };
 
-  /** 2) Inicializa tabela e carrega perfil (local + remoto) */
+  /** 2) Inicializa tabela e carrega perfil (remoto apenas) */
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        // Busca o id do usuário autenticado
-        let userId = '';
-        const accessToken = await AsyncStorage.getItem('accessToken');
-        if (accessToken) {
-          try {
-            const decoded: any = jwtDecode(accessToken);
-            userId = decoded.id || '';
-          } catch (e) {
-            console.log('[EditProfileScreen] Erro ao decodificar accessToken:', e);
-          }
-        }
-        // Busca perfil local pelo id do usuário
-        let local = null;
-        if (userId) {
-          const db = require('../database/db').openDatabase();
-          const res = db.getAllSync('SELECT * FROM user_profile WHERE id = ? LIMIT 1', [userId]);
-          if (res.length > 0) {
-            local = res[0];
-          }
-        } else {
-          local = await getUserProfileLocal();
-        }
-        if (local) {
-          setName(local.name || '');
-          setEmail(local.email || '');
-          setRg(local.rg || '');
-          setCellphone(local.cellphone || local.phone || '');
-        }
-        // Log extra: headers da requisição /user
-        api.interceptors.request.use(config => {
-          return config;
-        });
-        // Busca do backend e atualiza local
+        // Busca do backend
         const res = await api.get('/user');
         const js = res.data;
         setName(js.name || '');
         setEmail(js.email || '');
         setRg(js.rg || '');
         setCellphone(js.cellphone || js.phone || '');
-        // Salva perfil atualizado localmente com id correto
-        await saveUserProfileLocal({
-          id: js.id || userId || '1',
-          name: js.name || '',
-          email: js.email || '',
-          cellphone: js.cellphone || js.phone || '',
-          phone: js.phone || '',
-          rg: js.rg || '',
-        });
       } catch (e: any) {
         showAlert('Atualização cadastral', 'Atualize seus dados se necessário.', true);
       } finally {
@@ -116,7 +73,7 @@ export default function EditProfileScreen({ navigation }: any) {
     })();
   }, []);
 
-  /** 3) Salva alterações no servidor e SQLite, depois força logout */
+  /** 3) Salva alterações no servidor apenas, depois força logout */
   const handleSave = async () => {
     if (!name.trim() || !email.trim()) {
       return showAlert('Atenção', 'Nome e e-mail são obrigatórios.', false);
@@ -131,23 +88,7 @@ export default function EditProfileScreen({ navigation }: any) {
       // Só envia e-mail se o backend permitir alteração (remova se não for permitido)
       payload.email = email;
       await api.patch('/user', payload);
-      // Atualiza perfil local (sem senha) com id correto
-      let userId = '';
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      if (accessToken) {
-        try {
-          const decoded: any = jwtDecode(accessToken);
-          userId = decoded.id || '';
-        } catch {}
-      }
-      await saveUserProfileLocal({
-        id: userId || '1',
-        name,
-        email,
-        cellphone,
-        phone: cellphone,
-        rg,
-      });
+
       showAlert('Sucesso', 'Dados atualizados! Você será deslogado para segurança em 5 segundos, entre no aplicativo novamente! ', true);
       setTimeout(doLogout, 7000);
     } catch (e: any) {
