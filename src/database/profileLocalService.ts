@@ -2,8 +2,8 @@ import { openDatabase } from './db';
 
 // Adiciona suporte ao campo 'rg' no perfil local
 export async function saveUserProfileLocal(profile: { id: string, name: string, email: string, cellphone?: string, phone?: string, rg?: string }) {
-    const db = await openDatabase();
-    await db.executeSql(
+    const db = openDatabase();
+    db.runSync(
         'INSERT OR REPLACE INTO user_profile (id, name, email, cellphone, phone, rg) VALUES (?, ?, ?, ?, ?, ?)',
         [
             profile.id,
@@ -17,10 +17,10 @@ export async function saveUserProfileLocal(profile: { id: string, name: string, 
 }
 
 export async function getUserProfileLocal() {
-    const db = await openDatabase();
-    const res = await db.executeSql('SELECT * FROM user_profile LIMIT 1');
-    if (res[0].rows.length > 0) {
-        return res[0].rows.item(0);
+    const db = openDatabase();
+    const res = db.getAllSync('SELECT * FROM user_profile LIMIT 1');
+    if (res.length > 0) {
+        return res[0];
     }
     return null;
 }

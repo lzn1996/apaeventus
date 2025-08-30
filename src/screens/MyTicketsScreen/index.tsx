@@ -36,7 +36,9 @@ export default function MyTicketsScreen({ navigation }: any) {
                 setUserProfile(profile);
                 // Salva perfil localmente
                 if (profile && profile.id) {
+                    console.log('Aqui');
                     await saveUserProfileLocal(profile);
+                    console.log('Passou');
                 }
             } else {
                 // Busca perfil do SQLite local
@@ -94,6 +96,7 @@ export default function MyTicketsScreen({ navigation }: any) {
             });
             setGrouped(groupedArr);
         } catch (e: any) {
+            console.log(e);
             // Só exibe erro se estiver online; se offline, ignora erro de rede
             if (isConnected) {
                 setError('Erro ao carregar seus ingressos ou perfil. Tente novamente.');
