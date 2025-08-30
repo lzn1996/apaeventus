@@ -8,7 +8,6 @@ export default function EventListScreen({ navigation }: any) {
     getAllEvents()
       .then(evts => {
         setEvents(evts);
-        console.log('[EventListScreen] Eventos carregados:', evts.length, evts);
       })
       .catch(err => {
         setEvents([]);

@@ -49,34 +49,53 @@ export default function LoginScreen({ navigation }: any) {
     if (!email.trim() || !senha.trim()) {
       return Alert.alert('Ops', 'Preencha e-mail e senha');
     }
+
     setLoading(true);
     setError(null);
+
     try {
       await resetLocalDatabase();
+
       await initDatabase();
+
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: senha }),
       });
-      const json = await response.json().catch(() => null);
+
+      // Debug: capturar resposta como texto primeiro
+      const responseText = await response.text();
+      const contentType = response.headers.get('content-type');
+      const isJson = contentType && contentType.includes('application/json');
+
       if (!response.ok) {
-        let msg =
-          typeof json?.message === 'string'
-            ? json.message
-            : Array.isArray(json?.message)
-            ? json.message.join('\n')
-            : 'Credenciais inválidas';
+        let errorMessage = 'Erro desconhecido';
+        if (isJson) {
+          try {
+            const errorJson = JSON.parse(responseText);
+            errorMessage = errorJson.message || 'Credenciais inválidas';
+          } catch {
+            errorMessage = responseText;
+          }
+        } else {
+          errorMessage = responseText;
+        }
         // Força mensagem em português para erro de credenciais
         if (response.status === 401 || response.status === 400) {
-          msg = 'E-mail ou senha inválidos!';
+          errorMessage = 'E-mail ou senha inválidos!';
         }
-        throw new Error(msg);
+        throw new Error(errorMessage);
       }
-      const data = json;
+
+      if (!isJson) {
+        throw new Error('A resposta do servidor não é um JSON válido.');
+      }
+
+      const data = JSON.parse(responseText);
       const { accessToken, refreshToken, user } = data;
       if (!accessToken || !refreshToken || !user?.role) {
-        throw new Error('Resposta de login incompleta');
+        throw new Error('Resposta de login incompleta do servidor');
       }
       await AsyncStorage.setItem('accessToken', accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);

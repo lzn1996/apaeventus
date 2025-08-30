@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { authService } from './authService';
-import { refreshToken } from './saleService';
 import { baseUrl } from '../config/api';
 import { Alert } from 'react-native';
 import { navigate, navigationRef } from '../navigation/navigationService';
@@ -19,14 +18,6 @@ api.interceptors.request.use(async (config) => {
     if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
-    }
-    // Log padrão para debug
-    if (__DEV__) {
-        console.log(
-            `URL: ${config.baseURL || ''}${config.url}\n` +
-            `Headers: ${JSON.stringify(config.headers)}\n` +
-            `Body parts: ${config.data ? JSON.stringify(config.data) : '[]'}`
-        );
     }
     return config;
 });
@@ -57,7 +48,6 @@ api.interceptors.response.use(
             error.response?.status === 401 &&
             !originalRequest._retry
         ) {
-            console.log('[api.interceptor] Tentando refreshToken para:', originalRequest.url);
             if (isRefreshing) {
                 return new Promise(function (resolve, reject) {
                     failedQueue.push({ resolve, reject });
@@ -74,7 +64,7 @@ api.interceptors.response.use(
             isRefreshing = true;
             try {
                 // Agora refreshToken retorna ambos os tokens
-                const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await refreshToken();
+                const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await authService.refreshToken();
                 if (!newAccessToken) {
                     throw new Error('Refresh token inválido');
                 }
@@ -89,10 +79,7 @@ api.interceptors.response.use(
                     // Só mostra alerta se não estiver na tela de Login
                     const currentRoute = navigationRef.current?.getCurrentRoute?.();
                     if (!currentRoute || currentRoute.name !== 'Login') {
-                        console.log('[api.interceptor] Falha ao renovar token, redirecionando para login. Exibindo alerta.');
                         Alert.alert('Sessão expirada', 'Faça login novamente para continuar.');
-                    } else {
-                        console.log('[api.interceptor] Falha ao renovar token, mas já está na tela de Login. Não exibe alerta.');
                     }
                     navigate('Login');
                     error.config._fromRefresh = true;

@@ -3,13 +3,13 @@
 import { openDatabase } from './db';
 
 export async function initDatabase() {
-    const db = await openDatabase();
+    const db = openDatabase();
 
     // Ativa chaves estrangeiras
-    await db.executeSql('PRAGMA foreign_keys = ON;');
+    db.execSync('PRAGMA foreign_keys = ON;');
 
     // Tabela de eventos
-    await db.executeSql(`
+    db.execSync(`
         CREATE TABLE IF NOT EXISTS events (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
@@ -23,7 +23,7 @@ export async function initDatabase() {
     `);
 
     // Tabela de ingressos
-    await db.executeSql(`
+    db.execSync(`
         CREATE TABLE IF NOT EXISTS tickets (
         id TEXT PRIMARY KEY,
         event_id TEXT NOT NULL,
@@ -44,7 +44,7 @@ export async function initDatabase() {
     `);
 
     // Fila de sincronização (operações offline)
-    await db.executeSql(`
+    db.execSync(`
         CREATE TABLE IF NOT EXISTS sync_queue (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT NOT NULL, -- ex: 'UPDATE_TICKET', 'MARK_USED'
@@ -54,7 +54,7 @@ export async function initDatabase() {
     `);
 
     // Status de sincronização
-    await db.executeSql(`
+    db.execSync(`
         CREATE TABLE IF NOT EXISTS sync_status (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         last_sync INTEGER,
@@ -63,7 +63,7 @@ export async function initDatabase() {
     `);
 
     // Tabela de perfil do usuário
-    await db.executeSql(`
+    db.execSync(`
         CREATE TABLE IF NOT EXISTS user_profile (
         id TEXT PRIMARY KEY,
         name TEXT,
@@ -79,16 +79,16 @@ export async function initDatabase() {
 
 // Função utilitária para limpar todas as tabelas do banco local (apenas para depuração)
 export async function resetLocalDatabase() {
-    const db = await openDatabase();
+    const db = openDatabase();
     // Limpa todas as tabelas
-    await db.executeSql('DELETE FROM tickets');
-    await db.executeSql('DELETE FROM events');
-    await db.executeSql('DELETE FROM sync_status');
-    await db.executeSql('DELETE FROM sync_queue');
-    await db.executeSql('DELETE FROM user_profile');
+    db.execSync('DELETE FROM tickets');
+    db.execSync('DELETE FROM events');
+    db.execSync('DELETE FROM sync_status');
+    db.execSync('DELETE FROM sync_queue');
+    db.execSync('DELETE FROM user_profile');
     // Garante estrutura correta da tabela user_profile (com coluna rg)
-    await db.executeSql('DROP TABLE IF EXISTS user_profile');
-    await db.executeSql(`
+    db.execSync('DROP TABLE IF EXISTS user_profile');
+    db.execSync(`
         CREATE TABLE IF NOT EXISTS user_profile (
         id TEXT PRIMARY KEY,
         name TEXT,
@@ -98,5 +98,4 @@ export async function resetLocalDatabase() {
         rg TEXT
         );
     `);
-    console.log('Banco local limpo e tabela user_profile recriada com coluna rg!');
 }

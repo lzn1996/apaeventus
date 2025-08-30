@@ -90,9 +90,6 @@ export default function EditProfileScreen({ navigation }: any) {
         }
         // Log extra: headers da requisição /user
         api.interceptors.request.use(config => {
-          if (config.url?.includes('/user')) {
-            console.log('[EditProfileScreen] Header Authorization enviado:', config.headers?.Authorization);
-          }
           return config;
         });
         // Busca do backend e atualiza local

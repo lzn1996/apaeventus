@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, FlatList, Text, TouchableOpacity, BackHandler } from 'react-native';
 import styles from './styles';
 import EventCard from './components/EventCard';
-import { getAllEvents, getTicketsByEvent, logAllTickets } from '../../database/ticketService';
+import { getAllEvents, getTicketsByEvent } from '../../database/ticketService';
 import type { TicketDB } from '../../database/ticketService';
 import { MyEvent } from './types';
 import { getUserProfile } from '../../services/userService';
@@ -50,17 +50,14 @@ export default function MyTicketsScreen({ navigation }: any) {
                 const tickets = await getTicketsByEvent(event.id);
                 allTickets = allTickets.concat(tickets);
             }
-            // Log de depuração: mostra todos os ingressos encontrados no banco local
-            console.log('[MyTicketsScreen] Ingressos encontrados no SQLite:', allTickets.length, allTickets);
-            // Log extra: mostra o event_id de cada ingresso
-            allTickets.forEach(t => {
-                console.log(`[MyTicketsScreen] ticket.id=${t.id} event_id=${t.event_id} code=${t.code}`);
-            });
+
             // Agrupa os ingressos por ticket.event_id
             const groupedMap: { [eventId: string]: GroupedTickets } = {};
             for (const ticket of allTickets) {
                 const event = events.find(e => e.id === ticket.event_id);
-                if (!event) { continue; }
+                if (!event) {
+                    continue;
+                }
                 if (!groupedMap[event.id]) {
                     groupedMap[event.id] = {
                         event: { ...event, location: event.location || '' },
@@ -96,10 +93,6 @@ export default function MyTicketsScreen({ navigation }: any) {
                 });
             });
             setGrouped(groupedArr);
-            // Log de depuração: mostra quantos ingressos há em cada evento
-            groupedArr.forEach(group => {
-                console.log(`[MyTicketsScreen] Evento: ${group.event.title} - Ingressos: ${group.tickets.length}`);
-            });
         } catch (e: any) {
             // Só exibe erro se estiver online; se offline, ignora erro de rede
             if (isConnected) {
@@ -123,7 +116,6 @@ export default function MyTicketsScreen({ navigation }: any) {
     );
 
     useEffect(() => {
-        logAllTickets();
         let wasConnected: boolean | null = null;
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(!!state.isConnected);
@@ -176,7 +168,6 @@ export default function MyTicketsScreen({ navigation }: any) {
             price: ticket.price,
         }));
         // Log para depuração: quantos ingressos estão sendo enviados para o carrossel
-        console.log('[MyTicketsScreen] Tickets enviados para o carrossel:', tickets.length, tickets);
         navigation.navigate('TicketsByEvent', {
             eventId: group.event.id,
             eventTitle: group.event.title,

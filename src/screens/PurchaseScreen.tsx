@@ -105,7 +105,7 @@ export default function PurchaseScreen() {
       </TouchableOpacity>
 
       <View style={styles.backContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('Dashboard')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Dashboard' as any)}>
           <Text style={styles.backText}>Voltar</Text>
         </TouchableOpacity>
       </View>
@@ -122,7 +122,7 @@ export default function PurchaseScreen() {
         confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
         onConfirmPressed={() => {
           setAlertVisible(false);
-          if (isSuccess) navigation.navigate('MyTickets');
+          if (isSuccess) {navigation.navigate('MyTickets');}
         }}
       />
     </View>

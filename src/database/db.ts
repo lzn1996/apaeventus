@@ -1,9 +1,7 @@
 // src/database/db.ts
-// Função utilitária para abrir conexão SQLite
-import SQLite from 'react-native-sqlite-storage';
-
-SQLite.enablePromise(true);
+// Função utilitária para abrir conexão SQLite com Expo
+import * as SQLite from 'expo-sqlite';
 
 export function openDatabase() {
-    return SQLite.openDatabase({ name: 'apaeventus.db', location: 'default' });
+    return SQLite.openDatabaseSync('apaeventus.db');
 }
