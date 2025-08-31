@@ -1,5 +1,5 @@
 // src/screens/CreateEventScreen.tsxMore actions
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -10,11 +10,11 @@ import {
   StyleSheet,
   Platform,
   Image,
-  PermissionsAndroid,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { launchImageLibrary, Asset } from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import AwesomeAlert from 'react-native-awesome-alerts';
 import { baseUrl } from '../config/api';
@@ -28,7 +28,7 @@ export default function CreateEventScreen({ navigation }: any) {
   const [showTime, setShowTime] = useState(false);
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
-  const [imageFile, setImageFile] = useState<Asset | null>(null);
+  const [imageFile, setImageFile] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [loading, setLoading] = useState(false);
 
   // estados do AwesomeAlert
@@ -37,8 +37,8 @@ export default function CreateEventScreen({ navigation }: any) {
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
 
-  const showAlert = (title: string, message: string, success = true) => {
-    setAlertTitle(title);
+  const showAlert = (msgTitle: string, message: string, success = true) => {
+    setAlertTitle(msgTitle);
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
@@ -93,32 +93,82 @@ export default function CreateEventScreen({ navigation }: any) {
     }
   };
 
-  async function requestGalleryPermission(): Promise<boolean> {
-    if (Platform.OS !== 'android') return true;
-        const perm = Platform.Version >= 33
-      ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-      : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
-    const granted = await PermissionsAndroid.request(perm, {
-      title: 'Permissão de galeria',
-      message: 'Precisamos acessar suas imagens para enviar o evento.',
-      buttonPositive: 'OK',
-      buttonNegative: 'Cancelar',
-    });
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
-  }
+  const pickImageFromCamera = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
-  const pickImage = async () => {
-    if (!(await requestGalleryPermission())) {
-      return showAlert('Permissão negada', 'Não foi possível acessar a galeria.', false);
+      if (status !== 'granted') {
+        return showAlert('Permissão negada', 'Precisamos de permissão para usar a câmera.', false);
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImageFile(result.assets[0]);
+      }
+    } catch (error) {
+      console.log('Erro ao usar câmera:', error);
+      showAlert('Erro', 'Não foi possível abrir a câmera.', false);
     }
-    launchImageLibrary({ mediaType: 'photo', quality: 0.8 }, resp => {
-      if (resp.didCancel) {return;}
-      if (resp.errorMessage) {return showAlert('Erro', resp.errorMessage, false);}
-      if (resp.assets?.[0]) {setImageFile(resp.assets[0]);}
-    });
   };
 
-  const handleSubmit = async () => {
+  const showImageOptions = () => {
+    Alert.alert(
+      'Selecionar Imagem',
+      'Como você gostaria de adicionar a imagem do evento?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Câmera',
+          onPress: pickImageFromCamera,
+        },
+        {
+          text: 'Galeria',
+          onPress: pickImage,
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const pickImage = async () => {
+    try {
+      // Verificar permissão primeiro
+      const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (newStatus !== 'granted') {
+          return showAlert('Permissão negada', 'Precisamos de permissão para acessar suas fotos.', false);
+        }
+      }
+
+      // Opções mais flexíveis
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9], // Proporção para banners de evento
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImageFile(result.assets[0]);
+        console.log('Imagem selecionada:', result.assets[0]);
+      }
+    } catch (error) {
+      console.log('Erro ao selecionar imagem:', error);
+      showAlert('Erro', 'Não foi possível abrir a galeria.', false);
+    }
+  };  const handleSubmit = async () => {
     const token = await AsyncStorage.getItem('accessToken');
     if (!token) {
       return showAlert('Sessão inválida', 'Faça login novamente.', false);
@@ -158,9 +208,9 @@ export default function CreateEventScreen({ navigation }: any) {
         return showAlert('Erro', `Status ${res.status}\n${errBody}`, false);
       }
 
-    
 
-      showAlert('Sucesso', `Evento criado!`, true);
+
+      showAlert('Sucesso', 'Evento criado!', true);
     } catch (e: any) {
       showAlert('Erro Exceção', e.message, false);
     } finally {
@@ -237,7 +287,7 @@ export default function CreateEventScreen({ navigation }: any) {
 
         <Text style={styles.label}>Imagem do evento</Text>
         <View style={styles.imagePickerContainer}>
-          <Pressable style={styles.imageButton} onPress={pickImage}>
+          <Pressable style={styles.imageButton} onPress={showImageOptions}>
             <Text style={styles.imageButtonText}>
               {imageFile ? 'Trocar Imagem' : 'Escolher Imagem'}
             </Text>
@@ -272,7 +322,7 @@ export default function CreateEventScreen({ navigation }: any) {
         confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
         onConfirmPressed={() => {
           setAlertVisible(false);
-          if (isSuccess) navigation.navigate('Dashboard');
+          if (isSuccess) {navigation.navigate('Dashboard');}
         }}
       />
     </SafeAreaView>

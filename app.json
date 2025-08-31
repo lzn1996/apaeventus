@@ -23,7 +23,14 @@
         "foregroundImage": "./src/assets/apae_logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.apaeventus"
+      "package": "com.apaeventus",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO"
+      ]
     },
     "web": {
       "favicon": "./src/assets/apae_logo.png"
@@ -36,10 +43,21 @@
           "microphonePermission": "Permitir que $(PRODUCT_NAME) acesse seu microfone",
           "recordAudioAndroid": true
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O aplicativo acessa suas fotos para permitir o upload de imagens dos eventos."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9bcae14e-3105-4e7f-bf04-89156d58586c"
+      }
     }
   }
 }
