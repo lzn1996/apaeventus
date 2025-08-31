@@ -77,6 +77,129 @@ ApaEventus é uma solução SaaS híbrida, acessada por dispositivos móveis, qu
 
 ---
 
+---
+
+## 🚀 Como Usar o Aplicativo
+
+### 📱 **Opção 1: Desenvolvimento com Expo Go (Recomendada)**
+
+1. **Instale o Expo CLI:**
+   ```bash
+   npm install -g @expo/cli
+   ```
+
+2. **Clone e configure o projeto:**
+   ```bash
+   git clone https://github.com/lzn1996/apaeventus.git
+   cd apaeventus
+   npm install
+   ```
+
+3. **Inicie o servidor de desenvolvimento:**
+   ```bash
+   npx expo start
+   ```
+
+4. **Teste no dispositivo:**
+   - **Android**: Baixe o [Expo Go](https://play.google.com/store/apps/details?id=host.exp.exponent) e escaneie o QR Code
+   - **iOS**: Baixe o [Expo Go](https://apps.apple.com/app/expo-go/id982107779) e escaneie o QR Code
+
+### 🏗️ **Opção 2: Build de Produção**
+
+#### **Build na Nuvem (EAS Build - Recomendado)**
+
+1. **Instale o EAS CLI:**
+   ```bash
+   npm install -g eas-cli
+   ```
+
+2. **Faça login na sua conta Expo:**
+   ```bash
+   eas login -s
+   ```
+
+3. **Configure o projeto:**
+   ```bash
+   eas build:configure
+   ```
+
+4. **Gere o APK:**
+   ```bash
+   # Para Android
+   eas build --platform android --profile preview
+   
+   # Para produção
+   eas build --platform android --profile production
+   ```
+
+#### **Build Local (Avançado)**
+
+1. **Configure o ambiente Android:**
+   - Instale [Android Studio](https://developer.android.com/studio)
+   - Configure `ANDROID_HOME` e `JAVA_HOME`
+
+2. **Execute o build local:**
+   ```bash
+   eas build --platform android --local
+   ```
+
+### ⚙️ **Configuração do Backend**
+
+Para o aplicativo funcionar completamente, você precisa configurar o backend:
+
+1. **Configure a URL da API** em `src/config/api.ts`
+2. **Inicie o servidor backend** (NestJS)
+3. **Configure o banco PostgreSQL**
+
+---
+
+## 📚 Documentação e Recursos
+
+### 📖 **Documentação Oficial**
+
+- **[Expo Documentation](https://docs.expo.dev/)** - Documentação completa do Expo
+- **[React Native Docs](https://reactnative.dev/docs/getting-started)** - Guia do React Native
+- **[EAS Build](https://docs.expo.dev/build/introduction/)** - Sistema de build na nuvem
+- **[Expo Go](https://docs.expo.dev/get-started/expo-go/)** - App para desenvolvimento
+
+### 🛠️ **Ferramentas Utilizadas**
+
+- **[Expo SDK 53](https://docs.expo.dev/versions/v53.0.0/)** - Framework e ferramentas
+- **[React Navigation](https://reactnavigation.org/)** - Navegação entre telas
+- **[Expo Image Picker](https://docs.expo.dev/versions/latest/sdk/imagepicker/)** - Seleção de imagens
+- **[Expo Camera](https://docs.expo.dev/versions/latest/sdk/camera/)** - Funcionalidades da câmera
+
+### 🏗️ **Build e Deploy**
+
+#### **EAS Build - Build na Nuvem**
+- **[EAS Build Documentation](https://docs.expo.dev/build/introduction/)**
+- **[Configuration with eas.json](https://docs.expo.dev/build/eas-json/)**
+- **[Environment Variables](https://docs.expo.dev/build-reference/variables/)**
+
+#### **Distribuição**
+- **[Internal Distribution](https://docs.expo.dev/build/internal-distribution/)** - Compartilhar APK
+- **[App Stores](https://docs.expo.dev/distribution/introduction/)** - Publicar na Play Store/App Store
+
+### 📋 **Scripts Disponíveis**
+
+```bash
+# Desenvolvimento
+npm start              # Inicia Expo dev server
+npm run android        # Roda no emulador Android
+npm run ios            # Roda no simulador iOS
+
+# Build
+eas build --platform android --profile preview    # APK para testes
+eas build --platform android --profile production # APK para produção
+eas build --platform android --local              # Build local
+
+# Utilidades
+npm run lint           # Verificar código
+npm test              # Executar testes
+```
+
+---
+
 ## 🖥️ Frontend (Mobile Híbrido)
 
 Este repositório contém a parte **frontend mobile** do ApaEventus, desenvolvida em **React Native** junto com **TypeScript**, seguindo boas práticas de estrutura:
