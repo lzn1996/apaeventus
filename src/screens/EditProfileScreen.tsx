@@ -66,7 +66,21 @@ export default function EditProfileScreen({ navigation }: any) {
         setRg(js.rg || '');
         setCellphone(js.cellphone || js.phone || '');
       } catch (e: any) {
-        showAlert('Atualização cadastral', 'Atualize seus dados se necessário.', true);
+        // Mesmo com erro, tenta buscar dados do AsyncStorage se disponível
+        try {
+          const storedName = await AsyncStorage.getItem('userName') || '';
+          const storedEmail = await AsyncStorage.getItem('userEmail') || '';
+          const storedRg = await AsyncStorage.getItem('userRg') || '';
+          const storedCellphone = await AsyncStorage.getItem('userCellphone') || '';
+
+          setName(storedName);
+          setEmail(storedEmail);
+          setRg(storedRg);
+          setCellphone(storedCellphone);
+        } catch (storageError) {
+          console.log('Erro ao buscar dados do storage:', storageError);
+        }
+        showAlert('Atualização cadastral', 'Não foi possível carregar alguns dados. Preencha os campos necessários.', true);
       } finally {
         setLoading(false);
       }

@@ -94,6 +94,23 @@ export default function LoginScreen({ navigation }: any) {
       await AsyncStorage.setItem('refreshToken', refreshToken);
       await AsyncStorage.setItem('userRole', user.role);
 
+      // Salva todos os dados do usuário para usar como fallback no perfil
+      if (user.name) {
+        await AsyncStorage.setItem('userName', user.name);
+      }
+      if (user.email) {
+        await AsyncStorage.setItem('userEmail', user.email);
+      }
+      if (user.rg) {
+        await AsyncStorage.setItem('userRg', user.rg);
+      }
+      if (user.cpf) {
+        await AsyncStorage.setItem('userCpf', user.cpf);
+      }
+      if (user.cellphone) {
+        await AsyncStorage.setItem('userCellphone', user.cellphone);
+      }
+
       navigation.replace('Dashboard');
     } catch (err: any) {
       setError(err.message || 'Não foi possível fazer login');
