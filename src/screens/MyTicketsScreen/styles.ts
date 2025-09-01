@@ -167,4 +167,9 @@ export default StyleSheet.create({
         backgroundColor: '#FFCDD2',
         color: '#B71C1C',
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 });

@@ -1,27 +1,33 @@
 // src/screens/EditProfileScreen.tsx
 import React, { useState, useEffect } from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  BackHandler,
+  View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { baseUrl } from '../config/api';
 import api from '../services/api';
 import AwesomeAlert from 'react-native-awesome-alerts';
+import { SafeLayout } from '../components/SafeLayout';
+import { Header } from '../components/Header';
+import { TabBar } from '../components/TabBar';
+import { useNavigation } from '@react-navigation/native';
 
-export default function EditProfileScreen({ navigation }: any) {
+export default function EditProfileScreen() {
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rg, setRg] = useState('');
   const [cellphone, setCellphone] = useState('');
+  const [isLogged] = useState(true);
+  const [userRole] = useState<'ADMIN' | 'USER' | null>('USER');
   // estados do AwesomeAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
@@ -33,6 +39,20 @@ export default function EditProfileScreen({ navigation }: any) {
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
+  };
+
+  const handleTabPress = (tab: string) => {
+    switch (tab) {
+      case 'Home':
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Tickets':
+        navigation.navigate('MyTickets' as never);
+        break;
+      case 'Profile':
+        // Já está na tela de perfil
+        break;
+    }
   };
 
   /** 0) Logout forçado */
@@ -49,7 +69,7 @@ export default function EditProfileScreen({ navigation }: any) {
       console.warn('Erro no logout:', e);
     } finally {
       await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
-      navigation.navigate('Login');
+      navigation.navigate('Login' as never);
     }
   };
 
@@ -116,24 +136,33 @@ export default function EditProfileScreen({ navigation }: any) {
   };
 
   useEffect(() => {
-    const onBackPress = () => {
-      navigation.replace('Dashboard');
-      return true;
-    };
-    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => subscription.remove();
+    // Não precisamos do BackHandler aqui, pois o Header já tem um botão de voltar
   }, [navigation]);
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </SafeAreaView>
+      <SafeLayout showTabBar={true}>
+        <Header
+          title="Editar Perfil"
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+        <TabBar
+          activeTab="Profile"
+          onTabPress={handleTabPress}
+          isLogged={isLogged}
+          userRole={userRole}
+        />
+      </SafeLayout>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeLayout showTabBar={true}>
+      <Header
+        title="Editar Perfil"
+      />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.label}>Nome</Text>
         <TextInput
@@ -183,13 +212,8 @@ export default function EditProfileScreen({ navigation }: any) {
         <Pressable style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveText}>Salvar Alterações</Text>
         </Pressable>
-        <Pressable
-        style={styles.buttonBack}
-        onPress={() => navigation.navigate('Dashboard')}
-        >
-        <Text style={styles.buttonBackText}>← Voltar</Text>
-      </Pressable>
       </ScrollView>
+
       <AwesomeAlert
         show={alertVisible}
         showProgress={false}
@@ -204,14 +228,20 @@ export default function EditProfileScreen({ navigation }: any) {
           setAlertVisible(false);
         }}
       />
-    </SafeAreaView>
+
+      <TabBar
+        activeTab="Profile"
+        onTabPress={handleTabPress}
+        isLogged={isLogged}
+        userRole={userRole}
+      />
+    </SafeLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f2f2f7' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   container: { padding: 16 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   label: { fontWeight: '600', marginTop: 12, marginBottom: 4 },
   input: {
     backgroundColor: '#fff',
@@ -232,21 +262,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
-  },
-    buttonBack: {
-    marginTop: 16,
-    alignSelf: 'center',
-    backgroundColor: '#1976d2',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 24,
-  },
-  buttonBackPressed: {
-    backgroundColor: '#155a9c',
-  },
-  buttonBackText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

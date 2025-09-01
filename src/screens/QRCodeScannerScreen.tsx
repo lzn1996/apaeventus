@@ -5,14 +5,14 @@ import {
   Text,
   StyleSheet,
   Button,
-  ActivityIndicator,
-  Pressable,
-  SafeAreaView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import AwesomeAlert from 'react-native-awesome-alerts';
 import { useNavigation } from '@react-navigation/native';
+import { SafeLayout } from '../components/SafeLayout';
+import { Header } from '../components/Header';
+import { TabBar } from '../components/TabBar';
 
 let bearerToken = '';
 
@@ -48,6 +48,8 @@ export default function QrScannerScreen() {
   const navigation = useNavigation();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [isLogged] = useState(true);
+  const [userRole] = useState<'ADMIN' | 'USER' | null>('ADMIN');
 
   // estados do AwesomeAlert
   const [alertVisible, setAlertVisible] = useState(false);
@@ -62,14 +64,28 @@ export default function QrScannerScreen() {
     setAlertVisible(true);
   }
 
+  const handleTabPress = (tab: string) => {
+    switch (tab) {
+      case 'Home':
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Tickets':
+        navigation.navigate('MyTickets' as never);
+        break;
+      case 'Profile':
+        navigation.navigate('EditProfile' as never);
+        break;
+    }
+  };
+
   useEffect(() => {
     if (permission === null) {
       requestPermission();
     }
-  }, [permission]);
+  }, [permission, requestPermission]);
 
   const handleBarCodeScanned = async ({
-    type,
+    type: _type,
     data,
   }: {
     type: string;
@@ -110,21 +126,37 @@ export default function QrScannerScreen() {
   // Enquanto aguarda permissão
   if (permission === null || !permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.permissionText}>
-          Permissão da câmera não concedida.
-        </Text>
-        <Button title="Solicitar Permissão" onPress={requestPermission} />
-      </View>
+      <SafeLayout showTabBar={true}>
+        <Header
+          title="Scanner QR Code"
+          isLogged={isLogged}
+          userRole={userRole}
+          navigation={navigation}
+        />
+        <View style={styles.container}>
+          <Text style={styles.permissionText}>
+            Permissão da câmera não concedida.
+          </Text>
+          <Button title="Solicitar Permissão" onPress={requestPermission} />
+        </View>
+        <TabBar
+          activeTab="Profile"
+          onTabPress={handleTabPress}
+          isLogged={isLogged}
+          userRole={userRole}
+        />
+      </SafeLayout>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Botão de voltar */}
-      <Pressable style={styles.backButton} onPress={() => navigation.navigate('Dashboard')}>
-        <Text style={styles.backButtonText}>← Voltar</Text>
-      </Pressable>
+    <SafeLayout>
+      <Header
+        title="Scanner QR Code"
+        isLogged={isLogged}
+        userRole={userRole}
+        navigation={navigation}
+      />
 
       <CameraView
         style={styles.camera}
@@ -156,29 +188,18 @@ export default function QrScannerScreen() {
           setScanned(false); // permitir nova leitura
         }}
       />
-    </SafeAreaView>
+
+      <TabBar
+        activeTab="Profile"
+        onTabPress={handleTabPress}
+        isLogged={isLogged}
+        userRole={userRole}
+      />
+    </SafeLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#000', // para o preview da câmera
-  },
-  backButton: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
   container: {
     flex: 1,
     justifyContent: 'center',

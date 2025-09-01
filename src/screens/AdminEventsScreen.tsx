@@ -9,24 +9,27 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
   Platform,
-  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { baseUrl } from '../config/api';
+import { SafeLayout } from '../components/SafeLayout';
+import { Header } from '../components/Header';
+import { TabBar } from '../components/TabBar';
 
 export default function AdminEventsScreen() {
   const navigation = useNavigation();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLogged] = useState(true);
+  const [userRole] = useState<'ADMIN' | 'USER' | null>('ADMIN');
 
   // Renova access token usando o refreshToken
   async function refreshAccessToken(): Promise<string | null> {
     const old = await AsyncStorage.getItem('accessToken');
     const refresh = await AsyncStorage.getItem('refreshToken');
-    if (!old || !refresh) return null;
+    if (!old || !refresh) {return null;}
 
     const res = await fetch(`${baseUrl}/auth/refresh-token`, {
       method: 'POST',
@@ -36,7 +39,7 @@ export default function AdminEventsScreen() {
       },
       body: JSON.stringify({ refreshToken: refresh }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {return null;}
 
     const json = await res.json();
     if (json.accessToken) {
@@ -95,7 +98,7 @@ export default function AdminEventsScreen() {
 
     if (res.status === 401) {
       const newToken = await refreshAccessToken();
-      if (!newToken) return Alert.alert('Sessão expirada', 'Faça login novamente.');
+      if (!newToken) {return Alert.alert('Sessão expirada', 'Faça login novamente.');}
       token = newToken;
       res = await fetch(`${baseUrl}/ticket/enable-disable`, {
         method: 'POST',
@@ -132,7 +135,7 @@ export default function AdminEventsScreen() {
             });
             if (res.status === 401) {
               const newToken = await refreshAccessToken();
-              if (!newToken) return Alert.alert('Sessão expirada', 'Faça login novamente.');
+              if (!newToken) {return Alert.alert('Sessão expirada', 'Faça login novamente.');}
               token = newToken;
               res = await fetch(`${baseUrl}/ticket/${id}`, {
                 method: 'DELETE',
@@ -150,24 +153,73 @@ export default function AdminEventsScreen() {
     );
   };
 
+  const handleTabPress = (tab: string) => {
+    switch (tab) {
+      case 'Home':
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Tickets':
+        navigation.navigate('MyTickets' as never);
+        break;
+      case 'Profile':
+        navigation.navigate('EditProfile' as never);
+        break;
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (token) {
+        await fetch(`${baseUrl}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch (e) {
+      console.warn('Erro no logout:', e);
+    } finally {
+      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
+      navigation.navigate('Login' as never);
+    }
+  };
+
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </SafeAreaView>
+      <SafeLayout>
+        <Header
+          title="Gerenciar Eventos"
+          isLogged={isLogged}
+          userRole={userRole}
+          onLogout={handleLogout}
+          navigation={navigation}
+        />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+        <TabBar
+          activeTab="Profile"
+          onTabPress={handleTabPress}
+          isLogged={isLogged}
+          userRole={userRole}
+        />
+      </SafeLayout>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Botão de voltar */}
-      <Pressable style={styles.backButton} onPress={() => navigation.navigate('Dashboard')}>
-        <Text style={styles.backButtonText}>← Voltar</Text>
-      </Pressable>
+    <SafeLayout>
+      <Header
+        title="Gerenciar Eventos"
+        isLogged={isLogged}
+        userRole={userRole}
+        onLogout={handleLogout}
+        navigation={navigation}
+      />
 
       <FlatList
         data={events}
@@ -221,26 +273,19 @@ export default function AdminEventsScreen() {
           </View>
         )}
       />
-    </SafeAreaView>
+
+      <TabBar
+        activeTab="Profile"
+        onTabPress={handleTabPress}
+        isLogged={isLogged}
+        userRole={userRole}
+      />
+    </SafeLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F0F2F5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  backButton: {
-    alignSelf: 'flex-start',
-    margin: 16,
-    backgroundColor: '#1976d2',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   list: { paddingHorizontal: 16, paddingBottom: 16 },
   card: {
     flexDirection: 'row',

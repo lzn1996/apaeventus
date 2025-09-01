@@ -1,7 +1,6 @@
-// src/screens/CreateEventScreen.tsxMore actions
+// src/screens/CreateEventScreen.tsx
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   View,
   Text,
@@ -18,8 +17,15 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import AwesomeAlert from 'react-native-awesome-alerts';
 import { baseUrl } from '../config/api';
+import { SafeLayout } from '../components/SafeLayout';
+import { Header } from '../components/Header';
+import { TabBar } from '../components/TabBar';
+import { useNavigation } from '@react-navigation/native';
 
-export default function CreateEventScreen({ navigation }: any) {
+export default function CreateEventScreen() {
+  const navigation = useNavigation();
+  const [isLogged] = useState(true);
+  const [userRole] = useState<'ADMIN' | 'USER' | null>('ADMIN');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -42,6 +48,20 @@ export default function CreateEventScreen({ navigation }: any) {
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
+  };
+
+  const handleTabPress = (tab: string) => {
+    switch (tab) {
+      case 'Home':
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Tickets':
+        navigation.navigate('MyTickets' as never);
+        break;
+      case 'Profile':
+        navigation.navigate('EditProfile' as never);
+        break;
+    }
   };
 
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -219,7 +239,14 @@ export default function CreateEventScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeLayout showTabBar={true}>
+      <Header
+        title="Criar Evento"
+        isLogged={isLogged}
+        userRole={userRole}
+        navigation={navigation}
+      />
+
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.heading}>Criar Novo Evento</Text>
 
@@ -305,9 +332,6 @@ export default function CreateEventScreen({ navigation }: any) {
             : <Text style={styles.submitText}>Criar Evento</Text>
           }
         </Pressable>
-        <Pressable onPress={() => navigation.navigate('Dashboard')} style={({ pressed }) => [styles.buttonBack, pressed && styles.buttonBackPressed]}>
-            <Text style={styles.buttonBackText}>Voltar</Text>
-          </Pressable>
       </ScrollView>
 
       <AwesomeAlert
@@ -322,15 +346,23 @@ export default function CreateEventScreen({ navigation }: any) {
         confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
         onConfirmPressed={() => {
           setAlertVisible(false);
-          if (isSuccess) {navigation.navigate('Dashboard');}
+          if (isSuccess) {
+            navigation.goBack();
+          }
         }}
       />
-    </SafeAreaView>
+
+      <TabBar
+        activeTab="Profile"
+        onTabPress={handleTabPress}
+        isLogged={isLogged}
+        userRole={userRole}
+      />
+    </SafeLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
   container: { padding: 20 },
   heading: { fontSize: 22, fontWeight: '700', marginBottom: 12, color: '#111827' },
   label: { fontWeight: '600', marginTop: 16, color: '#374151' },
@@ -392,21 +424,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
-  },
-  buttonBack: {
-    marginTop: 16,
-    alignSelf: 'center',
-    backgroundColor: '#1976d2',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 24,
-  },
-  buttonBackPressed: {
-    backgroundColor: '#155a9c',
-  },
-  buttonBackText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

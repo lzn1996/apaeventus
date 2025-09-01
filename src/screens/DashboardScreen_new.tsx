@@ -1,5 +1,5 @@
 // src/screens/DashboardScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -13,13 +13,13 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MaterialIcons          from 'react-native-vector-icons/MaterialIcons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AwesomeAlert from 'react-native-awesome-alerts';
-import { Event } from '../types/Event';
-import { baseUrl } from '../config/api';
-import { SafeLayout } from '../components/SafeLayout';
-import { Header } from '../components/Header';
-import { TabBar } from '../components/TabBar';
+import {Event} from '../types/Event';
+import {baseUrl} from '../config/api';
+import {SafeLayout} from '../components/SafeLayout';
+import {Header} from '../components/Header';
+import {TabBar} from '../components/TabBar';
 
 interface EventRaw {
   id: string;
@@ -36,7 +36,7 @@ interface EventRaw {
   sold: number;
 }
 
-export default function DashboardScreen({ navigation }: any) {
+export default function DashboardScreen({navigation}: any) {
   type TabName = 'Home' | 'Search' | 'Tickets' | 'Profile';
   const [activeTab, setActiveTab] = useState<TabName>('Home');
 
@@ -59,13 +59,15 @@ export default function DashboardScreen({ navigation }: any) {
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
-  const [onConfirmAction, setOnConfirmAction] = useState<() => void>(() => () => {});
+  const [onConfirmAction, setOnConfirmAction] = useState<() => void>(
+    () => () => {},
+  );
 
   const showAlert = (
     title: string,
     message: string,
     success: boolean = true,
-    onConfirm: () => void = () => {}
+    onConfirm: () => void = () => {},
   ) => {
     setAlertTitle(title);
     setAlertMessage(message);
@@ -90,7 +92,11 @@ export default function DashboardScreen({ navigation }: any) {
       console.warn('Erro no logout remoto:', err);
     } finally {
       // limpa tudo local
-      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
+      await AsyncStorage.multiRemove([
+        'accessToken',
+        'refreshToken',
+        'userRole',
+      ]);
       // simplesmente atualiza o estado para "deslogado"
       setIsLogged(false);
       setUserRole(null);
@@ -127,8 +133,12 @@ export default function DashboardScreen({ navigation }: any) {
       setLoadingEvents(true);
 
       const accessToken = await AsyncStorage.getItem('accessToken');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (accessToken) {headers.Authorization = `Bearer ${accessToken}`;}
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+      }
 
       const res = await fetch(`${baseUrl}/ticket?showInactive=false`, {
         method: 'GET',
@@ -183,7 +193,9 @@ export default function DashboardScreen({ navigation }: any) {
 
     async function initialize() {
       await loadUserRole();
-      if (!isActive) {return;}
+      if (!isActive) {
+        return;
+      }
       await fetchEventsFromBackend();
     }
 
@@ -215,11 +227,8 @@ export default function DashboardScreen({ navigation }: any) {
 
       case 'Tickets':
         if (!isLogged) {
-          showAlert(
-            'Atenção',
-            'Faça login para ver os ingressos.',
-            false,
-            () => navigation.navigate('Login')
+          showAlert('Atenção', 'Faça login para ver os ingressos.', false, () =>
+            navigation.navigate('Login'),
           );
           return;
         }
@@ -262,15 +271,15 @@ export default function DashboardScreen({ navigation }: any) {
 
   // Filtra eventos pela busca
   const filteredEvents = allEvents.filter(ev =>
-    ev.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
+    ev.title.toLowerCase().includes(searchQuery.trim().toLowerCase()),
   );
 
   const goToPurchase = (ticketId: string, title: string) => {
-    navigation.navigate('EventDetail', { ticketId, title });
+    navigation.navigate('EventDetail', {ticketId, title});
   };
 
   return (
-     <SafeLayout showTabBar={true}>
+    <SafeLayout showTabBar={true}>
       <AwesomeAlert
         show={alertVisible}
         title={alertTitle}
@@ -298,10 +307,14 @@ export default function DashboardScreen({ navigation }: any) {
       {activeTab === 'Search' ? (
         <KeyboardAvoidingView
           style={styles.content}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.searchHeader}>
-            <MaterialIcons name="search" size={24} color="#90b1db" style={styles.searchIcon} />
+            <MaterialIcons
+              name="search"
+              size={24}
+              color="#90b1db"
+              style={styles.searchIcon}
+            />
             <TextInput
               style={styles.searchInput}
               placeholder="Pesquisar por nome..."
@@ -313,17 +326,18 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
           <ScrollView
             contentContainerStyle={styles.searchContainer}
-            showsVerticalScrollIndicator={false}
-          >
+            showsVerticalScrollIndicator={false}>
             {filteredEvents.length > 0 ? (
               filteredEvents.map(event => (
                 <Pressable
                   key={event.id}
                   style={styles.searchCard}
-                  onPress={() => goToPurchase(event.id, event.title)}
-                >
+                  onPress={() => goToPurchase(event.id, event.title)}>
                   {event.imageUrl && (
-                    <Image source={{ uri: event.imageUrl }} style={styles.searchImage} />
+                    <Image
+                      source={{uri: event.imageUrl}}
+                      style={styles.searchImage}
+                    />
                   )}
                   <View style={styles.searchTextContainer}>
                     <Text style={styles.searchTitleText}>{event.title}</Text>
@@ -334,7 +348,9 @@ export default function DashboardScreen({ navigation }: any) {
                 </Pressable>
               ))
             ) : (
-              <Text style={styles.noResultsText}>Nenhum evento encontrado.</Text>
+              <Text style={styles.noResultsText}>
+                Nenhum evento encontrado.
+              </Text>
             )}
           </ScrollView>
         </KeyboardAvoidingView>
@@ -342,31 +358,30 @@ export default function DashboardScreen({ navigation }: any) {
         <ScrollView
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           {/* ===== Evento em Destaque ===== */}
           <Text style={styles.sectionTitle}>Evento em Destaque</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.horizontalList,
-              featuredEvents.length === 1 && styles.singleItemContainer,
-            ]}
-          >
+            contentContainerStyle={styles.horizontalList}>
             {featuredEvents.length > 0 ? (
               featuredEvents.map(event => (
                 <Pressable
                   key={event.id}
                   style={styles.featureCard}
-                  onPress={() => goToPurchase(event.id, event.title)}
-                >
+                  onPress={() => goToPurchase(event.id, event.title)}>
                   {event.imageUrl && (
-                    <Image source={{ uri: event.imageUrl }} style={styles.featureImage} />
+                    <Image
+                      source={{uri: event.imageUrl}}
+                      style={styles.featureImage}
+                    />
                   )}
                   <View style={styles.cardTextContainer}>
                     <Text style={styles.featureTitle}>{event.title}</Text>
-                    <Text style={styles.featureDate}>{formatDateToLabel(event.date)}</Text>
+                    <Text style={styles.featureDate}>
+                      {formatDateToLabel(event.date)}
+                    </Text>
                   </View>
                 </Pressable>
               ))
@@ -380,24 +395,24 @@ export default function DashboardScreen({ navigation }: any) {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.horizontalList,
-              nextEvents.length === 1 && styles.singleItemContainer,
-            ]}
-          >
+            contentContainerStyle={styles.horizontalList}>
             {nextEvents.length > 0 ? (
               nextEvents.map(event => (
                 <Pressable
                   key={event.id}
                   style={styles.nextCard}
-                  onPress={() => goToPurchase(event.id, event.title)}
-                >
+                  onPress={() => goToPurchase(event.id, event.title)}>
                   {event.imageUrl && (
-                    <Image source={{ uri: event.imageUrl }} style={styles.nextImage} />
+                    <Image
+                      source={{uri: event.imageUrl}}
+                      style={styles.nextImage}
+                    />
                   )}
                   <View style={styles.cardTextContainer}>
                     <Text style={styles.nextTitle}>{event.title}</Text>
-                    <Text style={styles.nextDate}>{formatDateToLabel(event.date)}</Text>
+                    <Text style={styles.nextDate}>
+                      {formatDateToLabel(event.date)}
+                    </Text>
                   </View>
                 </Pressable>
               ))
@@ -423,7 +438,7 @@ function formatDateToLabel(eventDate: string): string {
   try {
     const data = new Date(eventDate);
     const dia = data.getDate().toString().padStart(2, '0');
-    const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+    const mes = data.toLocaleDateString('pt-BR', {month: 'short'});
     const hora = data.getHours().toString().padStart(2, '0');
     return `${dia} ${mes}, ${hora}h`;
   } catch {
@@ -468,13 +483,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   horizontalList: {
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
-  singleItemContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1,
+    paddingRight: 16,
   },
   featureCard: {
     width: 280,
@@ -483,7 +492,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -513,7 +522,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
@@ -557,7 +566,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,

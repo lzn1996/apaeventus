@@ -1,6 +1,7 @@
 // src/screens/MyTicketsScreen/index.tsx
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, TouchableOpacity, BackHandler, Alert } from 'react-native';
+import { View, FlatList, Text, TouchableOpacity, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from './styles';
 import EventCard from './components/EventCard';
 import { MyEvent } from './types';
@@ -9,6 +10,9 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useOfflineTickets } from '../../hooks/useOfflineTickets';
 import { OfflineNotification } from '../../components/OfflineNotification';
+import { SafeLayout } from '../../components/SafeLayout';
+import { Header } from '../../components/Header';
+import { TabBar } from '../../components/TabBar';
 
 interface GroupedTickets {
     event: MyEvent;
@@ -19,6 +23,8 @@ export default function MyTicketsScreen({ navigation }: any) {
     const [grouped, setGrouped] = useState<GroupedTickets[]>([]);
     const [loading, setLoading] = useState(true);
     const [userProfile, setUserProfile] = useState<any>(null);
+    const [userRole, setUserRole] = useState<'ADMIN' | 'USER' | null>(null);
+    const [isLogged, setIsLogged] = useState(false);
 
     const {
         isConnected,
@@ -31,19 +37,27 @@ export default function MyTicketsScreen({ navigation }: any) {
         clearLocalData,
     } = useOfflineTickets();
 
+    // Carrega dados do usuário
+    const loadUserData = React.useCallback(async () => {
+        try {
+            const role = await AsyncStorage.getItem('userRole');
+            const profile = await getUserProfile();
+            setUserProfile(profile);
+            setUserRole(role as 'ADMIN' | 'USER' | null);
+            setIsLogged(!!role);
+        } catch (error) {
+            console.log('Erro ao carregar dados do usuário:', error);
+            setIsLogged(false);
+            setUserRole(null);
+        }
+    }, []);
+
     const fetchData = React.useCallback(async () => {
         setLoading(true);
 
         try {
-            // Sempre tenta buscar o perfil do usuário se conectado
-            if (isConnected) {
-                try {
-                    const profile = await getUserProfile();
-                    setUserProfile(profile);
-                } catch (error) {
-                    console.log('Erro ao buscar perfil:', error);
-                }
-            }
+            // Carrega dados do usuário
+            await loadUserData();
 
             // Se tem conexão, sincroniza os dados
             if (isConnected) {
@@ -66,7 +80,7 @@ export default function MyTicketsScreen({ navigation }: any) {
         } finally {
             setLoading(false);
         }
-    }, [isConnected, hasLocalData, syncTickets, getLocalTickets]);
+    }, [isConnected, hasLocalData, syncTickets, getLocalTickets, loadUserData]);
 
     // Atualiza os ingressos sempre que a tela ganhar foco
     useFocusEffect(
@@ -75,15 +89,37 @@ export default function MyTicketsScreen({ navigation }: any) {
         }, [fetchData])
     );
 
-    // Garante que o botão físico de voltar do Android leve para o Dashboard
-    useEffect(() => {
-        const onBackPress = () => {
-            navigation.replace('Dashboard');
-            return true;
-        };
-        const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-        return () => subscription.remove();
+    const handleLogout = React.useCallback(async () => {
+        try {
+            await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
+            navigation.navigate('Login');
+        } catch (error) {
+            console.log('Erro no logout:', error);
+        }
     }, [navigation]);
+
+    const handleTabPress = (tab: string) => {
+        switch (tab) {
+            case 'Home':
+                navigation.navigate('Dashboard');
+                break;
+            case 'Search':
+                navigation.navigate('Dashboard');
+                break;
+            case 'Tickets':
+                // Já está na tela de ingressos
+                break;
+            case 'Profile':
+                if (isLogged) {
+                    navigation.navigate('ProfileEdit');
+                } else {
+                    navigation.navigate('Login');
+                }
+                break;
+            default:
+                break;
+        }
+    };
 
     const handleEventPress = (group: GroupedTickets) => {
         // Injeta os dados do usuário autenticado no campo buyer de cada ingresso
@@ -146,12 +182,20 @@ export default function MyTicketsScreen({ navigation }: any) {
 
     if (loading || offlineLoading) {
         return (
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Meus Ingressos</Text>
+            <SafeLayout showTabBar={true}>
+                <Header
+                    title="Meus Ingressos"
+                />
+                <View style={styles.loadingContainer}>
+                    <Text>Carregando...</Text>
                 </View>
-                <Text>Carregando...</Text>
-            </View>
+                <TabBar
+                    activeTab="Tickets"
+                    onTabPress={handleTabPress}
+                    isLogged={isLogged}
+                    userRole={userRole}
+                />
+            </SafeLayout>
         );
     }
 
@@ -171,31 +215,26 @@ export default function MyTicketsScreen({ navigation }: any) {
     }
 
     return (
-        <View style={styles.container}>
+        <SafeLayout showTabBar={true}>
             <OfflineNotification
                 isConnected={isConnected}
                 hasLocalData={hasLocalData}
                 lastSyncDate={lastSyncDate}
             />
 
-            <View style={styles.header}>
-                <TouchableOpacity
-                    onPress={() => navigation.replace('Dashboard')}
-                    style={styles.backButton}
-                >
-                    <Icon name="arrow-back" size={24} color="#fff" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Meus Ingressos</Text>
-                {/* Botão para limpar dados locais (apenas para debug/manutenção) */}
-                {hasLocalData && (
-                    <TouchableOpacity
-                        onPress={handleClearLocalData}
-                        style={styles.clearButton}
-                    >
-                        <Icon name="trash-outline" size={20} color="#fff" />
-                    </TouchableOpacity>
-                )}
-            </View>
+            <Header
+                title="Meus Ingressos"
+                rightButtons={
+                    hasLocalData ? (
+                        <TouchableOpacity
+                            onPress={handleClearLocalData}
+                            style={styles.clearButton}
+                        >
+                            <Icon name="trash-outline" size={20} color="#007AFF" />
+                        </TouchableOpacity>
+                    ) : undefined
+                }
+            />
 
             {/* Informações de sincronização */}
             {lastSyncDate && (
@@ -232,6 +271,13 @@ export default function MyTicketsScreen({ navigation }: any) {
                     )}
                 </View>
             )}
-        </View>
+
+            <TabBar
+                activeTab="Tickets"
+                onTabPress={handleTabPress}
+                isLogged={isLogged}
+                userRole={userRole}
+            />
+        </SafeLayout>
     );
 }

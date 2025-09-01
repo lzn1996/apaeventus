@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../types/navigation';
 import AwesomeAlert from 'react-native-awesome-alerts';
@@ -17,6 +17,9 @@ import styles from './styles';
 import { getTicketById } from '../../../services/eventService';
 import { authService } from '../../../services/authService';
 import eventBanner from '../../../assets/event-banner.png';
+import { SafeLayout } from '../../../components/SafeLayout';
+import { Header } from '../../../components/Header';
+import { TabBar } from '../../../components/TabBar';
 
 declare module '*.png';
 
@@ -28,6 +31,8 @@ export default function EventDetailScreen() {
   const [event, setEvent] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [isLogged] = useState(true);
+  const [userRole] = useState<'ADMIN' | 'USER' | null>('USER');
 
   // AwesomeAlert states
   const [alertVisible, setAlertVisible] = useState(false);
@@ -39,6 +44,20 @@ export default function EventDetailScreen() {
   // error/loading for image
   const [imageError, setImageError] = useState(false);
   const [aspectRatio, setAspectRatio] = useState(16 / 9);
+
+  const handleTabPress = (tab: string) => {
+    switch (tab) {
+      case 'Home':
+        navigation.navigate('EventDetail' as never);
+        break;
+      case 'Tickets':
+        navigation.navigate('MyTickets' as never);
+        break;
+      case 'Profile':
+        navigation.navigate('EventDetail' as never);
+        break;
+    }
+  };
 
   // helper to show awesome alerts
   function showAlert(
@@ -91,19 +110,19 @@ export default function EventDetailScreen() {
   }
 
   const handleBuy = async () => {
-    let isLogged = await authService.isLoggedIn();
+    let userIsLogged = await authService.isLoggedIn();
     let token = await authService.getAccessToken();
 
     // tenta refresh se tiver token mas não estiver marcado como logado
-    if (!isLogged && token) {
+    if (!userIsLogged && token) {
       try {
         await require('../../../services/api').default.get('/user/profile');
-        isLogged = await authService.isLoggedIn();
+        userIsLogged = await authService.isLoggedIn();
         token = await authService.getAccessToken();
       } catch {}
     }
 
-    if (!isLogged) {
+    if (!userIsLogged) {
       // limpa sessão e avisa
       try {
         const baseUrl = require('../../../config/api').baseUrl;
@@ -120,7 +139,7 @@ export default function EventDetailScreen() {
         'Atenção',
         'É necessário estar logado para comprar ingressos.',
         false,
-        () => navigation.navigate('Login')
+        () => navigation.goBack()
       );
       return;
     }
@@ -135,7 +154,7 @@ export default function EventDetailScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <SafeLayout showTabBar={true}>
       {/* AwesomeAlert */}
       <AwesomeAlert
         show={alertVisible}
@@ -153,6 +172,10 @@ export default function EventDetailScreen() {
         }}
       />
 
+      <Header
+        title="Detalhes do Evento"
+      />
+
       <ScrollView contentContainerStyle={styles.container} alwaysBounceVertical>
         {/* Banner */}
         <Image
@@ -162,7 +185,9 @@ export default function EventDetailScreen() {
           onError={() => setImageError(true)}
           onLoad={(e) => {
             const { width, height } = e.nativeEvent.source || {};
-            if (width && height) setAspectRatio(width / height);
+            if (width && height) {
+              setAspectRatio(width / height);
+            }
           }}
         />
 
@@ -206,17 +231,14 @@ export default function EventDetailScreen() {
           Penha do Rio do Peixe - Itapira - SP{'\n'}
           (19) 3813-8899
         </Text>
-
-        {/* Botão Voltar ao Dashboard */}
-        <View style={styles.backContainer}>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('Dashboard')}
-          >
-            <Text style={styles.backText}>Voltar</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
-    </View>
+
+      <TabBar
+        activeTab="Home"
+        onTabPress={handleTabPress}
+        isLogged={isLogged}
+        userRole={userRole}
+      />
+    </SafeLayout>
   );
 }

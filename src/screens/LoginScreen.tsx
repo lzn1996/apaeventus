@@ -1,7 +1,6 @@
 // src/screens/LoginScreen.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -19,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { baseUrl } from '../config/api';
+import { SafeLayout } from '../components/SafeLayout';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -123,7 +123,7 @@ export default function LoginScreen({ navigation }: any) {
   const isButtonDisabled = loading || !email.trim() || !senha.trim();
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeLayout>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -230,12 +230,11 @@ export default function LoginScreen({ navigation }: any) {
           </Animated.View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </SafeLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#eef2f5' },
   flex: { flex: 1 },
   container: { flex: 1, justifyContent: 'center', padding: 24 },
   logo: { width: 140, height: 140, alignSelf: 'center', marginBottom: 12 },
