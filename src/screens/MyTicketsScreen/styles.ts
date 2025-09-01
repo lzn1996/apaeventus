@@ -9,7 +9,11 @@ export default StyleSheet.create({
         paddingTop: 0,
     },
     backButton: {
-    marginRight: 12,
+        marginRight: 12,
+    },
+    clearButton: {
+        marginLeft: 'auto',
+        padding: 8,
     },
     header: {
         flexDirection: 'row',
@@ -33,6 +37,46 @@ export default StyleSheet.create({
         textShadowRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    syncInfoContainer: {
+        backgroundColor: '#E3F2FD',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginHorizontal: 16,
+        marginBottom: 8,
+        borderRadius: 8,
+    },
+    syncInfoText: {
+        fontSize: 12,
+        color: '#1565C0',
+        textAlign: 'center',
+    },
+    errorContainer: {
+        backgroundColor: '#FFEBEE',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginHorizontal: 16,
+        marginBottom: 8,
+        borderRadius: 8,
+    },
+    statusContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+    },
+    statusText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 16,
+        lineHeight: 24,
+    },
+    retryButton: {
+        backgroundColor: '#007AFF',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
     },
     list: {
         paddingHorizontal: 18,
@@ -98,11 +142,8 @@ export default StyleSheet.create({
         fontWeight: 'bold',
     },
     retryText: {
-        color: '#1976d2',
+        color: '#fff',
         fontSize: 16,
-        marginBottom: 16,
-        textAlign: 'center',
-        textDecorationLine: 'underline',
         fontWeight: 'bold',
     },
     connectionBannerContainer: {

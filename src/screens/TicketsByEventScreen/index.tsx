@@ -9,6 +9,7 @@ export default function TicketsByEventScreen({ route }: any) {
   const { tickets = [] } = route.params;
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [localTickets] = useState(tickets);
 
   useEffect(() => {
     setLoading(false);
@@ -21,7 +22,8 @@ export default function TicketsByEventScreen({ route }: any) {
       </View>
     );
   }
-  if (!tickets.length) {
+
+  if (!localTickets.length) {
     return (
       <View style={styles.container}>
         <Text>Não foi possível carregar os ingressos.</Text>
@@ -37,7 +39,7 @@ export default function TicketsByEventScreen({ route }: any) {
       <Carousel
         width={width * 0.95}
         height={height}
-        data={tickets}
+        data={localTickets}
         renderItem={({ item, index }: { item: any; index: number }) => (
           <TicketCard
             ticket={{
@@ -45,7 +47,7 @@ export default function TicketsByEventScreen({ route }: any) {
               buyer: item.buyer || { name: '', email: '', phone: '' },
             }}
             index={index}
-            total={tickets.length}
+            total={localTickets.length}
           />
         )}
         // modo padrão, sem stack nem triângulos:
@@ -56,9 +58,9 @@ export default function TicketsByEventScreen({ route }: any) {
         onSnapToItem={setCurrentIndex}
       />
 
-      {tickets.length > 1 && (
+      {localTickets.length > 1 && (
         <View style={styles.dotsContainer}>
-          {tickets.map((_, idx) => (
+          {localTickets.map((_: any, idx: number) => (
             <View
               key={idx}
               style={[styles.dot, idx === currentIndex && styles.dotActive]}
