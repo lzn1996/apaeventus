@@ -1,5 +1,5 @@
 // src/screens/CreateEventScreen.tsx
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   ScrollView,
   View,
@@ -14,13 +14,15 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+} from '@react-native-community/datetimepicker';
 import AwesomeAlert from 'react-native-awesome-alerts';
-import { baseUrl } from '../config/api';
-import { SafeLayout } from '../components/SafeLayout';
-import { Header } from '../components/Header';
-import { TabBar } from '../components/TabBar';
-import { useNavigation } from '@react-navigation/native';
+import {baseUrl} from '../config/api';
+import {SafeLayout} from '../components/SafeLayout';
+import {Header} from '../components/Header';
+import {TabBar} from '../components/TabBar';
+import {useNavigation} from '@react-navigation/native';
 
 export default function CreateEventScreen() {
   const navigation = useNavigation();
@@ -34,7 +36,8 @@ export default function CreateEventScreen() {
   const [showTime, setShowTime] = useState(false);
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
-  const [imageFile, setImageFile] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [imageFile, setImageFile] =
+    useState<ImagePicker.ImagePickerAsset | null>(null);
   const [loading, setLoading] = useState(false);
 
   // estados do AwesomeAlert
@@ -55,11 +58,14 @@ export default function CreateEventScreen() {
       case 'Home':
         navigation.navigate('Dashboard' as never);
         break;
+      case 'Search':
+        navigation.navigate('Dashboard' as never);
+        break;
       case 'Tickets':
         navigation.navigate('MyTickets' as never);
         break;
       case 'Profile':
-        navigation.navigate('EditProfile' as never);
+        navigation.navigate('ProfileEdit' as never);
         break;
     }
   };
@@ -115,10 +121,14 @@ export default function CreateEventScreen() {
 
   const pickImageFromCamera = async () => {
     try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      const {status} = await ImagePicker.requestCameraPermissionsAsync();
 
       if (status !== 'granted') {
-        return showAlert('Permissão negada', 'Precisamos de permissão para usar a câmera.', false);
+        return showAlert(
+          'Permissão negada',
+          'Precisamos de permissão para usar a câmera.',
+          false,
+        );
       }
 
       const result = await ImagePicker.launchCameraAsync({
@@ -155,19 +165,24 @@ export default function CreateEventScreen() {
           onPress: pickImage,
         },
       ],
-      { cancelable: true }
+      {cancelable: true},
     );
   };
 
   const pickImage = async () => {
     try {
       // Verificar permissão primeiro
-      const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+      const {status} = await ImagePicker.getMediaLibraryPermissionsAsync();
 
       if (status !== 'granted') {
-        const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        const {status: newStatus} =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (newStatus !== 'granted') {
-          return showAlert('Permissão negada', 'Precisamos de permissão para acessar suas fotos.', false);
+          return showAlert(
+            'Permissão negada',
+            'Precisamos de permissão para acessar suas fotos.',
+            false,
+          );
         }
       }
 
@@ -188,18 +203,27 @@ export default function CreateEventScreen() {
       console.log('Erro ao selecionar imagem:', error);
       showAlert('Erro', 'Não foi possível abrir a galeria.', false);
     }
-  };  const handleSubmit = async () => {
+  };
+  const handleSubmit = async () => {
     const token = await AsyncStorage.getItem('accessToken');
     if (!token) {
       return showAlert('Sessão inválida', 'Faça login novamente.', false);
     }
     if (!title.trim() || !description.trim()) {
-      return showAlert('Atenção', 'Título e descrição são obrigatórios.', false);
+      return showAlert(
+        'Atenção',
+        'Título e descrição são obrigatórios.',
+        false,
+      );
     }
 
     const isoDate =
-      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-      `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+        date.getDate(),
+      )}` +
+      `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+        date.getSeconds(),
+      )}`;
 
     const form = new FormData();
     form.append('title', title);
@@ -219,7 +243,7 @@ export default function CreateEventScreen() {
       setLoading(true);
       const res = await fetch(`${baseUrl}/ticket`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {Authorization: `Bearer ${token}`},
         body: form,
       });
 
@@ -227,8 +251,6 @@ export default function CreateEventScreen() {
         const errBody = await res.text();
         return showAlert('Erro', `Status ${res.status}\n${errBody}`, false);
       }
-
-
 
       showAlert('Sucesso', 'Evento criado!', true);
     } catch (e: any) {
@@ -273,7 +295,13 @@ export default function CreateEventScreen() {
             <Text>📅 {date.toLocaleDateString()}</Text>
           </Pressable>
           <Pressable onPress={showTimePicker} style={styles.dateButton}>
-            <Text>🕒 {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+            <Text>
+              🕒{' '}
+              {date.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
           </Pressable>
         </View>
 
@@ -319,18 +347,20 @@ export default function CreateEventScreen() {
               {imageFile ? 'Trocar Imagem' : 'Escolher Imagem'}
             </Text>
           </Pressable>
-          {imageFile && <Image source={{ uri: imageFile.uri }} style={styles.preview} />}
+          {imageFile && (
+            <Image source={{uri: imageFile.uri}} style={styles.preview} />
+          )}
         </View>
 
         <Pressable
           style={styles.submitButton}
           onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.submitText}>Criar Evento</Text>
-          }
+          disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.submitText}>Criar Evento</Text>
+          )}
         </Pressable>
       </ScrollView>
 
@@ -363,9 +393,14 @@ export default function CreateEventScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20 },
-  heading: { fontSize: 22, fontWeight: '700', marginBottom: 12, color: '#111827' },
-  label: { fontWeight: '600', marginTop: 16, color: '#374151' },
+  container: {padding: 20},
+  heading: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 12,
+    color: '#111827',
+  },
+  label: {fontWeight: '600', marginTop: 16, color: '#374151'},
   input: {
     backgroundColor: '#FFF',
     borderRadius: 10,

@@ -1,18 +1,13 @@
 // src/screens/QrScannerScreen.tsx
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Button,
-} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {View, Text, StyleSheet, Button} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import {CameraView, useCameraPermissions} from 'expo-camera';
 import AwesomeAlert from 'react-native-awesome-alerts';
-import { useNavigation } from '@react-navigation/native';
-import { SafeLayout } from '../components/SafeLayout';
-import { Header } from '../components/Header';
-import { TabBar } from '../components/TabBar';
+import {useNavigation} from '@react-navigation/native';
+import {SafeLayout} from '../components/SafeLayout';
+import {Header} from '../components/Header';
+import {TabBar} from '../components/TabBar';
 
 let bearerToken = '';
 
@@ -30,8 +25,8 @@ async function getNewToken() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${oldAccess}`,
       },
-      body: JSON.stringify({ refreshToken: refresh }),
-    }
+      body: JSON.stringify({refreshToken: refresh}),
+    },
   );
   if (!response.ok) {
     throw new Error(`Falha ao atualizar token: ${response.status}`);
@@ -69,11 +64,14 @@ export default function QrScannerScreen() {
       case 'Home':
         navigation.navigate('Dashboard' as never);
         break;
+      case 'Search':
+        navigation.navigate('Dashboard' as never);
+        break;
       case 'Tickets':
         navigation.navigate('MyTickets' as never);
         break;
       case 'Profile':
-        navigation.navigate('EditProfile' as never);
+        navigation.navigate('ProfileEdit' as never);
         break;
     }
   };
@@ -101,9 +99,9 @@ export default function QrScannerScreen() {
         Authorization: `Bearer ${bearerToken}`,
         'Content-Type': 'application/json',
       };
-      const body = JSON.stringify({ saleId: data });
+      const body = JSON.stringify({saleId: data});
 
-      const response = await fetch(url, { method: 'POST', headers, body });
+      const response = await fetch(url, {method: 'POST', headers, body});
       const text = await response.text();
       if (!response.ok) {
         let msg = text;
@@ -117,8 +115,9 @@ export default function QrScannerScreen() {
       showAlert('QR Code Válido', `Venda ${data} marcada como usada.`, true);
     } catch (error: any) {
       showAlert(
-        'Erro ao validar QR Code','Ingresso já utilizado ou inválido.',
-        false
+        'Erro ao validar QR Code',
+        'Ingresso já utilizado ou inválido.',
+        false,
       );
     }
   };
@@ -160,8 +159,7 @@ export default function QrScannerScreen() {
 
       <CameraView
         style={styles.camera}
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-      >
+        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}>
         <View style={styles.layerContainer}>
           <View style={styles.layerTop} />
           <View style={styles.layerCenter}>
@@ -215,16 +213,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
-  layerContainer: { flex: 1 },
-  layerTop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
-  layerCenter: { flexDirection: 'row' },
-  layerLeft: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  layerContainer: {flex: 1},
+  layerTop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)'},
+  layerCenter: {flexDirection: 'row'},
+  layerLeft: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)'},
   focused: {
     width: 200,
     height: 200,
     borderWidth: 2,
     borderColor: '#00FF00',
   },
-  layerRight: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
-  layerBottom: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  layerRight: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)'},
+  layerBottom: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)'},
 });

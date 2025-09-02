@@ -1,5 +1,5 @@
 // src/screens/EditProfileScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   ScrollView,
   Text,
@@ -10,13 +10,13 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { baseUrl } from '../config/api';
+import {baseUrl} from '../config/api';
 import api from '../services/api';
 import AwesomeAlert from 'react-native-awesome-alerts';
-import { SafeLayout } from '../components/SafeLayout';
-import { Header } from '../components/Header';
-import { TabBar } from '../components/TabBar';
-import { useNavigation } from '@react-navigation/native';
+import {SafeLayout} from '../components/SafeLayout';
+import {Header} from '../components/Header';
+import {TabBar} from '../components/TabBar';
+import {useNavigation} from '@react-navigation/native';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation();
@@ -46,6 +46,9 @@ export default function EditProfileScreen() {
       case 'Home':
         navigation.navigate('Dashboard' as never);
         break;
+      case 'Search':
+        navigation.navigate('Dashboard' as never);
+        break;
       case 'Tickets':
         navigation.navigate('MyTickets' as never);
         break;
@@ -62,13 +65,17 @@ export default function EditProfileScreen() {
       if (token) {
         await fetch(`${baseUrl}/auth/logout`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {Authorization: `Bearer ${token}`},
         });
       }
     } catch (e) {
       console.warn('Erro no logout:', e);
     } finally {
-      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
+      await AsyncStorage.multiRemove([
+        'accessToken',
+        'refreshToken',
+        'userRole',
+      ]);
       navigation.navigate('Login' as never);
     }
   };
@@ -88,10 +95,11 @@ export default function EditProfileScreen() {
       } catch (e: any) {
         // Mesmo com erro, tenta buscar dados do AsyncStorage se disponível
         try {
-          const storedName = await AsyncStorage.getItem('userName') || '';
-          const storedEmail = await AsyncStorage.getItem('userEmail') || '';
-          const storedRg = await AsyncStorage.getItem('userRg') || '';
-          const storedCellphone = await AsyncStorage.getItem('userCellphone') || '';
+          const storedName = (await AsyncStorage.getItem('userName')) || '';
+          const storedEmail = (await AsyncStorage.getItem('userEmail')) || '';
+          const storedRg = (await AsyncStorage.getItem('userRg')) || '';
+          const storedCellphone =
+            (await AsyncStorage.getItem('userCellphone')) || '';
 
           setName(storedName);
           setEmail(storedEmail);
@@ -100,7 +108,11 @@ export default function EditProfileScreen() {
         } catch (storageError) {
           console.log('Erro ao buscar dados do storage:', storageError);
         }
-        showAlert('Atualização cadastral', 'Não foi possível carregar alguns dados. Preencha os campos necessários.', true);
+        showAlert(
+          'Atualização cadastral',
+          'Não foi possível carregar alguns dados. Preencha os campos necessários.',
+          true,
+        );
       } finally {
         setLoading(false);
       }
@@ -114,7 +126,7 @@ export default function EditProfileScreen() {
     }
     try {
       // Monta objeto apenas com campos preenchidos e permitidos
-      const payload: any = { name, rg, cellphone };
+      const payload: any = {name, rg, cellphone};
       // Só envia password se preenchido
       if (password && password.trim().length > 0) {
         payload.password = password;
@@ -123,13 +135,19 @@ export default function EditProfileScreen() {
       payload.email = email;
       await api.patch('/user', payload);
 
-      showAlert('Sucesso', 'Dados atualizados! Você será deslogado para segurança em 5 segundos, entre no aplicativo novamente! ', true);
+      showAlert(
+        'Sucesso',
+        'Dados atualizados! Você será deslogado para segurança em 5 segundos, entre no aplicativo novamente! ',
+        true,
+      );
       setTimeout(doLogout, 7000);
     } catch (e: any) {
       let msg = 'Erro ao salvar.';
       if (e?.response) {
         msg += `\nStatus ${e.response.status}`;
-        if (typeof e.response.data === 'string') { msg += `\n${e.response.data}`; }
+        if (typeof e.response.data === 'string') {
+          msg += `\n${e.response.data}`;
+        }
       }
       showAlert('Erro de rede', e.message || String(msg), false);
     }
@@ -142,9 +160,7 @@ export default function EditProfileScreen() {
   if (loading) {
     return (
       <SafeLayout showTabBar={true}>
-        <Header
-          title="Editar Perfil"
-        />
+        <Header title="Editar Perfil" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
@@ -160,9 +176,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeLayout showTabBar={true}>
-      <Header
-        title="Editar Perfil"
-      />
+      <Header title="Editar Perfil" />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.label}>Nome</Text>
         <TextInput
@@ -240,9 +254,9 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  label: { fontWeight: '600', marginTop: 12, marginBottom: 4 },
+  container: {padding: 16},
+  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+  label: {fontWeight: '600', marginTop: 12, marginBottom: 4},
   input: {
     backgroundColor: '#fff',
     borderRadius: 8,

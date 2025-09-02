@@ -1,5 +1,5 @@
 // src/screens/Public/EventDetailScreen/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -9,24 +9,30 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../../types/navigation';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../../../types/navigation';
 import AwesomeAlert from 'react-native-awesome-alerts';
 import styles from './styles';
-import { getTicketById } from '../../../services/eventService';
-import { authService } from '../../../services/authService';
+import {getTicketById} from '../../../services/eventService';
+import {authService} from '../../../services/authService';
 import eventBanner from '../../../assets/event-banner.png';
-import { SafeLayout } from '../../../components/SafeLayout';
-import { Header } from '../../../components/Header';
-import { TabBar } from '../../../components/TabBar';
+import {SafeLayout} from '../../../components/SafeLayout';
+import {Header} from '../../../components/Header';
+import {TabBar} from '../../../components/TabBar';
 
 declare module '*.png';
 
 export default function EventDetailScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'EventDetail'>>();
+  const navigation =
+    useNavigation<
+      NativeStackNavigationProp<RootStackParamList, 'EventDetail'>
+    >();
   const route = useRoute();
-  const { ticketId } = route.params as { ticketId: string };
+
+  // Verificação mais robusta dos parâmetros
+  const params = route.params || {};
+  const {ticketId, title} = params as {ticketId?: string; title?: string};
 
   const [event, setEvent] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
@@ -39,7 +45,9 @@ export default function EventDetailScreen() {
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
-  const [onConfirmAction, setOnConfirmAction] = useState<() => void>(() => () => {});
+  const [onConfirmAction, setOnConfirmAction] = useState<() => void>(
+    () => () => {},
+  );
 
   // error/loading for image
   const [imageError, setImageError] = useState(false);
@@ -48,25 +56,28 @@ export default function EventDetailScreen() {
   const handleTabPress = (tab: string) => {
     switch (tab) {
       case 'Home':
-        navigation.navigate('EventDetail' as never);
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Search':
+        navigation.navigate('Dashboard' as never);
         break;
       case 'Tickets':
         navigation.navigate('MyTickets' as never);
         break;
       case 'Profile':
-        navigation.navigate('EventDetail' as never);
+        navigation.navigate('ProfileEdit' as never);
         break;
     }
   };
 
   // helper to show awesome alerts
   function showAlert(
-    title: string,
+    titleText: string,
     message: string,
     success = true,
-    onConfirm: () => void = () => {}
+    onConfirm: () => void = () => {},
   ) {
-    setAlertTitle(title);
+    setAlertTitle(titleText);
     setAlertMessage(message);
     setIsSuccess(success);
     setOnConfirmAction(() => onConfirm);
@@ -76,20 +87,33 @@ export default function EventDetailScreen() {
   useEffect(() => {
     async function loadEvent() {
       try {
+        if (!ticketId) {
+          showAlert(
+            'Erro',
+            'ID do evento não encontrado. Redirecionando para o Dashboard.',
+            false,
+            () => navigation.navigate('Dashboard' as never),
+          );
+          return;
+        }
+
         const data = await getTicketById(ticketId);
         setEvent(data);
       } catch (e) {
-        showAlert(
-          'Erro',
-          'Não foi possível carregar o evento.',
-          false,
-          () => navigation.goBack()
+        showAlert('Erro', 'Não foi possível carregar o evento.', false, () =>
+          navigation.navigate('Dashboard' as never),
         );
       } finally {
         setLoading(false);
       }
     }
-    loadEvent();
+
+    // Só carrega se tiver ticketId válido
+    if (ticketId) {
+      loadEvent();
+    } else {
+      setLoading(false);
+    }
   }, [ticketId, navigation]);
 
   if (loading) {
@@ -130,7 +154,10 @@ export default function EventDetailScreen() {
         if (tk) {
           await fetch(`${baseUrl}/auth/logout`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk}` },
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${tk}`,
+            },
           });
         }
         await authService.clearTokens();
@@ -139,7 +166,7 @@ export default function EventDetailScreen() {
         'Atenção',
         'É necessário estar logado para comprar ingressos.',
         false,
-        () => navigation.goBack()
+        () => navigation.goBack(),
       );
       return;
     }
@@ -172,19 +199,19 @@ export default function EventDetailScreen() {
         }}
       />
 
-      <Header
-        title="Detalhes do Evento"
-      />
+      <Header title="Detalhes do Evento" />
 
       <ScrollView contentContainerStyle={styles.container} alwaysBounceVertical>
         {/* Banner */}
         <Image
-          source={imageError || !event.imageUrl ? eventBanner : { uri: event.imageUrl }}
-          style={[styles.banner, { aspectRatio }]}
+          source={
+            imageError || !event.imageUrl ? eventBanner : {uri: event.imageUrl}
+          }
+          style={[styles.banner, {aspectRatio}]}
           resizeMode="contain"
           onError={() => setImageError(true)}
-          onLoad={(e) => {
-            const { width, height } = e.nativeEvent.source || {};
+          onLoad={e => {
+            const {width, height} = e.nativeEvent.source || {};
             if (width && height) {
               setAspectRatio(width / height);
             }
@@ -206,15 +233,33 @@ export default function EventDetailScreen() {
         <View style={styles.priceBox}>
           <Text style={styles.price}>R${Number(event.price).toFixed(2)}</Text>
           <View style={styles.counter}>
-            <TouchableOpacity onPress={() => setQuantity(q => Math.max(1, q - 1))} disabled={quantity === 1}>
-              <Text style={[styles.counterButton, quantity === 1 && styles.counterButtonDisabled]}>–</Text>
+            <TouchableOpacity
+              onPress={() => setQuantity(q => Math.max(1, q - 1))}
+              disabled={quantity === 1}>
+              <Text
+                style={[
+                  styles.counterButton,
+                  quantity === 1 && styles.counterButtonDisabled,
+                ]}>
+                –
+              </Text>
             </TouchableOpacity>
             <Text style={styles.counterValue}>{quantity}</Text>
-            <TouchableOpacity onPress={() => setQuantity(q => Math.min(5, q + 1))} disabled={quantity === 5}>
-              <Text style={[styles.counterButton, quantity === 5 && styles.counterButtonDisabled]}>+</Text>
+            <TouchableOpacity
+              onPress={() => setQuantity(q => Math.min(5, q + 1))}
+              disabled={quantity === 5}>
+              <Text
+                style={[
+                  styles.counterButton,
+                  quantity === 5 && styles.counterButtonDisabled,
+                ]}>
+                +
+              </Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.total}>Total: R${(Number(event.price) * quantity).toFixed(2)}</Text>
+          <Text style={styles.total}>
+            Total: R${(Number(event.price) * quantity).toFixed(2)}
+          </Text>
         </View>
 
         <TouchableOpacity style={styles.buyButton} onPress={handleBuy}>

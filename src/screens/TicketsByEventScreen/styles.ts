@@ -5,10 +5,29 @@ export default StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f6f8fc',
-        padding: 0,
+    },
+    scrollViewStyle: {
+        flex: 1,
+        backgroundColor: '#f6f8fc',
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingBottom: 100, // Espaço para o TabBar
         alignItems: 'center',
-        justifyContent: 'center', // Centraliza verticalmente
-        minHeight: '100%',
+        justifyContent: 'flex-start',
+        padding: 0,
+    },
+    centerContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: 400,
+    },
+    carouselContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 20,
     },
     carousel: {
         marginTop: 0,

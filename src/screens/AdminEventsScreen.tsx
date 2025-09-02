@@ -1,5 +1,5 @@
 // src/screens/AdminEventsScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,11 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
-import { baseUrl } from '../config/api';
-import { SafeLayout } from '../components/SafeLayout';
-import { Header } from '../components/Header';
-import { TabBar } from '../components/TabBar';
+import {useNavigation} from '@react-navigation/native';
+import {baseUrl} from '../config/api';
+import {SafeLayout} from '../components/SafeLayout';
+import {Header} from '../components/Header';
+import {TabBar} from '../components/TabBar';
 
 export default function AdminEventsScreen() {
   const navigation = useNavigation();
@@ -29,7 +29,9 @@ export default function AdminEventsScreen() {
   async function refreshAccessToken(): Promise<string | null> {
     const old = await AsyncStorage.getItem('accessToken');
     const refresh = await AsyncStorage.getItem('refreshToken');
-    if (!old || !refresh) {return null;}
+    if (!old || !refresh) {
+      return null;
+    }
 
     const res = await fetch(`${baseUrl}/auth/refresh-token`, {
       method: 'POST',
@@ -37,9 +39,11 @@ export default function AdminEventsScreen() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${old}`,
       },
-      body: JSON.stringify({ refreshToken: refresh }),
+      body: JSON.stringify({refreshToken: refresh}),
     });
-    if (!res.ok) {return null;}
+    if (!res.ok) {
+      return null;
+    }
 
     const json = await res.json();
     if (json.accessToken) {
@@ -57,7 +61,7 @@ export default function AdminEventsScreen() {
     setLoading(true);
     let token = await AsyncStorage.getItem('accessToken');
     let res = await fetch(`${baseUrl}/ticket?showInactive=true`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {Authorization: `Bearer ${token}`},
     });
 
     // se token expirou, tenta renovar e refazer fetch
@@ -69,14 +73,17 @@ export default function AdminEventsScreen() {
       }
       token = newToken;
       res = await fetch(`${baseUrl}/ticket?showInactive=true`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {Authorization: `Bearer ${token}`},
       });
     }
 
     if (!res.ok) {
       const txt = await res.text();
       setLoading(false);
-      return Alert.alert('Erro ao buscar eventos', `Status ${res.status}\n${txt}`);
+      return Alert.alert(
+        'Erro ao buscar eventos',
+        `Status ${res.status}\n${txt}`,
+      );
     }
 
     const data = await res.json();
@@ -93,12 +100,14 @@ export default function AdminEventsScreen() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ id, isActive }),
+      body: JSON.stringify({id, isActive}),
     });
 
     if (res.status === 401) {
       const newToken = await refreshAccessToken();
-      if (!newToken) {return Alert.alert('Sessão expirada', 'Faça login novamente.');}
+      if (!newToken) {
+        return Alert.alert('Sessão expirada', 'Faça login novamente.');
+      }
       token = newToken;
       res = await fetch(`${baseUrl}/ticket/enable-disable`, {
         method: 'POST',
@@ -106,7 +115,7 @@ export default function AdminEventsScreen() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ id, isActive }),
+        body: JSON.stringify({id, isActive}),
       });
     }
 
@@ -123,7 +132,7 @@ export default function AdminEventsScreen() {
       'Excluir Evento',
       'Tem certeza que deseja excluir este evento permanentemente?',
       [
-        { text: 'Cancelar', style: 'cancel' },
+        {text: 'Cancelar', style: 'cancel'},
         {
           text: 'Excluir',
           style: 'destructive',
@@ -131,25 +140,32 @@ export default function AdminEventsScreen() {
             let token = await AsyncStorage.getItem('accessToken');
             let res = await fetch(`${baseUrl}/ticket/${id}`, {
               method: 'DELETE',
-              headers: { Authorization: `Bearer ${token}` },
+              headers: {Authorization: `Bearer ${token}`},
             });
             if (res.status === 401) {
               const newToken = await refreshAccessToken();
-              if (!newToken) {return Alert.alert('Sessão expirada', 'Faça login novamente.');}
+              if (!newToken) {
+                return Alert.alert('Sessão expirada', 'Faça login novamente.');
+              }
               token = newToken;
               res = await fetch(`${baseUrl}/ticket/${id}`, {
                 method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` },
+                headers: {Authorization: `Bearer ${token}`},
               });
             }
             if (!res.ok) {
               const txt = await res.text();
-              return Alert.alert('Erro ao excluir', `Status ${res.status}\n${txt}`);
+              return Alert.alert(
+                'Erro ao excluir',
+                `Status ${res.status}\n${txt}`,
+              );
             }
-            Alert.alert('Sucesso', 'Evento excluído.', [{ text: 'OK', onPress: fetchEvents }]);
+            Alert.alert('Sucesso', 'Evento excluído.', [
+              {text: 'OK', onPress: fetchEvents},
+            ]);
           },
         },
-      ]
+      ],
     );
   };
 
@@ -158,11 +174,16 @@ export default function AdminEventsScreen() {
       case 'Home':
         navigation.navigate('Dashboard' as never);
         break;
+
+      case 'Search':
+        navigation.navigate('Dashboard' as never);
+        break;
+
       case 'Tickets':
         navigation.navigate('MyTickets' as never);
         break;
       case 'Profile':
-        navigation.navigate('EditProfile' as never);
+        navigation.navigate('ProfileEdit' as never);
         break;
     }
   };
@@ -173,13 +194,17 @@ export default function AdminEventsScreen() {
       if (token) {
         await fetch(`${baseUrl}/auth/logout`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {Authorization: `Bearer ${token}`},
         });
       }
     } catch (e) {
       console.warn('Erro no logout:', e);
     } finally {
-      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
+      await AsyncStorage.multiRemove([
+        'accessToken',
+        'refreshToken',
+        'userRole',
+      ]);
       navigation.navigate('Login' as never);
     }
   };
@@ -226,9 +251,11 @@ export default function AdminEventsScreen() {
         keyExtractor={item => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
+        renderItem={({item}) => (
           <View style={styles.card}>
-            {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.image} />}
+            {item.imageUrl && (
+              <Image source={{uri: item.imageUrl}} style={styles.image} />
+            )}
             <View style={styles.info}>
               <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
                 {item.title}
@@ -250,23 +277,24 @@ export default function AdminEventsScreen() {
             </View>
             <View style={styles.buttons}>
               <Pressable
-                android_ripple={{ color: '#EEE' }}
-                style={({ pressed }) => [
+                android_ripple={{color: '#EEE'}}
+                style={({pressed}) => [
                   styles.toggleButton,
                   item.isActive ? styles.btnDeactivate : styles.btnActivate,
                   pressed && styles.pressed,
                 ]}
-                onPress={() => toggleActive(item.id, !item.isActive)}
-              >
+                onPress={() => toggleActive(item.id, !item.isActive)}>
                 <Text style={styles.toggleText}>
                   {item.isActive ? 'Desativar' : 'Ativar'}
                 </Text>
               </Pressable>
               <Pressable
-                android_ripple={{ color: '#FCC' }}
-                style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
-                onPress={() => deleteTicket(item.id)}
-              >
+                android_ripple={{color: '#FCC'}}
+                style={({pressed}) => [
+                  styles.deleteButton,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => deleteTicket(item.id)}>
                 <Text style={styles.deleteText}>Excluir</Text>
               </Pressable>
             </View>
@@ -285,8 +313,8 @@ export default function AdminEventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list: { paddingHorizontal: 16, paddingBottom: 16 },
+  center: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+  list: {paddingHorizontal: 16, paddingBottom: 16},
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -299,9 +327,9 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: {width: 0, height: 4},
       },
-      android: { elevation: 4 },
+      android: {elevation: 4},
     }),
   },
   image: {
@@ -310,11 +338,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginRight: 12,
   },
-  info: { flex: 1, justifyContent: 'center' },
-  title: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
-  date: { fontSize: 12, color: '#6B7280' },
-  time: { fontSize: 12, color: '#6B7280' },
-  buttons: { justifyContent: 'center' },
+  info: {flex: 1, justifyContent: 'center'},
+  title: {fontSize: 15, fontWeight: '700', color: '#1F2937'},
+  date: {fontSize: 12, color: '#6B7280'},
+  time: {fontSize: 12, color: '#6B7280'},
+  buttons: {justifyContent: 'center'},
   toggleButton: {
     backgroundColor: '#4ADE80',
     paddingVertical: 6,
@@ -322,15 +350,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 6,
   },
-  btnActivate: { backgroundColor: '#10B981' },
-  btnDeactivate: { backgroundColor: '#EF4444' },
-  toggleText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  btnActivate: {backgroundColor: '#10B981'},
+  btnDeactivate: {backgroundColor: '#EF4444'},
+  toggleText: {color: '#fff', fontSize: 12, fontWeight: '600'},
   deleteButton: {
     backgroundColor: '#DC2626',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
   },
-  deleteText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  pressed: { opacity: 0.8 },
+  deleteText: {color: '#fff', fontSize: 12, fontWeight: '600'},
+  pressed: {opacity: 0.8},
 });
