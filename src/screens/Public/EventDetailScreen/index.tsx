@@ -166,7 +166,7 @@ export default function EventDetailScreen() {
         'Atenção',
         'É necessário estar logado para comprar ingressos.',
         false,
-        () => navigation.goBack(),
+        () => navigation.navigate('Login' as never),
       );
       return;
     }

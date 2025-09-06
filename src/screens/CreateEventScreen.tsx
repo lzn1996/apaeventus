@@ -377,7 +377,7 @@ export default function CreateEventScreen() {
         onConfirmPressed={() => {
           setAlertVisible(false);
           if (isSuccess) {
-            navigation.goBack();
+            navigation.navigate('Dashboard' as never);
           }
         }}
       />
