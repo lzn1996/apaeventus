@@ -134,8 +134,7 @@ export default function CreateEventScreen() {
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: 'images' as any,
-        allowsEditing: true,
-        aspect: [16, 9],
+        allowsEditing: true, // Permite corte livre
         quality: 0.8,
       });
 
@@ -190,8 +189,7 @@ export default function CreateEventScreen() {
       // Opções mais flexíveis
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: 'images' as any,
-        allowsEditing: true,
-        aspect: [16, 9], // Proporção para banners de evento
+        allowsEditing: true, // Permite corte livre
         quality: 0.8,
         allowsMultipleSelection: false,
       });
