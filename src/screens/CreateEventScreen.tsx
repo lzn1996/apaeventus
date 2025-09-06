@@ -19,6 +19,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import AwesomeAlert from 'react-native-awesome-alerts';
 import {baseUrl} from '../config/api';
+import api from '../services/api';
 import {SafeLayout} from '../components/SafeLayout';
 import {Header} from '../components/Header';
 import {TabBar} from '../components/TabBar';
@@ -132,7 +133,7 @@ export default function CreateEventScreen() {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images' as any,
         allowsEditing: true,
         aspect: [16, 9],
         quality: 0.8,
@@ -188,7 +189,7 @@ export default function CreateEventScreen() {
 
       // Opções mais flexíveis
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images' as any,
         allowsEditing: true,
         aspect: [16, 9], // Proporção para banners de evento
         quality: 0.8,
@@ -197,7 +198,6 @@ export default function CreateEventScreen() {
 
       if (!result.canceled && result.assets[0]) {
         setImageFile(result.assets[0]);
-        console.log('Imagem selecionada:', result.assets[0]);
       }
     } catch (error) {
       console.log('Erro ao selecionar imagem:', error);
@@ -225,36 +225,76 @@ export default function CreateEventScreen() {
         date.getSeconds(),
       )}`;
 
-    const form = new FormData();
-    form.append('title', title);
-    form.append('description', description);
-    form.append('eventDate', isoDate);
-    form.append('quantity', quantity || '0');
-    form.append('price', price || '0');
-    if (imageFile) {
-      form.append('imageFile', {
-        uri: imageFile.uri,
-        type: imageFile.type || 'image/jpeg',
-        name: imageFile.fileName || 'file.jpg',
-      } as any);
-    }
-
     try {
       setLoading(true);
-      const res = await fetch(`${baseUrl}/ticket`, {
-        method: 'POST',
-        headers: {Authorization: `Bearer ${token}`},
-        body: form,
-      });
 
-      if (!res.ok) {
-        const errBody = await res.text();
-        return showAlert('Erro', `Status ${res.status}\n${errBody}`, false);
+      if (imageFile) {
+        // Para upload com imagem, usar FormData
+        const form = new FormData();
+        form.append('title', title);
+        form.append('description', description);
+        form.append('eventDate', isoDate);
+        form.append('quantity', quantity || '0');
+        form.append('price', price || '0');
+
+        // Estrutura correta para FormData com imagem no React Native
+        const imageUri = Platform.OS === 'ios'
+          ? imageFile.uri.replace('file://', '')
+          : imageFile.uri;
+
+        form.append('imageFile', {
+          uri: imageUri,
+          type: imageFile.mimeType || 'image/jpeg',
+          name: imageFile.fileName || `event_image_${Date.now()}.jpg`,
+        } as any);
+
+        // Usar fetch para FormData com imagem (melhor compatibilidade)
+        const response = await fetch(`${baseUrl}/ticket`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            // Não definir Content-Type para FormData - deixar o browser configurar
+          },
+          body: form,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Status ${response.status}: ${errorText}`);
+        }
+
+        await response.json();
+        showAlert('Sucesso', 'Evento criado!', true);
+      } else {
+        // Para dados sem imagem, usar JSON
+        await api.post('/ticket', {
+          title,
+          description,
+          eventDate: isoDate,
+          quantity: parseInt(quantity, 10) || 0,
+          price: parseFloat(price) || 0,
+        });
+
+        showAlert('Sucesso', 'Evento criado!', true);
       }
-
-      showAlert('Sucesso', 'Evento criado!', true);
     } catch (e: any) {
-      showAlert('Erro Exceção', e.message, false);
+      console.error('Erro na requisição:', e);
+
+      if (e.response) {
+        // Erro da API
+        console.error('Erro da API:', {
+          status: e.response.status,
+          data: e.response.data,
+        });
+        showAlert('Erro', `Status ${e.response.status}: ${e.response.data?.message || 'Erro desconhecido'}`, false);
+      } else if (e.request) {
+        // Erro de rede
+        console.error('Erro de rede:', e.request);
+        showAlert('Erro de Rede', 'Verifique sua conexão e tente novamente.', false);
+      } else {
+        // Outro erro
+        showAlert('Erro Exceção', e.message, false);
+      }
     } finally {
       setLoading(false);
     }
