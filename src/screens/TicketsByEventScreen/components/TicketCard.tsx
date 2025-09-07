@@ -35,6 +35,16 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, index, total, style }) 
             <Text style={styles.ticketCountText}>
                 {`Ingresso ${index + 1} de ${total}`}
             </Text>
+
+            {/* Badge para ingresso usado */}
+            {ticket.used && (
+                <View style={styles.usedTicketBadge}>
+                    <Text style={styles.usedTicketText}>
+                        ✓ INGRESSO UTILIZADO
+                    </Text>
+                </View>
+            )}
+
             {/* Status pendente de sync */}
             {ticket.pendingSync && (
                 <View style={styles.pendingSyncBadge}>
@@ -43,6 +53,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, index, total, style }) 
                     </Text>
                 </View>
             )}
+
             {/* Header com imagem do evento */}
             {ticket.eventImageUrl && (
                 <Image
@@ -78,17 +89,24 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, index, total, style }) 
                     {ticket.qrCodeDataUrl ? (
                         <Image
                             source={{ uri: ticket.qrCodeDataUrl }}
-                            style={styles.qrCodeImage}
+                            style={[styles.qrCodeImage, ticket.used && styles.qrCodeImageUsed]}
                             resizeMode="contain"
                         />
                     ) : ticket.qrCodeUrl ? (
                         <Image
                             source={{ uri: ticket.qrCodeUrl }}
-                            style={styles.qrCodeImage}
+                            style={[styles.qrCodeImage, ticket.used && styles.qrCodeImageUsed]}
                             resizeMode="contain"
                         />
                     ) : (
-                        <QRCode value={ticket.code} size={180} />
+                        <View style={styles.qrCodeContainer}>
+                            <QRCode value={ticket.code} size={180} />
+                            {ticket.used && (
+                                <View style={styles.qrCodeUsedOverlay}>
+                                    <Text style={styles.qrCodeUsedText}>USADO</Text>
+                                </View>
+                            )}
+                        </View>
                     )}
                 </View>
                 <Text style={styles.ticketCode}>{ticket.code}</Text>

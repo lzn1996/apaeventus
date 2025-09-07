@@ -89,15 +89,6 @@ export default function MyTicketsScreen({ navigation }: any) {
         }, [fetchData])
     );
 
-    const handleLogout = React.useCallback(async () => {
-        try {
-            await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
-            navigation.navigate('Login');
-        } catch (error) {
-            console.log('Erro no logout:', error);
-        }
-    }, [navigation]);
-
     const handleTabPress = (tab: string) => {
         switch (tab) {
             case 'Home':
