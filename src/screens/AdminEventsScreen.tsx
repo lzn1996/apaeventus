@@ -215,7 +215,7 @@ export default function AdminEventsScreen() {
 
   if (loading) {
     return (
-      <SafeLayout>
+      <SafeLayout showTabBar={true}>
         <Header
           title="Gerenciar Eventos"
           isLogged={isLogged}
@@ -237,7 +237,7 @@ export default function AdminEventsScreen() {
   }
 
   return (
-    <SafeLayout>
+    <SafeLayout showTabBar={true}>
       <Header
         title="Gerenciar Eventos"
         isLogged={isLogged}
