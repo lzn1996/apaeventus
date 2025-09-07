@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -26,37 +26,73 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   navigation,
 }) => {
+  const [menuVisible, setMenuVisible] = useState(false);
+
   const renderAdminButtons = () => {
     if (!isLogged || userRole !== 'ADMIN' || !navigation) {
       return null;
     }
 
     return (
-      <View style={styles.adminButtons}>
+      <View style={styles.menuContainer}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('CreateEvent')}
-          style={styles.iconButton}
+          onPress={() => setMenuVisible(!menuVisible)}
+          style={styles.menuButton}
         >
-          <MaterialIcons name="add" size={28} color="#007AFF" />
+          <MaterialIcons name="menu" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('AdminEvents')}
-          style={styles.iconButton}
-        >
-          <MaterialIcons name="event" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Scanner')}
-          style={styles.iconButton}
-        >
-          <MaterialCommunityIcons name="qrcode-scan" size={24} color="#007AFF" />
-        </TouchableOpacity>
+
+        {menuVisible && (
+          <View style={styles.dropdown}>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate('CreateEvent');
+                setMenuVisible(false);
+              }}
+              style={styles.menuItem}
+            >
+              <MaterialIcons name="add" size={20} color="#007AFF" />
+              <Text style={styles.menuText}>Criar Evento</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate('AdminEvents');
+                setMenuVisible(false);
+              }}
+              style={styles.menuItem}
+            >
+              <MaterialIcons name="event" size={20} color="#007AFF" />
+              <Text style={styles.menuText}>Gerenciar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate('Scanner');
+                setMenuVisible(false);
+              }}
+              style={[styles.menuItem, styles.lastMenuItem]}
+            >
+              <MaterialCommunityIcons name="qrcode-scan" size={20} color="#007AFF" />
+              <Text style={styles.menuText}>Ler QR Code</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   };
 
   return (
     <View style={styles.header}>
+      {/* Overlay para fechar menu quando clicar fora */}
+      {menuVisible && (
+        <TouchableOpacity
+          style={styles.overlay}
+          onPress={() => setMenuVisible(false)}
+          activeOpacity={1}
+        />
+      )}
+
       {/* Left Side */}
       <View style={styles.leftContainer}>
         {showBackButton && onBackPress ? (
@@ -105,6 +141,14 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     minHeight: 60,
   },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+  },
   leftContainer: {
     flex: 1,
     alignItems: 'flex-start',
@@ -119,6 +163,47 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
+  },
+  menuContainer: {
+    position: 'relative',
+    zIndex: 1000,
+  },
+  menuButton: {
+    padding: 8,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    minWidth: 140,
+    zIndex: 1001,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  lastMenuItem: {
+    borderBottomWidth: 0, // Remove a borda do último item
+  },
+  menuText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
   },
   adminButtons: {
     flexDirection: 'row',
