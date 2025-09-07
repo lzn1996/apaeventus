@@ -17,6 +17,12 @@ export const SafeLayout: React.FC<SafeLayoutProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
 
+  const contentStyle = {
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : insets.top,
+    paddingBottom: showTabBar ? 0 : insets.bottom,
+    backgroundColor,
+  };
+
   return (
     <View style={[styles.container, { backgroundColor }]}>
       <StatusBar
@@ -24,16 +30,7 @@ export const SafeLayout: React.FC<SafeLayoutProps> = ({
         backgroundColor={Platform.OS === 'android' ? backgroundColor : 'transparent'}
         translucent={Platform.OS === 'android'}
       />
-      <View
-        style={[
-          styles.content,
-          {
-            paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : insets.top,
-            paddingBottom: showTabBar ? 0 : insets.bottom,
-            backgroundColor,
-          },
-        ]}
-      >
+      <View style={[styles.content, contentStyle]}>
         {children}
       </View>
     </View>

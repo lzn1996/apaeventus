@@ -1,5 +1,5 @@
 // src/screens/EditProfileScreen.tsx
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   ScrollView,
   Text,
@@ -41,6 +41,37 @@ export default function EditProfileScreen() {
     setAlertVisible(true);
   };
 
+  // Renova access token usando o refreshToken
+  async function refreshAccessToken(): Promise<string | null> {
+    const old = await AsyncStorage.getItem('accessToken');
+    const refresh = await AsyncStorage.getItem('refreshToken');
+    if (!old || !refresh) {
+      return null;
+    }
+
+    const res = await fetch(`${baseUrl}/auth/refresh-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${old}`,
+      },
+      body: JSON.stringify({refreshToken: refresh}),
+    });
+    if (!res.ok) {
+      return null;
+    }
+
+    const json = await res.json();
+    if (json.accessToken) {
+      await AsyncStorage.setItem('accessToken', json.accessToken);
+      if (json.refreshToken) {
+        await AsyncStorage.setItem('refreshToken', json.refreshToken);
+      }
+      return json.accessToken;
+    }
+    return null;
+  }
+
   const handleTabPress = (tab: string) => {
     switch (tab) {
       case 'Home':
@@ -59,7 +90,7 @@ export default function EditProfileScreen() {
   };
 
   /** 0) Logout forçado */
-  const doLogout = async () => {
+  const doLogout = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
       if (token) {
@@ -78,16 +109,32 @@ export default function EditProfileScreen() {
       ]);
       navigation.navigate('Login' as never);
     }
-  };
+  }, [navigation]);
 
   /** 2) Inicializa tabela e carrega perfil (remoto apenas) */
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        // Busca do backend
-        const res = await api.get('/user');
-        const js = res.data;
+        // Primeira tentativa: busca do backend
+        let response;
+        try {
+          response = await api.get('/user/profile');
+        } catch (apiError: any) {
+          // Se erro 401, tenta renovar token
+          if (apiError?.response?.status === 401) {
+            const newToken = await refreshAccessToken();
+            if (!newToken) {
+              throw new Error('Sessão expirada');
+            }
+            // Retry com novo token
+            response = await api.get('/user/profile');
+          } else {
+            throw apiError;
+          }
+        }
+
+        const js = response.data;
         setName(js.name || '');
         setEmail(js.email || '');
         setRg(js.rg || '');
@@ -108,16 +155,26 @@ export default function EditProfileScreen() {
         } catch (storageError) {
           console.log('Erro ao buscar dados do storage:', storageError);
         }
-        showAlert(
-          'Atualização cadastral',
-          'Não foi possível carregar alguns dados. Preencha os campos necessários.',
-          true,
-        );
+
+        if (e.message === 'Sessão expirada') {
+          showAlert(
+            'Sessão Expirada',
+            'Sua sessão expirou. Você será redirecionado para o login.',
+            false,
+          );
+          setTimeout(doLogout, 3000);
+        } else {
+          showAlert(
+            'Atualização cadastral',
+            'Não foi possível carregar alguns dados. Preencha os campos necessários.',
+            true,
+          );
+        }
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [doLogout]);
 
   /** 3) Salva alterações no servidor apenas, depois força logout */
   const handleSave = async () => {

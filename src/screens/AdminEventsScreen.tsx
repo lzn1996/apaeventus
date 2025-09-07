@@ -358,7 +358,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
+    textAlign: 'center',
   },
-  deleteText: {color: '#fff', fontSize: 12, fontWeight: '600'},
+  deleteText: {color: '#fff', fontSize: 12, fontWeight: '600', textAlign: 'center'},
   pressed: {opacity: 0.8},
 });
