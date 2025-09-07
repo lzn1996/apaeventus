@@ -7,12 +7,10 @@ import NetInfoSyncListener from './src/components/NetInfoSyncListener';
 
 export default function App() {
   useEffect(() => {
-    // Desabilita completamente o botão físico de voltar do Android
     if (Platform.OS === 'android') {
       const backHandler = BackHandler.addEventListener(
         'hardwareBackPress',
         () => {
-          // Sempre bloqueia o botão de voltar
           return true;
         },
       );
