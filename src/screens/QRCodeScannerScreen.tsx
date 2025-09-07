@@ -62,7 +62,7 @@ export default function QrScannerScreen() {
       setAlertVisible(false);
       setScanned(false);
       navigation.navigate('Dashboard' as never);
-    }, 5000);
+    }, 10000);
   }
 
   const handleTabPress = (tab: string) => {
@@ -126,24 +126,24 @@ export default function QrScannerScreen() {
         response = await fetch(url, {method: 'POST', headers: newHeaders, body});
       }
 
-      const text = await response.text();
-
       if (!response.ok) {
-        let msg = text;
-        try {
-          const err = JSON.parse(text);
-          msg = err.message || JSON.stringify(err);
-        } catch (parseError) {
-          console.error('Erro ao fazer parse da resposta:', parseError);
+        if (response.status === 400) {
+          throw new Error('Ingresso já foi utilizado ou é inválido.');
+        } else if (response.status === 404) {
+          throw new Error('Ingresso não encontrado no sistema.');
+        } else if (response.status >= 500) {
+          throw new Error('Erro no servidor. Tente novamente em alguns instantes.');
+        } else {
+          throw new Error('Erro ao validar o ingresso. Verifique o QR Code.');
         }
-        throw new Error(`HTTP ${response.status}: ${msg}`);
       }
 
-      showAlert('QR Code Válido', `Venda ${data} marcada como usada.`, true);
+      showAlert('✅ Ingresso Válido', 'Ingresso validado com sucesso!', true);
     } catch (error: any) {
+      console.error('Erro completo:', error);
       showAlert(
-        'Erro ao validar QR Code',
-        `Erro: ${error.message || 'Ingresso já utilizado ou inválido.'}`,
+        '❌ Erro na Validação',
+        error.message || 'Não foi possível validar o ingresso. Tente novamente.',
         false,
       );
     }
