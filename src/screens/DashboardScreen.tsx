@@ -157,13 +157,20 @@ export default function DashboardScreen({ navigation }: any) {
         };
       });
 
-      setAllEvents(mapped);
-      if (mapped.length === 0) {
+      // Ordena eventos por data (mais próximos primeiro)
+      const sortedEvents = mapped.sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return dateA - dateB;
+      });
+
+      setAllEvents(sortedEvents);
+      if (sortedEvents.length === 0) {
         setFeaturedEvents([]);
         setNextEvents([]);
       } else {
-        setFeaturedEvents([mapped[0]]);
-        setNextEvents(mapped.slice(1));
+        setFeaturedEvents([sortedEvents[0]]);
+        setNextEvents(sortedEvents.slice(1));
       }
     } catch (error) {
       console.warn('Erro fetchEvents:', error);
@@ -418,14 +425,15 @@ export default function DashboardScreen({ navigation }: any) {
   );
 }
 
-// Formata "2025-06-14T19:00:00.000Z" em "14 jun, 19h"
+// Formata "2025-06-14T19:00:00.000Z" em "14 jun 2025, 19h"
 function formatDateToLabel(eventDate: string): string {
   try {
     const data = new Date(eventDate);
     const dia = data.getDate().toString().padStart(2, '0');
     const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+    const ano = data.getFullYear();
     const hora = data.getHours().toString().padStart(2, '0');
-    return `${dia} ${mes}, ${hora}h`;
+    return `${dia} ${mes} ${ano}, ${hora}h`;
   } catch {
     return eventDate;
   }
