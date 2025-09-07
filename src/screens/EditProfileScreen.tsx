@@ -210,10 +210,6 @@ export default function EditProfileScreen() {
     }
   };
 
-  useEffect(() => {
-    // Não precisamos do BackHandler aqui, pois o Header já tem um botão de voltar
-  }, [navigation]);
-
   if (loading) {
     return (
       <SafeLayout showTabBar={true}>
