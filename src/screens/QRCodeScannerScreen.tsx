@@ -149,18 +149,20 @@ export default function QrScannerScreen() {
   }
 
   return (
-    <SafeLayout>
+    <SafeLayout showTabBar={true}>
       <Header
-        title="Scanner QR Code"
+        title="Leitor de QR Code"
         isLogged={isLogged}
         userRole={userRole}
         navigation={navigation}
       />
 
-      <CameraView
-        style={styles.camera}
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}>
-        <View style={styles.layerContainer}>
+      <View style={styles.cameraContainer}>
+        <CameraView
+          style={styles.camera}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        />
+        <View style={styles.overlay}>
           <View style={styles.layerTop} />
           <View style={styles.layerCenter}>
             <View style={styles.layerLeft} />
@@ -169,7 +171,7 @@ export default function QrScannerScreen() {
           </View>
           <View style={styles.layerBottom} />
         </View>
-      </CameraView>
+      </View>
 
       <AwesomeAlert
         show={alertVisible}
@@ -209,11 +211,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
+  cameraContainer: {
+    flex: 1,
+    position: 'relative',
+  },
   camera: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
-  layerContainer: {flex: 1},
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flex: 1,
+  },
   layerTop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)'},
   layerCenter: {flexDirection: 'row'},
   layerLeft: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)'},
