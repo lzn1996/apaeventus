@@ -1,5 +1,5 @@
 // src/screens/MyTicketsScreen/index.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, FlatList, Text, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from './styles';
@@ -245,7 +245,7 @@ export default function MyTicketsScreen({ navigation }: any) {
                 </View>
             )}
 
-            {offlineError && (
+            {offlineError && isConnected && (
                 <View style={styles.errorContainer}>
                     <Text style={styles.errorText}>{offlineError}</Text>
                 </View>

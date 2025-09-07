@@ -57,7 +57,6 @@ export const useOfflineTickets = () => {
       console.log('Ingressos sincronizados com sucesso');
       return true;
     } catch (error: any) {
-      console.error('Erro na sincronização:', error);
       setState(prev => ({
         ...prev,
         error: 'Erro ao sincronizar ingressos',
