@@ -109,4 +109,42 @@ export const authService = {
             throw error;
         }
     },
+
+    /**
+     * Função de compatibilidade para renovar o access token.
+     * Retorna apenas o novo access token ou null se falhar.
+     * @returns O novo access token ou null se falhar.
+     */
+    async refreshAccessToken(): Promise<string | null> {
+        try {
+            const old = await this.getAccessToken();
+            const refresh = await this.getRefreshToken();
+            if (!old || !refresh) {
+                return null;
+            }
+
+            const response = await fetch(`${baseUrl}/auth/refresh-token`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${old}`,
+                },
+                body: JSON.stringify({ refreshToken: refresh }),
+            });
+
+            if (!response.ok) {
+                return null;
+            }
+
+            const json = await response.json();
+            if (json.accessToken) {
+                await this.setTokens(json.accessToken, json.refreshToken || refresh);
+                return json.accessToken;
+            }
+            return null;
+        } catch (error) {
+            console.error('[authService] Erro ao renovar access token:', error);
+            return null;
+        }
+    },
 };

@@ -17,6 +17,7 @@ import {baseUrl} from '../config/api';
 import {SafeLayout} from '../components/SafeLayout';
 import {Header} from '../components/Header';
 import {TabBar} from '../components/TabBar';
+import { authService } from '../services/authService';
 
 export default function AdminEventsScreen() {
   const navigation = useNavigation();
@@ -24,37 +25,6 @@ export default function AdminEventsScreen() {
   const [loading, setLoading] = useState(true);
   const [isLogged] = useState(true);
   const [userRole] = useState<'ADMIN' | 'USER' | null>('ADMIN');
-
-  // Renova access token usando o refreshToken
-  async function refreshAccessToken(): Promise<string | null> {
-    const old = await AsyncStorage.getItem('accessToken');
-    const refresh = await AsyncStorage.getItem('refreshToken');
-    if (!old || !refresh) {
-      return null;
-    }
-
-    const res = await fetch(`${baseUrl}/auth/refresh-token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${old}`,
-      },
-      body: JSON.stringify({refreshToken: refresh}),
-    });
-    if (!res.ok) {
-      return null;
-    }
-
-    const json = await res.json();
-    if (json.accessToken) {
-      await AsyncStorage.setItem('accessToken', json.accessToken);
-      if (json.refreshToken) {
-        await AsyncStorage.setItem('refreshToken', json.refreshToken);
-      }
-      return json.accessToken;
-    }
-    return null;
-  }
 
   // Busca lista de eventos
   const fetchEvents = useCallback(async () => {
@@ -66,7 +36,7 @@ export default function AdminEventsScreen() {
 
     // se token expirou, tenta renovar e refazer fetch
     if (res.status === 401) {
-      const newToken = await refreshAccessToken();
+      const newToken = await authService.refreshAccessToken();
       if (!newToken) {
         setLoading(false);
         return Alert.alert('Sessão expirada', 'Faça login novamente.');
@@ -104,7 +74,7 @@ export default function AdminEventsScreen() {
     });
 
     if (res.status === 401) {
-      const newToken = await refreshAccessToken();
+      const newToken = await authService.refreshAccessToken();
       if (!newToken) {
         return Alert.alert('Sessão expirada', 'Faça login novamente.');
       }
@@ -143,7 +113,7 @@ export default function AdminEventsScreen() {
               headers: {Authorization: `Bearer ${token}`},
             });
             if (res.status === 401) {
-              const newToken = await refreshAccessToken();
+              const newToken = await authService.refreshAccessToken();
               if (!newToken) {
                 return Alert.alert('Sessão expirada', 'Faça login novamente.');
               }

@@ -17,6 +17,7 @@ import {SafeLayout} from '../components/SafeLayout';
 import {Header} from '../components/Header';
 import {TabBar} from '../components/TabBar';
 import {useNavigation} from '@react-navigation/native';
+import { authService } from '../services/authService';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation();
@@ -40,37 +41,6 @@ export default function EditProfileScreen() {
     setIsSuccess(success);
     setAlertVisible(true);
   };
-
-  // Renova access token usando o refreshToken
-  async function refreshAccessToken(): Promise<string | null> {
-    const old = await AsyncStorage.getItem('accessToken');
-    const refresh = await AsyncStorage.getItem('refreshToken');
-    if (!old || !refresh) {
-      return null;
-    }
-
-    const res = await fetch(`${baseUrl}/auth/refresh-token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${old}`,
-      },
-      body: JSON.stringify({refreshToken: refresh}),
-    });
-    if (!res.ok) {
-      return null;
-    }
-
-    const json = await res.json();
-    if (json.accessToken) {
-      await AsyncStorage.setItem('accessToken', json.accessToken);
-      if (json.refreshToken) {
-        await AsyncStorage.setItem('refreshToken', json.refreshToken);
-      }
-      return json.accessToken;
-    }
-    return null;
-  }
 
   const handleTabPress = (tab: string) => {
     switch (tab) {
@@ -123,7 +93,7 @@ export default function EditProfileScreen() {
         } catch (apiError: any) {
           // Se erro 401, tenta renovar token
           if (apiError?.response?.status === 401) {
-            const newToken = await refreshAccessToken();
+            const newToken = await authService.refreshAccessToken();
             if (!newToken) {
               throw new Error('Sessão expirada');
             }

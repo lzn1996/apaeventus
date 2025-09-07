@@ -9,6 +9,7 @@ import {Header} from '../components/Header';
 import {TabBar} from '../components/TabBar';
 import { baseUrl } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authService } from '../services/authService';
 
 export default function QrScannerScreen() {
   const navigation = useNavigation();
@@ -21,36 +22,6 @@ export default function QrScannerScreen() {
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
-
-  async function refreshAccessToken(): Promise<string | null> {
-    const old = await AsyncStorage.getItem('accessToken');
-    const refresh = await AsyncStorage.getItem('refreshToken');
-    if (!old || !refresh) {
-      return null;
-    }
-
-    const res = await fetch(`${baseUrl}/auth/refresh-token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${old}`,
-      },
-      body: JSON.stringify({refreshToken: refresh}),
-    });
-    if (!res.ok) {
-      return null;
-    }
-
-    const json = await res.json();
-    if (json.accessToken) {
-      await AsyncStorage.setItem('accessToken', json.accessToken);
-      if (json.refreshToken) {
-        await AsyncStorage.setItem('refreshToken', json.refreshToken);
-      }
-      return json.accessToken;
-    }
-    return null;
-  }
 
   function showAlert(title: string, message: string, success = true) {
     setAlertTitle(title);
@@ -114,7 +85,7 @@ export default function QrScannerScreen() {
       let response = await fetch(url, {method: 'POST', headers, body});
 
       if (response.status === 401) {
-        const newToken = await refreshAccessToken();
+        const newToken = await authService.refreshAccessToken();
         if (!newToken) {
           throw new Error('Não foi possível renovar o token');
         }
