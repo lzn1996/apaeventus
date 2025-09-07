@@ -1,43 +1,14 @@
 // src/screens/QrScannerScreen.tsx
 import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, Button} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {CameraView, useCameraPermissions} from 'expo-camera';
 import AwesomeAlert from 'react-native-awesome-alerts';
 import {useNavigation} from '@react-navigation/native';
 import {SafeLayout} from '../components/SafeLayout';
 import {Header} from '../components/Header';
 import {TabBar} from '../components/TabBar';
-
-let bearerToken = '';
-
-async function getNewToken() {
-  const oldAccess = await AsyncStorage.getItem('accessToken');
-  const refresh = await AsyncStorage.getItem('refreshToken');
-  if (!oldAccess || !refresh) {
-    throw new Error('Tokens não encontrados no armazenamento');
-  }
-  const response = await fetch(
-    'https://apaeventus.rafaelcostadev.com/auth/refresh-token',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${oldAccess}`,
-      },
-      body: JSON.stringify({refreshToken: refresh}),
-    },
-  );
-  if (!response.ok) {
-    throw new Error(`Falha ao atualizar token: ${response.status}`);
-  }
-  const result = await response.json();
-  await AsyncStorage.setItem('accessToken', result.accessToken);
-  if (result.refreshToken) {
-    await AsyncStorage.setItem('refreshToken', result.refreshToken);
-  }
-  return result.accessToken;
-}
+import { baseUrl } from '../config/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function QrScannerScreen() {
   const navigation = useNavigation();
@@ -46,17 +17,52 @@ export default function QrScannerScreen() {
   const [isLogged] = useState(true);
   const [userRole] = useState<'ADMIN' | 'USER' | null>('ADMIN');
 
-  // estados do AwesomeAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
+
+  async function refreshAccessToken(): Promise<string | null> {
+    const old = await AsyncStorage.getItem('accessToken');
+    const refresh = await AsyncStorage.getItem('refreshToken');
+    if (!old || !refresh) {
+      return null;
+    }
+
+    const res = await fetch(`${baseUrl}/auth/refresh-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${old}`,
+      },
+      body: JSON.stringify({refreshToken: refresh}),
+    });
+    if (!res.ok) {
+      return null;
+    }
+
+    const json = await res.json();
+    if (json.accessToken) {
+      await AsyncStorage.setItem('accessToken', json.accessToken);
+      if (json.refreshToken) {
+        await AsyncStorage.setItem('refreshToken', json.refreshToken);
+      }
+      return json.accessToken;
+    }
+    return null;
+  }
 
   function showAlert(title: string, message: string, success = true) {
     setAlertTitle(title);
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
+
+    setTimeout(() => {
+      setAlertVisible(false);
+      setScanned(false);
+      navigation.navigate('Dashboard' as never);
+    }, 5000);
   }
 
   const handleTabPress = (tab: string) => {
@@ -92,23 +98,44 @@ export default function QrScannerScreen() {
     setScanned(true);
 
     try {
-      bearerToken = await getNewToken();
+      let bearerToken = await AsyncStorage.getItem('accessToken');
 
-      const url = 'https://apaeventus.rafaelcostadev.com/sale/set-used';
+      if (!bearerToken) {
+        throw new Error('Token não encontrado');
+      }
+
+      const url = `${baseUrl}/sale/set-used`;
       const headers = {
         Authorization: `Bearer ${bearerToken}`,
         'Content-Type': 'application/json',
       };
       const body = JSON.stringify({saleId: data});
 
-      const response = await fetch(url, {method: 'POST', headers, body});
+      let response = await fetch(url, {method: 'POST', headers, body});
+
+      if (response.status === 401) {
+        const newToken = await refreshAccessToken();
+        if (!newToken) {
+          throw new Error('Não foi possível renovar o token');
+        }
+
+        const newHeaders = {
+          Authorization: `Bearer ${newToken}`,
+          'Content-Type': 'application/json',
+        };
+        response = await fetch(url, {method: 'POST', headers: newHeaders, body});
+      }
+
       const text = await response.text();
+
       if (!response.ok) {
         let msg = text;
         try {
           const err = JSON.parse(text);
           msg = err.message || JSON.stringify(err);
-        } catch {}
+        } catch (parseError) {
+          console.error('Erro ao fazer parse da resposta:', parseError);
+        }
         throw new Error(`HTTP ${response.status}: ${msg}`);
       }
 
@@ -116,13 +143,12 @@ export default function QrScannerScreen() {
     } catch (error: any) {
       showAlert(
         'Erro ao validar QR Code',
-        'Ingresso já utilizado ou inválido.',
+        `Erro: ${error.message || 'Ingresso já utilizado ou inválido.'}`,
         false,
       );
     }
   };
 
-  // Enquanto aguarda permissão
   if (permission === null || !permission.granted) {
     return (
       <SafeLayout showTabBar={true}>
@@ -185,7 +211,13 @@ export default function QrScannerScreen() {
         confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
         onConfirmPressed={() => {
           setAlertVisible(false);
-          setScanned(false); // permitir nova leitura
+          setScanned(false);
+          navigation.navigate('Dashboard' as never);
+        }}
+        onDismiss={() => {
+          setAlertVisible(false);
+          setScanned(false);
+          navigation.navigate('Dashboard' as never);
         }}
       />
 

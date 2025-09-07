@@ -14,7 +14,7 @@ export default function TicketsByEventScreen({route}: any) {
   const {tickets = []} = route.params;
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [localTickets] = useState(tickets);
+  const [localTickets, setLocalTickets] = useState(tickets);
   const [isLogged] = useState(true);
   const [userRole] = useState<'ADMIN' | 'USER' | null>('USER');
 
@@ -36,8 +36,20 @@ export default function TicketsByEventScreen({route}: any) {
   };
 
   useEffect(() => {
+    // Ordena os ingressos: não utilizados primeiro, depois os utilizados
+    const sortedTickets = [...tickets].sort((a, b) => {
+      // Se a.used é false e b.used é true, a vem primeiro (retorna -1)
+      // Se a.used é true e b.used é false, b vem primeiro (retorna 1)
+      // Se ambos têm o mesmo status, mantém a ordem original (retorna 0)
+      if (a.used === b.used) {
+        return 0;
+      }
+      return a.used ? 1 : -1;
+    });
+
+    setLocalTickets(sortedTickets);
     setLoading(false);
-  }, []);
+  }, [tickets]);
 
   if (loading) {
     return (

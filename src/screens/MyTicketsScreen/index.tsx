@@ -65,12 +65,18 @@ export default function MyTicketsScreen({ navigation }: any) {
                 if (syncSuccess) {
                     // Busca dados sincronizados do banco local
                     const localGrouped = await getLocalTickets();
-                    setGrouped(localGrouped);
+
+                    // Ordena os eventos por prioridade e data
+                    const sortedGrouped = sortEventsByDateAndStatus(localGrouped);
+                    setGrouped(sortedGrouped);
                 }
             } else if (hasLocalData) {
                 // Se não tem conexão mas tem dados locais, usa eles
                 const localGrouped = await getLocalTickets();
-                setGrouped(localGrouped);
+
+                // Ordena os eventos por prioridade e data
+                const sortedGrouped = sortEventsByDateAndStatus(localGrouped);
+                setGrouped(sortedGrouped);
             } else {
                 // Sem conexão e sem dados locais
                 setGrouped([]);
@@ -81,6 +87,53 @@ export default function MyTicketsScreen({ navigation }: any) {
             setLoading(false);
         }
     }, [isConnected, hasLocalData, syncTickets, getLocalTickets, loadUserData]);
+
+    // Função para ordenar eventos por status e data
+    const sortEventsByDateAndStatus = (events: GroupedTickets[]) => {
+        const now = new Date();
+
+        return [...events].sort((a, b) => {
+            // Converte as datas dos eventos
+            let dateA: Date;
+            let dateB: Date;
+
+            if (a.event.date && a.event.time) {
+                dateA = new Date(`${a.event.date}T${a.event.time}`);
+            } else if (a.event.date) {
+                dateA = new Date(a.event.date);
+            } else {
+                dateA = new Date(0); // Data muito antiga se não tem data
+            }
+
+            if (b.event.date && b.event.time) {
+                dateB = new Date(`${b.event.date}T${b.event.time}`);
+            } else if (b.event.date) {
+                dateB = new Date(b.event.date);
+            } else {
+                dateB = new Date(0); // Data muito antiga se não tem data
+            }
+
+            // Determina se os eventos são futuros ou passados
+            const aIsFuture = dateA.getTime() > now.getTime();
+            const bIsFuture = dateB.getTime() > now.getTime();
+
+            // Prioridade: eventos futuros primeiro
+            if (aIsFuture && !bIsFuture) {
+                return -1; // a vem primeiro
+            }
+            if (!aIsFuture && bIsFuture) {
+                return 1; // b vem primeiro
+            }
+
+            // Se ambos são futuros, ordena por data mais próxima primeiro
+            if (aIsFuture && bIsFuture) {
+                return dateA.getTime() - dateB.getTime();
+            }
+
+            // Se ambos são passados, ordena por data mais recente primeiro
+            return dateB.getTime() - dateA.getTime();
+        });
+    };
 
     // Atualiza os ingressos sempre que a tela ganhar foco
     useFocusEffect(
