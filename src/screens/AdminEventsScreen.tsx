@@ -18,6 +18,7 @@ import {SafeLayout} from '../components/SafeLayout';
 import {Header} from '../components/Header';
 import {TabBar} from '../components/TabBar';
 import { authService } from '../services/authService';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 export default function AdminEventsScreen() {
   const navigation = useNavigation();
@@ -25,6 +26,7 @@ export default function AdminEventsScreen() {
   const [loading, setLoading] = useState(true);
   const [isLogged] = useState(true);
   const [userRole] = useState<'ADMIN' | 'USER' | null>('ADMIN');
+  const isConnected = useNetworkStatus();
 
   // Busca lista de eventos
   const fetchEvents = useCallback(async () => {
@@ -158,6 +160,10 @@ export default function AdminEventsScreen() {
     }
   };
 
+  const handleOfflineAlert = () => {
+    // Esta tela é para admin, não precisa de lógica especial
+  };
+
   const handleLogout = async () => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
@@ -201,6 +207,8 @@ export default function AdminEventsScreen() {
           onTabPress={handleTabPress}
           isLogged={isLogged}
           userRole={userRole}
+          isConnected={isConnected}
+          onOfflineAlert={handleOfflineAlert}
         />
       </SafeLayout>
     );
@@ -277,6 +285,8 @@ export default function AdminEventsScreen() {
         onTabPress={handleTabPress}
         isLogged={isLogged}
         userRole={userRole}
+        isConnected={isConnected}
+        onOfflineAlert={handleOfflineAlert}
       />
     </SafeLayout>
   );

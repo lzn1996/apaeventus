@@ -18,6 +18,7 @@ import {Header} from '../components/Header';
 import {TabBar} from '../components/TabBar';
 import {useNavigation} from '@react-navigation/native';
 import { authService } from '../services/authService';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation();
@@ -29,6 +30,7 @@ export default function EditProfileScreen() {
   const [cellphone, setCellphone] = useState('');
   const [isLogged] = useState(true);
   const [userRole] = useState<'ADMIN' | 'USER' | null>('USER');
+  const isConnected = useNetworkStatus();
   // estados do AwesomeAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
@@ -40,6 +42,10 @@ export default function EditProfileScreen() {
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
+  };
+
+  const handleOfflineAlert = () => {
+    // Esta tela já requer login, então não precisa de lógica especial
   };
 
   const handleTabPress = (tab: string) => {
@@ -192,6 +198,8 @@ export default function EditProfileScreen() {
           onTabPress={handleTabPress}
           isLogged={isLogged}
           userRole={userRole}
+          isConnected={isConnected}
+          onOfflineAlert={handleOfflineAlert}
         />
       </SafeLayout>
     );
@@ -271,6 +279,8 @@ export default function EditProfileScreen() {
         onTabPress={handleTabPress}
         isLogged={isLogged}
         userRole={userRole}
+        isConnected={isConnected}
+        onOfflineAlert={handleOfflineAlert}
       />
     </SafeLayout>
   );

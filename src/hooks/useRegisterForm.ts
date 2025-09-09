@@ -251,7 +251,7 @@ const useRegisterForm = () => {
         }
 
         setLoading(true);
-        let timeoutId: NodeJS.Timeout | null = null;
+        let timeoutId: number | null = null;
         try {
             const controller = new AbortController();
             timeoutId = setTimeout(() => {

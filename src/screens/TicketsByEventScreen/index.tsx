@@ -7,6 +7,7 @@ import Carousel from 'react-native-reanimated-carousel';
 import {SafeLayout} from '../../components/SafeLayout';
 import {Header} from '../../components/Header';
 import {TabBar} from '../../components/TabBar';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import {useNavigation} from '@react-navigation/native';
 
 export default function TicketsByEventScreen({route}: any) {
@@ -17,6 +18,7 @@ export default function TicketsByEventScreen({route}: any) {
   const [localTickets, setLocalTickets] = useState(tickets);
   const [isLogged] = useState(true);
   const [userRole] = useState<'ADMIN' | 'USER' | null>('USER');
+  const isConnected = useNetworkStatus();
 
   const handleTabPress = (tab: string) => {
     switch (tab) {
@@ -33,6 +35,10 @@ export default function TicketsByEventScreen({route}: any) {
         navigation.navigate('ProfileEdit' as never);
         break;
     }
+  };
+
+  const handleOfflineAlert = () => {
+    // Esta tela mostra ingressos já carregados, não precisa de lógica especial
   };
 
   useEffect(() => {
@@ -67,6 +73,8 @@ export default function TicketsByEventScreen({route}: any) {
           onTabPress={handleTabPress}
           isLogged={isLogged}
           userRole={userRole}
+          isConnected={isConnected}
+          onOfflineAlert={handleOfflineAlert}
         />
       </SafeLayout>
     );
@@ -88,6 +96,8 @@ export default function TicketsByEventScreen({route}: any) {
           onTabPress={handleTabPress}
           isLogged={isLogged}
           userRole={userRole}
+          isConnected={isConnected}
+          onOfflineAlert={handleOfflineAlert}
         />
       </SafeLayout>
     );
@@ -143,6 +153,8 @@ export default function TicketsByEventScreen({route}: any) {
         onTabPress={handleTabPress}
         isLogged={isLogged}
         userRole={userRole}
+        isConnected={isConnected}
+        onOfflineAlert={handleOfflineAlert}
       />
     </SafeLayout>
   );

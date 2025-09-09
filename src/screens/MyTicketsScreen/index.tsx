@@ -59,8 +59,8 @@ export default function MyTicketsScreen({ navigation }: any) {
             // Carrega dados do usuário
             await loadUserData();
 
-            // Se tem conexão, sincroniza os dados
-            if (isConnected) {
+            // Se o usuário está logado e tem conexão, sincroniza os dados
+            if (isLogged && isConnected) {
                 const syncSuccess = await syncTickets();
                 if (syncSuccess) {
                     // Busca dados sincronizados do banco local
@@ -71,14 +71,14 @@ export default function MyTicketsScreen({ navigation }: any) {
                     setGrouped(sortedGrouped);
                 }
             } else if (hasLocalData) {
-                // Se não tem conexão mas tem dados locais, usa eles
+                // Se não está logado ou sem conexão, mas tem dados locais, usa eles
                 const localGrouped = await getLocalTickets();
 
                 // Ordena os eventos por prioridade e data
                 const sortedGrouped = sortEventsByDateAndStatus(localGrouped);
                 setGrouped(sortedGrouped);
             } else {
-                // Sem conexão e sem dados locais
+                // Sem dados locais
                 setGrouped([]);
             }
         } catch (error: any) {
@@ -86,7 +86,7 @@ export default function MyTicketsScreen({ navigation }: any) {
         } finally {
             setLoading(false);
         }
-    }, [isConnected, hasLocalData, syncTickets, getLocalTickets, loadUserData]);
+    }, [isLogged, isConnected, hasLocalData, syncTickets, getLocalTickets, loadUserData]);
 
     // Função para ordenar eventos por status e data
     const sortEventsByDateAndStatus = (events: GroupedTickets[]) => {
@@ -238,6 +238,7 @@ export default function MyTicketsScreen({ navigation }: any) {
                     onTabPress={handleTabPress}
                     isLogged={isLogged}
                     userRole={userRole}
+                    isConnected={isConnected}
                 />
             </SafeLayout>
         );
@@ -247,12 +248,17 @@ export default function MyTicketsScreen({ navigation }: any) {
     let statusMessage = '';
     let canShowTickets = false;
 
-    if (!isConnected && !hasLocalData) {
+    if (!isLogged && !hasLocalData) {
+        statusMessage = 'Nenhum ingresso sincronizado encontrado. Faça login e conecte-se à internet para sincronizar seus ingressos.';
+    } else if (!isLogged && hasLocalData) {
+        statusMessage = 'Mostrando ingressos salvos localmente. Faça login para sincronizar novos ingressos.';
+        canShowTickets = true;
+    } else if (isLogged && !isConnected && !hasLocalData) {
         statusMessage = 'Sem conexão com a internet e nenhum ingresso salvo localmente. Conecte-se para sincronizar seus ingressos.';
-    } else if (!isConnected && hasLocalData) {
+    } else if (isLogged && !isConnected && hasLocalData) {
         statusMessage = 'Modo offline - mostrando ingressos salvos localmente.';
         canShowTickets = true;
-    } else if (isConnected && grouped.length === 0) {
+    } else if (isLogged && isConnected && grouped.length === 0) {
         statusMessage = 'Você ainda não possui ingressos.';
     } else {
         canShowTickets = true;
@@ -308,6 +314,14 @@ export default function MyTicketsScreen({ navigation }: any) {
             ) : (
                 <View style={styles.statusContainer}>
                     <Text style={styles.statusText}>{statusMessage}</Text>
+                    {!isLogged && (
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Login')}
+                            style={styles.loginButton}
+                        >
+                            <Text style={styles.loginButtonText}>Fazer Login</Text>
+                        </TouchableOpacity>
+                    )}
                     {!isConnected && (
                         <TouchableOpacity onPress={fetchData} style={styles.retryButton}>
                             <Text style={styles.retryText}>Tentar novamente</Text>
@@ -321,6 +335,7 @@ export default function MyTicketsScreen({ navigation }: any) {
                 onTabPress={handleTabPress}
                 isLogged={isLogged}
                 userRole={userRole}
+                isConnected={isConnected}
             />
         </SafeLayout>
     );

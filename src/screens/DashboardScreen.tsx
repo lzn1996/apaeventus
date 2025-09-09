@@ -20,6 +20,7 @@ import { baseUrl } from '../config/api';
 import { SafeLayout } from '../components/SafeLayout';
 import { Header } from '../components/Header';
 import { TabBar } from '../components/TabBar';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 interface EventRaw {
   id: string;
@@ -39,6 +40,7 @@ interface EventRaw {
 export default function DashboardScreen({ navigation }: any) {
   type TabName = 'Home' | 'Search' | 'Tickets' | 'Profile';
   const [activeTab, setActiveTab] = useState<TabName>('Home');
+  const isConnected = useNetworkStatus();
 
   // --- Autenticação simplificada via AsyncStorage "userRole" ---
   const [isLogged, setIsLogged] = useState(false);
@@ -55,13 +57,15 @@ export default function DashboardScreen({ navigation }: any) {
 
   // Busca
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Estados do AwesomeAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
   const [onConfirmAction, setOnConfirmAction] = useState<() => void>(() => () => {});
 
-  const showAlert = (
+  const showAlert = useCallback((
     title: string,
     message: string,
     success: boolean = true,
@@ -72,7 +76,31 @@ export default function DashboardScreen({ navigation }: any) {
     setIsSuccess(success);
     setOnConfirmAction(() => onConfirm);
     setAlertVisible(true);
-  };
+  }, []);
+
+  const handleOfflineAlert = useCallback((tab: string) => {
+    const tabNames: { [key: string]: string } = {
+      Search: 'buscar eventos',
+      Profile: 'acessar o perfil',
+    };
+
+    showAlert(
+      'Sem Conexão',
+      `Você precisa estar conectado à internet para ${tabNames[tab] || 'esta funcionalidade'}.`,
+      false,
+      () => {
+        // Se não estiver logado, mostra segunda opção para login
+        if (!isLogged) {
+          showAlert(
+            'Fazer Login',
+            'Deseja fazer login agora?',
+            true,
+            () => navigation.navigate('Login')
+          );
+        }
+      }
+    );
+  }, [showAlert, isLogged, navigation]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -221,15 +249,8 @@ export default function DashboardScreen({ navigation }: any) {
         break;
 
       case 'Tickets':
-        if (!isLogged) {
-          showAlert(
-            'Atenção',
-            'Faça login para ver os ingressos.',
-            false,
-            () => navigation.navigate('Login')
-          );
-          return;
-        }
+        // Permite acesso à tela de ingressos mesmo deslogado
+        // A tela MyTicketsScreen mostrará apenas ingressos salvos localmente
         navigation.navigate('MyTickets');
         setActiveTab('Tickets');
         break;
@@ -262,6 +283,8 @@ export default function DashboardScreen({ navigation }: any) {
           onTabPress={handleTabPress}
           isLogged={isLogged}
           userRole={userRole}
+          isConnected={isConnected}
+          onOfflineAlert={handleOfflineAlert}
         />
       </SafeLayout>
     );
@@ -420,6 +443,8 @@ export default function DashboardScreen({ navigation }: any) {
         onTabPress={handleTabPress}
         isLogged={isLogged}
         userRole={userRole}
+        isConnected={isConnected}
+        onOfflineAlert={handleOfflineAlert}
       />
     </SafeLayout>
   );

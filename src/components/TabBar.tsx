@@ -9,6 +9,8 @@ interface TabBarProps {
   onTabPress: (tab: string) => void;
   isLogged: boolean;
   userRole?: 'ADMIN' | 'USER' | null;
+  isConnected?: boolean;
+  onOfflineAlert?: (tab: string) => void;
 }
 
 export const TabBar: React.FC<TabBarProps> = ({
@@ -16,13 +18,28 @@ export const TabBar: React.FC<TabBarProps> = ({
   onTabPress,
   isLogged,
   userRole,
+  isConnected = true,
+  onOfflineAlert,
 }) => {
   const insets = useSafeAreaInsets();
+
+  const handleTabPress = (tab: string) => {
+    // Se offline e tentando acessar funcionalidades que precisam de internet
+    if (!isConnected && (tab === 'Search' || tab === 'Profile')) {
+      if (onOfflineAlert) {
+        onOfflineAlert(tab);
+      }
+      return;
+    }
+
+    // Permite acesso normal
+    onTabPress(tab);
+  };
 
   return (
     <View style={[styles.tabBar, { paddingBottom: insets.bottom }]}>
       {/* Home */}
-      <TouchableOpacity onPress={() => onTabPress('Home')} style={styles.tabItem}>
+      <TouchableOpacity onPress={() => handleTabPress('Home')} style={styles.tabItem}>
         <MaterialIcons
           name="home"
           size={26}
@@ -34,7 +51,7 @@ export const TabBar: React.FC<TabBarProps> = ({
       </TouchableOpacity>
 
       {/* Busca */}
-      <TouchableOpacity onPress={() => onTabPress('Search')} style={styles.tabItem}>
+      <TouchableOpacity onPress={() => handleTabPress('Search')} style={styles.tabItem}>
         <MaterialIcons
           name="search"
           size={26}
@@ -46,7 +63,7 @@ export const TabBar: React.FC<TabBarProps> = ({
       </TouchableOpacity>
 
       {/* Ingressos */}
-      <TouchableOpacity onPress={() => onTabPress('Tickets')} style={styles.tabItem}>
+      <TouchableOpacity onPress={() => handleTabPress('Tickets')} style={styles.tabItem}>
         <MaterialCommunityIcons
           name="ticket-outline"
           size={26}
@@ -57,8 +74,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         </Text>
       </TouchableOpacity>
 
-      {/* Conta / Perfil / Admin */}
-      <TouchableOpacity onPress={() => onTabPress('Profile')} style={styles.tabItem}>
+      <TouchableOpacity onPress={() => handleTabPress('Profile')} style={styles.tabItem}>
         {isLogged ? (
           userRole === 'ADMIN' ? (
             <MaterialCommunityIcons
@@ -85,7 +101,7 @@ export const TabBar: React.FC<TabBarProps> = ({
             ? userRole === 'ADMIN'
               ? 'Admin'
               : 'Perfil'
-            : 'Conta'}
+            : 'Perfil'}
         </Text>
       </TouchableOpacity>
     </View>

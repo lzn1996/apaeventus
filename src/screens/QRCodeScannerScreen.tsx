@@ -10,6 +10,7 @@ import {TabBar} from '../components/TabBar';
 import { baseUrl } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from '../services/authService';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 export default function QrScannerScreen() {
   const navigation = useNavigation();
@@ -17,11 +18,17 @@ export default function QrScannerScreen() {
   const [scanned, setScanned] = useState(false);
   const [isLogged] = useState(true);
   const [userRole] = useState<'ADMIN' | 'USER' | null>('ADMIN');
+  const isConnected = useNetworkStatus();
 
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
+
+  const handleOfflineAlert = () => {
+    // Função vazia, pois o QR scanner é uma tela específica de admin
+    // e não precisa de navegação quando offline
+  };
 
   function showAlert(title: string, message: string, success = true) {
     setAlertTitle(title);
@@ -140,6 +147,8 @@ export default function QrScannerScreen() {
           onTabPress={handleTabPress}
           isLogged={isLogged}
           userRole={userRole}
+          isConnected={isConnected}
+          onOfflineAlert={handleOfflineAlert}
         />
       </SafeLayout>
     );
@@ -197,6 +206,8 @@ export default function QrScannerScreen() {
         onTabPress={handleTabPress}
         isLogged={isLogged}
         userRole={userRole}
+        isConnected={isConnected}
+        onOfflineAlert={handleOfflineAlert}
       />
     </SafeLayout>
   );

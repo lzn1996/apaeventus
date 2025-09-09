@@ -78,6 +78,19 @@ export default StyleSheet.create({
         paddingVertical: 12,
         borderRadius: 8,
     },
+    loginButton: {
+        backgroundColor: '#4CAF50',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+        marginBottom: 16,
+    },
+    loginButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
     list: {
         paddingHorizontal: 18,
         paddingBottom: 32,
