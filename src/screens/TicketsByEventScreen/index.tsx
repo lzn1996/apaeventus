@@ -128,7 +128,6 @@ export default function TicketsByEventScreen({route}: any) {
                 total={localTickets.length}
               />
             )}
-            // modo padrão, sem stack nem triângulos:
             pagingEnabled
             snapEnabled
             autoPlay={false}
