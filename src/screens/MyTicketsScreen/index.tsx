@@ -6,7 +6,7 @@ import styles from './styles';
 import EventCard from './components/EventCard';
 import { MyEvent } from './types';
 import { getUserProfile } from '../../services/userService';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useOfflineTickets } from '../../hooks/useOfflineTickets';
 import { OfflineNotification } from '../../components/OfflineNotification';
@@ -280,7 +280,7 @@ export default function MyTicketsScreen({ navigation }: any) {
                             onPress={handleClearLocalData}
                             style={styles.clearButton}
                         >
-                            <Icon name="trash-outline" size={20} color="#007AFF" />
+                            <Ionicons name="trash-outline" size={20} color="#007AFF" />
                         </TouchableOpacity>
                     ) : undefined
                 }

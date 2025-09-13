@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface HeaderProps {
   title?: string;

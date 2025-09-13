@@ -15,8 +15,7 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { baseUrl } from '../config/api';
 import { SafeLayout } from '../components/SafeLayout';
 

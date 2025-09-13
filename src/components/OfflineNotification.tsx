@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 interface OfflineNotificationProps {
   isConnected: boolean;
@@ -19,7 +19,7 @@ export const OfflineNotification: React.FC<OfflineNotificationProps> = ({
 
   return (
     <View style={styles.container}>
-      <Icon
+      <Ionicons
         name={hasLocalData ? 'cloud-offline' : 'warning'}
         size={16}
         color={hasLocalData ? '#FF9800' : '#F44336'}

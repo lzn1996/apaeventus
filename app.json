@@ -49,7 +49,8 @@
         {
           "photosPermission": "O aplicativo acessa suas fotos para permitir o upload de imagens dos eventos."
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": false
