@@ -44,7 +44,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, onPress }) => {
     return (
         <TouchableOpacity style={styles.card} onPress={onPress}>
             {event.imageUrl && (
-                <Image source={{ uri: event.imageUrl }} style={styles.cardImage} />
+                <Image source={{ uri: event.imageUrl }} style={styles.cardImage} resizeMode="cover" />
             )}
             <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>{event.title}</Text>

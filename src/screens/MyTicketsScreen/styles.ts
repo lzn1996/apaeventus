@@ -109,10 +109,11 @@ export default StyleSheet.create({
     },
     cardImage: {
         width: 85,
-        height: 85,
+        height: '100%',
         borderTopLeftRadius: 18,
         borderBottomLeftRadius: 18,
         backgroundColor: '#e3eafc',
+        resizeMode: 'cover',
     },
     cardContent: {
         flex: 1,
