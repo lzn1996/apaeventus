@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { baseUrl } from '../config/api';
 import { SafeLayout } from '../components/SafeLayout';
+import { localStorageService } from '../services/localStorageService';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -108,6 +109,15 @@ export default function LoginScreen({ navigation }: any) {
       }
       if (user.cellphone) {
         await AsyncStorage.setItem('userCellphone', user.cellphone);
+      }
+
+      // Limpa dados locais de ingressos ao fazer login
+      try {
+        await localStorageService.clearAllTickets();
+        console.log('Dados locais de ingressos limpos após login');
+      } catch (clearError) {
+        console.log('Erro ao limpar dados locais após login:', clearError);
+        // Não bloqueia o login se a limpeza falhar
       }
 
       navigation.replace('Dashboard');
