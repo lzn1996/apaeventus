@@ -1,29 +1,36 @@
 // src/screens/EditProfileScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  BackHandler,
+  View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { baseUrl } from '../config/api';
+import {baseUrl} from '../config/api';
 import api from '../services/api';
-import { getUserProfileLocal, saveUserProfileLocal } from '../database/profileLocalService';
-import { jwtDecode } from 'jwt-decode';
 import AwesomeAlert from 'react-native-awesome-alerts';
+import {SafeLayout} from '../components/SafeLayout';
+import {Header} from '../components/Header';
+import {TabBar} from '../components/TabBar';
+import {useNavigation} from '@react-navigation/native';
+import { authService } from '../services/authService';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
-export default function EditProfileScreen({ navigation }: any) {
+export default function EditProfileScreen() {
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rg, setRg] = useState('');
   const [cellphone, setCellphone] = useState('');
+  const [isLogged] = useState(true);
+  const [userRole] = useState<'ADMIN' | 'USER' | null>('USER');
+  const isConnected = useNetworkStatus();
   // estados do AwesomeAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
@@ -37,96 +44,122 @@ export default function EditProfileScreen({ navigation }: any) {
     setAlertVisible(true);
   };
 
+  const handleOfflineAlert = () => {
+    // Esta tela já requer login, então não precisa de lógica especial
+  };
+
+  const handleTabPress = (tab: string) => {
+    switch (tab) {
+      case 'Home':
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Search':
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Tickets':
+        navigation.navigate('MyTickets' as never);
+        break;
+      case 'Profile':
+        // Já está na tela de perfil
+        break;
+    }
+  };
+
   /** 0) Logout forçado */
-  const doLogout = async () => {
+  const doLogout = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
       if (token) {
         await fetch(`${baseUrl}/auth/logout`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {Authorization: `Bearer ${token}`},
         });
       }
     } catch (e) {
       console.warn('Erro no logout:', e);
     } finally {
-      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
-      navigation.navigate('Login');
+      await AsyncStorage.multiRemove([
+        'accessToken',
+        'refreshToken',
+        'userRole',
+      ]);
+      navigation.navigate('Login' as never);
     }
-  };
+  }, [navigation]);
 
-  /** 2) Inicializa tabela e carrega perfil (local + remoto) */
+  /** 2) Inicializa tabela e carrega perfil (remoto apenas) */
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        // Busca o id do usuário autenticado
-        let userId = '';
-        const accessToken = await AsyncStorage.getItem('accessToken');
-        if (accessToken) {
-          try {
-            const decoded: any = jwtDecode(accessToken);
-            userId = decoded.id || '';
-          } catch (e) {
-            console.log('[EditProfileScreen] Erro ao decodificar accessToken:', e);
+        // Primeira tentativa: busca do backend
+        let response;
+        try {
+          response = await api.get('/user/profile');
+        } catch (apiError: any) {
+          // Se erro 401, tenta renovar token
+          if (apiError?.response?.status === 401) {
+            const newToken = await authService.refreshAccessToken();
+            if (!newToken) {
+              throw new Error('Sessão expirada');
+            }
+            // Retry com novo token
+            response = await api.get('/user/profile');
+          } else {
+            throw apiError;
           }
         }
-        // Busca perfil local pelo id do usuário
-        let local = null;
-        if (userId) {
-          const db = await require('../database/db').openDatabase();
-          const res = await db.executeSql('SELECT * FROM user_profile WHERE id = ? LIMIT 1', [userId]);
-          if (res[0].rows.length > 0) {
-            local = res[0].rows.item(0);
-          }
-        } else {
-          local = await getUserProfileLocal();
-        }
-        if (local) {
-          setName(local.name || '');
-          setEmail(local.email || '');
-          setRg(local.rg || '');
-          setCellphone(local.cellphone || local.phone || '');
-        }
-        // Log extra: headers da requisição /user
-        api.interceptors.request.use(config => {
-          if (config.url?.includes('/user')) {
-            console.log('[EditProfileScreen] Header Authorization enviado:', config.headers?.Authorization);
-          }
-          return config;
-        });
-        // Busca do backend e atualiza local
-        const res = await api.get('/user');
-        const js = res.data;
+
+        const js = response.data;
         setName(js.name || '');
         setEmail(js.email || '');
         setRg(js.rg || '');
         setCellphone(js.cellphone || js.phone || '');
-        // Salva perfil atualizado localmente com id correto
-        await saveUserProfileLocal({
-          id: js.id || userId || '1',
-          name: js.name || '',
-          email: js.email || '',
-          cellphone: js.cellphone || js.phone || '',
-          phone: js.phone || '',
-          rg: js.rg || '',
-        });
       } catch (e: any) {
-        showAlert('Atualização cadastral', 'Atualize seus dados se necessário.', true);
+        // Mesmo com erro, tenta buscar dados do AsyncStorage se disponível
+        try {
+          const storedName = (await AsyncStorage.getItem('userName')) || '';
+          const storedEmail = (await AsyncStorage.getItem('userEmail')) || '';
+          const storedRg = (await AsyncStorage.getItem('userRg')) || '';
+          const storedCellphone =
+            (await AsyncStorage.getItem('userCellphone')) || '';
+
+          setName(storedName);
+          setEmail(storedEmail);
+          setRg(storedRg);
+          setCellphone(storedCellphone);
+        } catch (storageError) {
+          console.log('Erro ao buscar dados do storage:', storageError);
+        }
+
+        if (e.message === 'Sessão expirada') {
+          showAlert(
+            'Sessão Expirada',
+            'Sua sessão expirou. Você será redirecionado para o login.',
+            false,
+          );
+          setTimeout(doLogout, 3000);
+        } else {
+          showAlert(
+            'Atualização cadastral',
+            'Não foi possível carregar alguns dados. Preencha os campos necessários.',
+            true,
+          );
+        }
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [doLogout]);
 
-  /** 3) Salva alterações no servidor e SQLite, depois força logout */
+  /** 3) Salva alterações no servidor apenas, depois força logout */
   const handleSave = async () => {
     if (!name.trim() || !email.trim()) {
       return showAlert('Atenção', 'Nome e e-mail são obrigatórios.', false);
     }
     try {
       // Monta objeto apenas com campos preenchidos e permitidos
-      const payload: any = { name, rg, cellphone };
+      const payload: any = {name, rg, cellphone};
       // Só envia password se preenchido
       if (password && password.trim().length > 0) {
         payload.password = password;
@@ -134,54 +167,47 @@ export default function EditProfileScreen({ navigation }: any) {
       // Só envia e-mail se o backend permitir alteração (remova se não for permitido)
       payload.email = email;
       await api.patch('/user', payload);
-      // Atualiza perfil local (sem senha) com id correto
-      let userId = '';
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      if (accessToken) {
-        try {
-          const decoded: any = jwtDecode(accessToken);
-          userId = decoded.id || '';
-        } catch {}
-      }
-      await saveUserProfileLocal({
-        id: userId || '1',
-        name,
-        email,
-        cellphone,
-        phone: cellphone,
-        rg,
-      });
-      showAlert('Sucesso', 'Dados atualizados! Você será deslogado para segurança em 5 segundos, entre no aplicativo novamente! ', true);
+
+      showAlert(
+        'Sucesso',
+        'Dados atualizados! Você será deslogado para segurança em 5 segundos, entre no aplicativo novamente! ',
+        true,
+      );
       setTimeout(doLogout, 7000);
     } catch (e: any) {
       let msg = 'Erro ao salvar.';
       if (e?.response) {
         msg += `\nStatus ${e.response.status}`;
-        if (typeof e.response.data === 'string') { msg += `\n${e.response.data}`; }
+        if (typeof e.response.data === 'string') {
+          msg += `\n${e.response.data}`;
+        }
       }
       showAlert('Erro de rede', e.message || String(msg), false);
     }
   };
 
-  useEffect(() => {
-    const onBackPress = () => {
-      navigation.replace('Dashboard');
-      return true;
-    };
-    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => subscription.remove();
-  }, [navigation]);
-
   if (loading) {
     return (
-      <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </SafeAreaView>
+      <SafeLayout showTabBar={true}>
+        <Header title="Editar Perfil" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+        <TabBar
+          activeTab="Profile"
+          onTabPress={handleTabPress}
+          isLogged={isLogged}
+          userRole={userRole}
+          isConnected={isConnected}
+          onOfflineAlert={handleOfflineAlert}
+        />
+      </SafeLayout>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeLayout showTabBar={true}>
+      <Header title="Editar Perfil" />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.label}>Nome</Text>
         <TextInput
@@ -231,13 +257,8 @@ export default function EditProfileScreen({ navigation }: any) {
         <Pressable style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveText}>Salvar Alterações</Text>
         </Pressable>
-        <Pressable
-        style={styles.buttonBack}
-        onPress={() => navigation.navigate('Dashboard')}
-        >
-        <Text style={styles.buttonBackText}>← Voltar</Text>
-      </Pressable>
       </ScrollView>
+
       <AwesomeAlert
         show={alertVisible}
         showProgress={false}
@@ -252,15 +273,23 @@ export default function EditProfileScreen({ navigation }: any) {
           setAlertVisible(false);
         }}
       />
-    </SafeAreaView>
+
+      <TabBar
+        activeTab="Profile"
+        onTabPress={handleTabPress}
+        isLogged={isLogged}
+        userRole={userRole}
+        isConnected={isConnected}
+        onOfflineAlert={handleOfflineAlert}
+      />
+    </SafeLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f2f2f7' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { padding: 16 },
-  label: { fontWeight: '600', marginTop: 12, marginBottom: 4 },
+  container: {padding: 16},
+  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+  label: {fontWeight: '600', marginTop: 12, marginBottom: 4},
   input: {
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -280,21 +309,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
-  },
-    buttonBack: {
-    marginTop: 16,
-    alignSelf: 'center',
-    backgroundColor: '#1976d2',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 24,
-  },
-  buttonBackPressed: {
-    backgroundColor: '#155a9c',
-  },
-  buttonBackText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

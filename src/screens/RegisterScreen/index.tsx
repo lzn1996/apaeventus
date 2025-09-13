@@ -421,7 +421,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             )}
                         </TouchableOpacity>
 
-                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <TouchableOpacity onPress={() => navigation.navigate('Login' as never)}>
                             <Text style={styles.loginLinkText}>
                                 Já tem uma conta? Faça Login
                             </Text>

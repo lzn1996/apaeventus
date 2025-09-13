@@ -1,7 +1,6 @@
 // src/screens/LoginScreen.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   TextInput,
@@ -16,12 +15,10 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { baseUrl } from '../config/api';
-import { resetLocalDatabase } from '../database/ticketService';
-import { syncAll } from '../database/syncService';
-import { initDatabase } from '../database/init';
+import { SafeLayout } from '../components/SafeLayout';
+import { localStorageService } from '../services/localStorageService';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -49,39 +46,80 @@ export default function LoginScreen({ navigation }: any) {
     if (!email.trim() || !senha.trim()) {
       return Alert.alert('Ops', 'Preencha e-mail e senha');
     }
+
     setLoading(true);
     setError(null);
+
     try {
-      await resetLocalDatabase();
-      await initDatabase();
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: senha }),
       });
-      const json = await response.json().catch(() => null);
+
+      // Debug: capturar resposta como texto primeiro
+      const responseText = await response.text();
+      const contentType = response.headers.get('content-type');
+      const isJson = contentType && contentType.includes('application/json');
+
       if (!response.ok) {
-        let msg =
-          typeof json?.message === 'string'
-            ? json.message
-            : Array.isArray(json?.message)
-            ? json.message.join('\n')
-            : 'Credenciais inválidas';
+        let errorMessage = 'Erro desconhecido';
+        if (isJson) {
+          try {
+            const errorJson = JSON.parse(responseText);
+            errorMessage = errorJson.message || 'Credenciais inválidas';
+          } catch {
+            errorMessage = responseText;
+          }
+        } else {
+          errorMessage = responseText;
+        }
         // Força mensagem em português para erro de credenciais
         if (response.status === 401 || response.status === 400) {
-          msg = 'E-mail ou senha inválidos!';
+          errorMessage = 'E-mail ou senha inválidos!';
         }
-        throw new Error(msg);
+        throw new Error(errorMessage);
       }
-      const data = json;
+
+      if (!isJson) {
+        throw new Error('A resposta do servidor não é um JSON válido.');
+      }
+
+      const data = JSON.parse(responseText);
       const { accessToken, refreshToken, user } = data;
       if (!accessToken || !refreshToken || !user?.role) {
-        throw new Error('Resposta de login incompleta');
+        throw new Error('Resposta de login incompleta do servidor');
       }
       await AsyncStorage.setItem('accessToken', accessToken);
       await AsyncStorage.setItem('refreshToken', refreshToken);
       await AsyncStorage.setItem('userRole', user.role);
-      await syncAll('', async () => true);
+
+      // Salva todos os dados do usuário para usar como fallback no perfil
+      if (user.name) {
+        await AsyncStorage.setItem('userName', user.name);
+      }
+      if (user.email) {
+        await AsyncStorage.setItem('userEmail', user.email);
+      }
+      if (user.rg) {
+        await AsyncStorage.setItem('userRg', user.rg);
+      }
+      if (user.cpf) {
+        await AsyncStorage.setItem('userCpf', user.cpf);
+      }
+      if (user.cellphone) {
+        await AsyncStorage.setItem('userCellphone', user.cellphone);
+      }
+
+      // Limpa dados locais de ingressos ao fazer login
+      try {
+        await localStorageService.clearAllTickets();
+        console.log('Dados locais de ingressos limpos após login');
+      } catch (clearError) {
+        console.log('Erro ao limpar dados locais após login:', clearError);
+        // Não bloqueia o login se a limpeza falhar
+      }
+
       navigation.replace('Dashboard');
     } catch (err: any) {
       setError(err.message || 'Não foi possível fazer login');
@@ -94,7 +132,7 @@ export default function LoginScreen({ navigation }: any) {
   const isButtonDisabled = loading || !email.trim() || !senha.trim();
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeLayout>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -201,12 +239,11 @@ export default function LoginScreen({ navigation }: any) {
           </Animated.View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </SafeLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#eef2f5' },
   flex: { flex: 1 },
   container: { flex: 1, justifyContent: 'center', padding: 24 },
   logo: { width: 140, height: 140, alignSelf: 'center', marginBottom: 12 },

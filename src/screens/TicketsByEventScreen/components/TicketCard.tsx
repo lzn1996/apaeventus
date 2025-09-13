@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, Image, ViewStyle, StyleProp } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { MaterialIcons, Feather, AntDesign } from '@expo/vector-icons';
 import styles from '../styles';
 import { Ticket } from '../types';
 
@@ -35,6 +36,16 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, index, total, style }) 
             <Text style={styles.ticketCountText}>
                 {`Ingresso ${index + 1} de ${total}`}
             </Text>
+
+            {/* Badge para ingresso usado */}
+            {ticket.used && (
+                <View style={styles.usedTicketBadge}>
+                    <Text style={styles.usedTicketText}>
+                        ✓ INGRESSO UTILIZADO
+                    </Text>
+                </View>
+            )}
+
             {/* Status pendente de sync */}
             {ticket.pendingSync && (
                 <View style={styles.pendingSyncBadge}>
@@ -43,6 +54,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, index, total, style }) 
                     </Text>
                 </View>
             )}
+
             {/* Header com imagem do evento */}
             {ticket.eventImageUrl && (
                 <Image
@@ -62,33 +74,60 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, index, total, style }) 
                 </Text>
             </View>
             <View style={styles.ticketCardBox}>
-                <View style={styles.ticketInfoRow}>
-                    <View style={styles.ticketInfoLeft}>
-                        <Text style={styles.buyerName}>{ticket.buyer.name}</Text>
-                        <Text style={styles.buyerEmail}>{ticket.buyer.email}</Text>
-                        <Text style={styles.buyerPhone}>{maskPhone(ticket.buyer.phone)}</Text>
+                <View style={styles.ticketInfoVertical}>
+                    {/* Informações do comprador */}
+                    <View style={styles.infoSection}>
+                        <View style={styles.infoItem}>
+                            <AntDesign name="user" size={18} color="#4A90E2" />
+                            <Text style={styles.buyerName}>{ticket.buyer.name}</Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                            <MaterialIcons name="email" size={18} color="#E74C3C" />
+                            <Text style={styles.buyerEmail}>{ticket.buyer.email}</Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                            <Feather name="phone" size={18} color="#27AE60" />
+                            <Text style={styles.buyerPhone}>{maskPhone(ticket.buyer.phone)}</Text>
+                        </View>
                     </View>
-                    <View style={styles.ticketInfoRightColumn}>
-                        <Text style={styles.boughtAt}>Comprado em:</Text>
-                        <Text style={styles.boughtAt}>{new Date(ticket.boughtAt).toLocaleDateString('pt-BR')}</Text>
-                        <Text style={styles.price}>R$ {ticket.price?.toFixed(2)}</Text>
+
+                    {/* Informações da compra */}
+                    <View style={styles.infoSection}>
+                        <View style={styles.infoItem}>
+                            <AntDesign name="calendar" size={18} color="#9B59B6" />
+                            <View style={styles.infoTextContainer}>
+                                <Text style={styles.infoLabel}>Comprado em</Text>
+                                <Text style={styles.infoValue}>{new Date(ticket.boughtAt).toLocaleDateString('pt-BR')}</Text>
+                            </View>
+                        </View>
+                        <View style={styles.infoItem}>
+                            <MaterialIcons name="attach-money" size={20} color="#F39C12" />
+                            <Text style={styles.price}>R$ {ticket.price?.toFixed(2)}</Text>
+                        </View>
                     </View>
                 </View>
                 <View style={styles.qrCodeContainer}>
                     {ticket.qrCodeDataUrl ? (
                         <Image
                             source={{ uri: ticket.qrCodeDataUrl }}
-                            style={styles.qrCodeImage}
+                            style={[styles.qrCodeImage, ticket.used && styles.qrCodeImageUsed]}
                             resizeMode="contain"
                         />
                     ) : ticket.qrCodeUrl ? (
                         <Image
                             source={{ uri: ticket.qrCodeUrl }}
-                            style={styles.qrCodeImage}
+                            style={[styles.qrCodeImage, ticket.used && styles.qrCodeImageUsed]}
                             resizeMode="contain"
                         />
                     ) : (
-                        <QRCode value={ticket.code} size={180} />
+                        <View style={styles.qrCodeContainer}>
+                            <QRCode value={ticket.code} size={180} />
+                            {ticket.used && (
+                                <View style={styles.qrCodeUsedOverlay}>
+                                    <Text style={styles.qrCodeUsedText}>USADO</Text>
+                                </View>
+                            )}
+                        </View>
                     )}
                 </View>
                 <Text style={styles.ticketCode}>{ticket.code}</Text>

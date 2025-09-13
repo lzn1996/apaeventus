@@ -7,11 +7,11 @@ import {
     StyleProp,
     ViewStyle,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import styles from '../screens/RegisterScreen/styles';
 
 export interface InputComIconeProps extends TextInputProps {
-    iconName: string;
+    iconName: keyof typeof Ionicons.glyphMap;
     iconColor?: string;
     inputRef?: RefObject<TextInput | null>;
     containerStyle?: StyleProp<ViewStyle>;

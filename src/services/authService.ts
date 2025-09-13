@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
+import axios from 'axios';
+import { baseUrl } from '../config/api';
 
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
@@ -26,22 +28,11 @@ export const authService = {
                 // Se não veio um novo refreshToken, tenta manter o anterior
                 const previous = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
                 safeRefreshToken = previous || '';
-                if (__DEV__) {
-                    console.log('[authService] Mantendo refreshToken anterior:', safeRefreshToken);
-                }
-            } else {
-                if (__DEV__) {
-                    console.log('[authService] Novo refreshToken recebido:', safeRefreshToken);
-                }
             }
             await AsyncStorage.multiSet([
                 [ACCESS_TOKEN_KEY, accessToken],
                 [REFRESH_TOKEN_KEY, safeRefreshToken],
             ]);
-            if (__DEV__) {
-                console.log('[authService] AccessToken salvo:', accessToken);
-                console.log('[authService] RefreshToken salvo:', safeRefreshToken);
-            }
         } catch (error) {
             console.error('[authService] Erro ao salvar tokens:', error);
         }
@@ -53,9 +44,6 @@ export const authService = {
      */
     async getAccessToken() {
         const token = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
-        // if (__DEV__) {
-        //     console.log('[authService] getAccessToken:', token);
-        // }
         return token;
     },
 
@@ -65,9 +53,6 @@ export const authService = {
      */
     async getRefreshToken() {
         const token = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
-        if (__DEV__) {
-            console.log('[authService] getRefreshToken:', token);
-        }
         return token;
     },
 
@@ -82,20 +67,84 @@ export const authService = {
     async isLoggedIn() {
         const token = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
         if (!token) {
-            console.log('[authService.isLoggedIn] Nenhum token encontrado');
             return false;
         }
         try {
             const decoded: any = jwtDecode(token);
             const now = Math.floor(Date.now() / 1000);
-            console.log('[authService.isLoggedIn] token:', token);
-            console.log('[authService.isLoggedIn] decoded.exp:', decoded.exp, '| agora:', now, '| expira em (s):', decoded.exp - now);
             const valido = decoded.exp > now;
-            console.log('[authService.isLoggedIn] Token é válido?', valido);
             return valido;
         } catch (error) {
             console.log('[authService.isLoggedIn] Erro ao decodificar token:', error);
             return false;
+        }
+    },
+
+    async refreshToken() {
+        try {
+            const storedRefreshToken = await this.getRefreshToken();
+            if (!storedRefreshToken) {
+                throw new Error('Sem refresh token');
+            }
+
+            // Cria uma instância limpa do axios para evitar interceptors
+            const cleanApi = axios.create({ baseURL: baseUrl });
+
+            const response = await cleanApi.post(
+                '/auth/refresh-token',
+                { refreshToken: storedRefreshToken }
+            );
+
+            // Ajuste para aceitar diferentes formatos de resposta
+            const newAccessToken = response.data.accessToken || response.data.access_token;
+            const newRefreshToken = response.data.refreshToken || response.data.refresh_token;
+
+            await this.setTokens(newAccessToken, newRefreshToken);
+            // Retorne ambos!
+            return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+        } catch (error) {
+            if (__DEV__) {
+                console.error('[refreshToken] Erro ao tentar renovar o token:', error);
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Função de compatibilidade para renovar o access token.
+     * Retorna apenas o novo access token ou null se falhar.
+     * @returns O novo access token ou null se falhar.
+     */
+    async refreshAccessToken(): Promise<string | null> {
+        try {
+            const old = await this.getAccessToken();
+            const refresh = await this.getRefreshToken();
+            if (!old || !refresh) {
+                return null;
+            }
+
+            const response = await fetch(`${baseUrl}/auth/refresh-token`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${old}`,
+                },
+                body: JSON.stringify({ refreshToken: refresh }),
+            });
+
+            if (!response.ok) {
+                return null;
+            }
+
+            const json = await response.json();
+            if (json.accessToken) {
+                await this.setTokens(json.accessToken, json.refreshToken || refresh);
+                return json.accessToken;
+            }
+            return null;
+        } catch (error) {
+            console.error('[authService] Erro ao renovar access token:', error);
+            return null;
         }
     },
 };

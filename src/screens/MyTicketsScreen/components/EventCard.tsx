@@ -19,13 +19,23 @@ const getEventStatus = (event: MyEvent) => {
     } else {
         return { text: 'Data não informada', color: '#888' };
     }
+
     const isSameDay = now.toDateString() === eventDate.toDateString();
-    if (now < eventDate) {
-        return { text: 'Será realizado em breve', color: '#1976d2' };
-    }
+    const timeDifference = eventDate.getTime() - now.getTime();
+    const daysDifference = Math.ceil(timeDifference / (1000 * 3600 * 24));
+
     if (isSameDay) {
         return { text: 'Em andamento', color: '#43a047' };
     }
+
+    if (now < eventDate) {
+        if (daysDifference <= 3) {
+            return { text: 'Será realizado em breve', color: '#1976d2' };
+        } else {
+            return { text: 'Evento agendado', color: '#4caf50' };
+        }
+    }
+
     return { text: 'Já aconteceu', color: '#e53935' };
 };
 
@@ -34,7 +44,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, onPress }) => {
     return (
         <TouchableOpacity style={styles.card} onPress={onPress}>
             {event.imageUrl && (
-                <Image source={{ uri: event.imageUrl }} style={styles.cardImage} />
+                <Image source={{ uri: event.imageUrl }} style={styles.cardImage} resizeMode="cover" />
             )}
             <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>{event.title}</Text>

@@ -9,7 +9,11 @@ export default StyleSheet.create({
         paddingTop: 0,
     },
     backButton: {
-    marginRight: 12,
+        marginRight: 12,
+    },
+    clearButton: {
+        marginLeft: 'auto',
+        padding: 8,
     },
     header: {
         flexDirection: 'row',
@@ -34,6 +38,59 @@ export default StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    syncInfoContainer: {
+        backgroundColor: '#E3F2FD',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginHorizontal: 16,
+        marginBottom: 8,
+        borderRadius: 8,
+    },
+    syncInfoText: {
+        fontSize: 12,
+        color: '#1565C0',
+        textAlign: 'center',
+    },
+    errorContainer: {
+        backgroundColor: '#FFEBEE',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginHorizontal: 16,
+        marginBottom: 8,
+        borderRadius: 8,
+    },
+    statusContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+    },
+    statusText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 16,
+        lineHeight: 24,
+    },
+    retryButton: {
+        backgroundColor: '#007AFF',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    loginButton: {
+        backgroundColor: '#4CAF50',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+        marginBottom: 16,
+    },
+    loginButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
     list: {
         paddingHorizontal: 18,
         paddingBottom: 32,
@@ -52,10 +109,11 @@ export default StyleSheet.create({
     },
     cardImage: {
         width: 85,
-        height: 85,
+        height: '100%',
         borderTopLeftRadius: 18,
         borderBottomLeftRadius: 18,
         backgroundColor: '#e3eafc',
+        resizeMode: 'cover',
     },
     cardContent: {
         flex: 1,
@@ -98,11 +156,8 @@ export default StyleSheet.create({
         fontWeight: 'bold',
     },
     retryText: {
-        color: '#1976d2',
+        color: '#fff',
         fontSize: 16,
-        marginBottom: 16,
-        textAlign: 'center',
-        textDecorationLine: 'underline',
         fontWeight: 'bold',
     },
     connectionBannerContainer: {
@@ -125,5 +180,10 @@ export default StyleSheet.create({
     connectionOffline: {
         backgroundColor: '#FFCDD2',
         color: '#B71C1C',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });

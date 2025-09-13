@@ -8,7 +8,7 @@ export default function EventFormScreen({ navigation }: any) {
       <TextInput placeholder="Nome do Evento" style={{ borderWidth: 1, marginVertical: 10, padding: 8 }} />
       <TextInput placeholder="Data" style={{ borderWidth: 1, marginVertical: 10, padding: 8 }} />
       <TextInput placeholder="Local" style={{ borderWidth: 1, marginVertical: 10, padding: 8 }} />
-      <Button title="Salvar" onPress={() => navigation.goBack()} />
+      <Button title="Salvar" onPress={() => navigation.navigate('Dashboard' as never)} />
     </View>
   );
 }

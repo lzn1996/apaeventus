@@ -1,16 +1,10 @@
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { initDatabase } from './database/init';
-import { syncAll } from './database/syncService';
 
 export default function App() {
     useEffect(() => {
-        async function start() {
-            await initDatabase();
-            // Chama syncAll ao abrir o app (dummy processQueueItem)
-            await syncAll('', async () => true);
-        }
-        start();
+        // Inicialização removida - sem SQLite
+        console.log('App iniciado sem SQLite');
     }, []);
 
     return (

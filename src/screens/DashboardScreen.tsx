@@ -1,27 +1,26 @@
 // src/screens/DashboardScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   Image,
   ScrollView,
   Pressable,
   StyleSheet,
-  Dimensions,
   ActivityIndicator,
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  /*Alert,*/
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MaterialIcons          from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 import AwesomeAlert from 'react-native-awesome-alerts';
 import { Event } from '../types/Event';
 import { baseUrl } from '../config/api';
-
+import { SafeLayout } from '../components/SafeLayout';
+import { Header } from '../components/Header';
+import { TabBar } from '../components/TabBar';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 interface EventRaw {
   id: string;
@@ -41,10 +40,11 @@ interface EventRaw {
 export default function DashboardScreen({ navigation }: any) {
   type TabName = 'Home' | 'Search' | 'Tickets' | 'Profile';
   const [activeTab, setActiveTab] = useState<TabName>('Home');
+  const isConnected = useNetworkStatus();
 
-  // --- Autenticação simplificada via AsyncStorage “userRole” ---
+  // --- Autenticação simplificada via AsyncStorage "userRole" ---
   const [isLogged, setIsLogged] = useState(false);
-  // “ADMIN” | “USER” | null
+  // "ADMIN" | "USER" | null
   const [userRole, setUserRole] = useState<'ADMIN' | 'USER' | null>(null);
 
   // Carregando dados iniciais
@@ -57,13 +57,15 @@ export default function DashboardScreen({ navigation }: any) {
 
   // Busca
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Estados do AwesomeAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
   const [onConfirmAction, setOnConfirmAction] = useState<() => void>(() => () => {});
 
-  const showAlert = (
+  const showAlert = useCallback((
     title: string,
     message: string,
     success: boolean = true,
@@ -74,7 +76,31 @@ export default function DashboardScreen({ navigation }: any) {
     setIsSuccess(success);
     setOnConfirmAction(() => onConfirm);
     setAlertVisible(true);
-  };
+  }, []);
+
+  const handleOfflineAlert = useCallback((tab: string) => {
+    const tabNames: { [key: string]: string } = {
+      Search: 'buscar eventos',
+      Profile: 'acessar o perfil',
+    };
+
+    showAlert(
+      'Sem Conexão',
+      `Você precisa estar conectado à internet para ${tabNames[tab] || 'esta funcionalidade'}.`,
+      false,
+      () => {
+        // Se não estiver logado, mostra segunda opção para login
+        if (!isLogged) {
+          showAlert(
+            'Fazer Login',
+            'Deseja fazer login agora?',
+            true,
+            () => navigation.navigate('Login')
+          );
+        }
+      }
+    );
+  }, [showAlert, isLogged, navigation]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -93,7 +119,7 @@ export default function DashboardScreen({ navigation }: any) {
     } finally {
       // limpa tudo local
       await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
-      // simplesmente atualiza o estado para “deslogado”
+      // simplesmente atualiza o estado para "deslogado"
       setIsLogged(false);
       setUserRole(null);
       // opcional: voltar para a tab Home
@@ -102,7 +128,7 @@ export default function DashboardScreen({ navigation }: any) {
   }, []);
 
   /**
-   * Lê o “userRole” do AsyncStorage e atualiza isLogged / userRole.
+   * Lê o "userRole" do AsyncStorage e atualiza isLogged / userRole.
    */
   const loadUserRole = useCallback(async () => {
     try {
@@ -159,13 +185,20 @@ export default function DashboardScreen({ navigation }: any) {
         };
       });
 
-      setAllEvents(mapped);
-      if (mapped.length === 0) {
+      // Ordena eventos por data (mais próximos primeiro)
+      const sortedEvents = mapped.sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return dateA - dateB;
+      });
+
+      setAllEvents(sortedEvents);
+      if (sortedEvents.length === 0) {
         setFeaturedEvents([]);
         setNextEvents([]);
       } else {
-        setFeaturedEvents([mapped[0]]);
-        setNextEvents(mapped.slice(1));
+        setFeaturedEvents([sortedEvents[0]]);
+        setNextEvents(sortedEvents.slice(1));
       }
     } catch (error) {
       console.warn('Erro fetchEvents:', error);
@@ -198,10 +231,8 @@ export default function DashboardScreen({ navigation }: any) {
     };
   }, [navigation, loadUserRole, fetchEventsFromBackend]);
 
-  /* Tratamento ao clicar em “Perfil/Admin”*/
-
-
-const onProfileOrAdminPress = useCallback(() => {
+  /* Tratamento ao clicar em "Perfil/Admin"*/
+  const onProfileOrAdminPress = useCallback(() => {
     if (!isLogged) {
       navigation.navigate('Login');
     } else {
@@ -210,22 +241,16 @@ const onProfileOrAdminPress = useCallback(() => {
     setActiveTab('Profile');
   }, [isLogged, navigation]);
 
-  const handleTabPress = (tabName: TabName) => {
-    switch (tabName) {
+  const handleTabPress = (tabName: string) => {
+    const tab = tabName as TabName;
+    switch (tab) {
       case 'Search':
         setActiveTab('Search');
         break;
 
       case 'Tickets':
-        if (!isLogged) {
-          showAlert(
-            'Atenção',
-            'Faça login para ver os ingressos.',
-            false,
-            () => navigation.navigate('Login')
-          );
-          return;
-        }
+        // Permite acesso à tela de ingressos mesmo deslogado
+        // A tela MyTicketsScreen mostrará apenas ingressos salvos localmente
         navigation.navigate('MyTickets');
         setActiveTab('Tickets');
         break;
@@ -242,11 +267,26 @@ const onProfileOrAdminPress = useCallback(() => {
   // Spinner enquanto carrega eventos
   if (loadingEvents) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeLayout showTabBar={true}>
+        <Header
+          showLogo={true}
+          isLogged={isLogged}
+          userRole={userRole}
+          onLogout={handleLogout}
+          navigation={navigation}
+        />
         <View style={[styles.centeredContainer, styles.fullFlex]}>
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
-      </SafeAreaView>
+        <TabBar
+          activeTab="Home"
+          onTabPress={handleTabPress}
+          isLogged={isLogged}
+          userRole={userRole}
+          isConnected={isConnected}
+          onOfflineAlert={handleOfflineAlert}
+        />
+      </SafeLayout>
     );
   }
 
@@ -260,7 +300,7 @@ const onProfileOrAdminPress = useCallback(() => {
   };
 
   return (
-     <SafeAreaView style={styles.safe}>
+     <SafeLayout showTabBar={true}>
       <AwesomeAlert
         show={alertVisible}
         title={alertTitle}
@@ -276,47 +316,13 @@ const onProfileOrAdminPress = useCallback(() => {
           onConfirmAction();
         }}
       />
-      {/* ================== Header ================== */}
-<View style={styles.header}>
-  {isLogged && userRole === 'ADMIN' ? (
-    <View style={styles.adminButtons}>
-      <Pressable
-        onPress={() => navigation.navigate('CreateEvent')}
-        style={styles.iconButton}
-      >
-        <MaterialIcons name="add" size={28} color="#007AFF" />
-      </Pressable>
-      <Pressable
-        onPress={() => navigation.navigate('AdminEvents')}
-        style={styles.iconButton}
-      >
-        <MaterialIcons name="event" size={24} color="#007AFF" />
-      </Pressable>
-      <Pressable
-        onPress={() => navigation.navigate('Scanner')}
-        style={styles.iconButton}
-      >
-        <MaterialCommunityIcons name="qrcode-scan" size={24} color="#007AFF" />
-      </Pressable>
-    </View>
-  ) : (
-    <View style={styles.menuButtonPlaceholder} />
-  )}
-
-  <View style={styles.logoWrapper}>
-    <Image source={require('../assets/apae_logo.png')} style={styles.logo} />
-  </View>
-  {isLogged ? (
- <Pressable onPress={handleLogout} style={styles.logoutButton}>
-      <MaterialCommunityIcons name="logout" size={24} color="#E74C3C" />
-    </Pressable>
-
-
-) : (
-  <View style={styles.menuButtonPlaceholder} />
-)}
-
-</View>
+      <Header
+        showLogo={true}
+        isLogged={isLogged}
+        userRole={userRole}
+        onLogout={handleLogout}
+        navigation={navigation}
+      />
 
       {/* ============ Conteúdo das abas ============ */}
       {activeTab === 'Search' ? (
@@ -325,7 +331,7 @@ const onProfileOrAdminPress = useCallback(() => {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.searchHeader}>
-            <MaterialIcons name="search" size={24} color="#90b1db" style={{ marginRight: 8 }} />
+            <MaterialIcons name="search" size={24} color="#90b1db" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Pesquisar por nome..."
@@ -335,35 +341,32 @@ const onProfileOrAdminPress = useCallback(() => {
               returnKeyType="search"
             />
           </View>
-  <ScrollView
-  contentContainerStyle={styles.searchContainer}
-  showsVerticalScrollIndicator={false}
->
-  {filteredEvents.length > 0 ? (
-    filteredEvents.map(event => (
-      <Pressable
-        key={event.id}
-        style={styles.searchCard}
-        onPress={() => goToPurchase(event.id, event.title)}
-      >
-        {event.imageUrl && (
-          <Image source={{ uri: event.imageUrl }} style={styles.searchImage} />
-        )}
-        <View style={styles.searchTextContainer}>
-          <Text style={styles.searchTitleText}>{event.title}</Text>
-          <Text style={styles.searchDateText}>
-            {formatDateToLabel(event.date)}
-          </Text>
-        </View>
-      </Pressable>
-    ))
-  ) : (
-    <Text style={styles.noResultsText}>Nenhum evento encontrado.</Text>
-  )}
-</ScrollView>
-
-
-
+          <ScrollView
+            contentContainerStyle={styles.searchContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {filteredEvents.length > 0 ? (
+              filteredEvents.map(event => (
+                <Pressable
+                  key={event.id}
+                  style={styles.searchCard}
+                  onPress={() => goToPurchase(event.id, event.title)}
+                >
+                  {event.imageUrl && (
+                    <Image source={{ uri: event.imageUrl }} style={styles.searchImage} />
+                  )}
+                  <View style={styles.searchTextContainer}>
+                    <Text style={styles.searchTitleText}>{event.title}</Text>
+                    <Text style={styles.searchDateText}>
+                      {formatDateToLabel(event.date)}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))
+            ) : (
+              <Text style={styles.noResultsText}>Nenhum evento encontrado.</Text>
+            )}
+          </ScrollView>
         </KeyboardAvoidingView>
       ) : (
         <ScrollView
@@ -376,7 +379,10 @@ const onProfileOrAdminPress = useCallback(() => {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
+            contentContainerStyle={[
+              styles.horizontalList,
+              featuredEvents.length === 1 && styles.singleItemContainer,
+            ]}
           >
             {featuredEvents.length > 0 ? (
               featuredEvents.map(event => (
@@ -404,7 +410,10 @@ const onProfileOrAdminPress = useCallback(() => {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
+            contentContainerStyle={[
+              styles.horizontalList,
+              nextEvents.length === 1 && styles.singleItemContainer,
+            ]}
           >
             {nextEvents.length > 0 ? (
               nextEvents.map(event => (
@@ -429,180 +438,167 @@ const onProfileOrAdminPress = useCallback(() => {
         </ScrollView>
       )}
 
-      {/* ================== Tab Bar ================== */}
-      <View style={styles.tabBar}>
-        {/* Home */}
-        <Pressable onPress={() => handleTabPress('Home')} style={styles.tabItem}>
-          <MaterialIcons
-            name="home"
-            size={26}
-            color={activeTab === 'Home' ? '#007AFF' : '#666'}
-          />
-          <Text style={[styles.tabLabel, activeTab === 'Home' && styles.tabLabelActive]}>
-            Home
-          </Text>
-        </Pressable>
-
-        {/* Busca */}
-        <Pressable onPress={() => handleTabPress('Search')} style={styles.tabItem}>
-          <MaterialIcons
-            name="search"
-            size={26}
-            color={activeTab === 'Search' ? '#007AFF' : '#666'}
-          />
-          <Text style={[styles.tabLabel, activeTab === 'Search' && styles.tabLabelActive]}>
-            Busca
-          </Text>
-        </Pressable>
-
-        {/* Ingressos */}
-        <Pressable onPress={() => handleTabPress('Tickets')} style={styles.tabItem}>
-          <MaterialCommunityIcons
-            name="ticket-outline"
-            size={26}
-            color={activeTab === 'Tickets' ? '#007AFF' : '#666'}
-          />
-          <Text style={[styles.tabLabel, activeTab === 'Tickets' && styles.tabLabelActive]}>
-            Ingressos
-          </Text>
-        </Pressable>
-
-        {/* Conta / Perfil / Admin */}
-        <Pressable onPress={() => handleTabPress('Profile')} style={styles.tabItem}>
-          {isLogged ? (
-            userRole === 'ADMIN' ? (
-              // ADMIN: ícone shield-account + label “Admin”
-              <MaterialCommunityIcons
-                name="shield-account"
-                size={28}
-                color={activeTab === 'Profile' ? '#007AFF' : '#666'}
-              />
-            ) : (
-              // USER: ícone account-circle + label “Perfil”
-              <MaterialIcons
-                name="account-circle"
-                size={28}
-                color={activeTab === 'Profile' ? '#007AFF' : '#666'}
-              />
-            )
-          ) : (
-            // Não logado: ícone person + label “Conta”
-            <MaterialIcons
-              name="person"
-              size={28}
-              color={activeTab === 'Profile' ? '#007AFF' : '#666'}
-            />
-          )}
-          <Text style={[styles.tabLabel, activeTab === 'Profile' && styles.tabLabelActive]}>
-            {isLogged
-              ? userRole === 'ADMIN'
-                ? 'Admin'
-                : 'Perfil'
-              : 'Conta'}
-          </Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
+      <TabBar
+        activeTab={activeTab}
+        onTabPress={handleTabPress}
+        isLogged={isLogged}
+        userRole={userRole}
+        isConnected={isConnected}
+        onOfflineAlert={handleOfflineAlert}
+      />
+    </SafeLayout>
   );
 }
 
-// Formata “2025-06-14T19:00:00.000Z” em “14 jun, 19h”
-function formatDateToLabel(isoString: string): string {
+// Formata "2025-06-14T19:00:00.000Z" em "14 jun 2025, 19h"
+function formatDateToLabel(eventDate: string): string {
   try {
-    const dateObj = new Date(isoString);
-    const day = dateObj.getDate();
-    const monthNames = [
-      'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-      'jul', 'ago', 'set', 'out', 'nov', 'dez',
-    ];
-    const month = monthNames[dateObj.getMonth()];
-    const hours = dateObj.getHours();
-    const minutes = dateObj.getMinutes().toString().padStart(2, '0');
-    return `${day} ${month}, ${hours}h${minutes !== '00' ? minutes : ''}`;
+    const data = new Date(eventDate);
+    const dia = data.getDate().toString().padStart(2, '0');
+    const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+    const ano = data.getFullYear();
+    const hora = data.getHours().toString().padStart(2, '0');
+    return `${dia} ${mes} ${ano}, ${hora}h`;
   } catch {
-    return isoString;
+    return eventDate;
   }
 }
 
-const { width } = Dimensions.get('window');
-const cardWidth = width * 0.75;
-
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#f2f2f7',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  // centraliza o logo
-  logoWrapper: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  logo: {
-    width: 200,
-    height: 100,
-    resizeMode: 'contain',
-  },
-  logoutButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingBottom: 16,
-    alignItems: 'center',
-  },
-
-  // ====== Busca ======
   searchHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderColor: '#e0e0e0',
+    marginHorizontal: 16,
+    marginTop: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#8c8c8c',
-    paddingHorizontal: 12,
-    fontSize: 14,
+    fontSize: 16,
+    color: '#333',
   },
-  searchContainer: {
-    paddingTop: 16,
-    paddingBottom: 16,
+  content: {
+    flex: 1,
+    backgroundColor: '#f2f2f7',
+  },
+  contentContainer: {
     paddingHorizontal: 16,
+    paddingBottom: 20,
   },
-  searchCard: {
-    flexDirection: 'row',
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1c1c1e',
+    marginTop: 20,
     marginBottom: 12,
+  },
+  horizontalList: {
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  singleItemContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+  },
+  featureCard: {
+    width: 280,
     backgroundColor: '#fff',
     borderRadius: 12,
+    marginRight: 16,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowRadius: 4,
     elevation: 3,
+  },
+  featureImage: {
+    width: '100%',
+    height: 160,
+    resizeMode: 'cover',
+  },
+  cardTextContainer: {
+    padding: 12,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1c1c1e',
+    marginBottom: 4,
+  },
+  featureDate: {
+    fontSize: 14,
+    color: '#8e8e93',
+  },
+  nextCard: {
+    width: 200,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginRight: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  nextImage: {
+    width: '100%',
+    height: 100,
+    resizeMode: 'cover',
+  },
+  nextTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1c1c1e',
+    marginBottom: 2,
+  },
+  nextDate: {
+    fontSize: 12,
+    color: '#8e8e93',
+  },
+  noneText: {
+    fontSize: 14,
+    color: '#8e8e93',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 20,
+  },
+  centeredContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullFlex: {
+    flex: 1,
+  },
+  searchContainer: {
+    padding: 16,
+  },
+  searchCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginBottom: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   searchImage: {
     width: 80,
     height: 80,
+    resizeMode: 'cover',
   },
   searchTextContainer: {
     flex: 1,
@@ -611,153 +607,19 @@ const styles = StyleSheet.create({
   },
   searchTitleText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111',
+    fontWeight: '500',
+    color: '#1c1c1e',
+    marginBottom: 4,
   },
   searchDateText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    fontSize: 14,
+    color: '#8e8e93',
   },
   noResultsText: {
-    marginTop: 20,
-    color: '#666',
-    alignSelf: 'center',
-  },
-
-  // ====== Home ======
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
-    marginTop: 20,
-    marginLeft: 16,
-  },
-  noneText: {
-    marginLeft: 16,
-    color: '#666',
-  },
-  horizontalList: {
-    paddingLeft: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  featureCard: {
-    width: cardWidth,
-    marginRight: 16,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  featureImage: {
-    width: '100%',
-    height: cardWidth * 0.55,
-  },
-  cardTextContainer: {
-    padding: 12,
-  },
-  featureTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111',
-  },
-  featureDate: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  nextCard: {
-    width: cardWidth * 0.8,
-    marginRight: 16,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  nextImage: {
-    width: '100%',
-    height: (cardWidth * 0.8) * 0.55,
-  },
-  nextTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111',
+    color: '#8e8e93',
+    textAlign: 'center',
+    marginTop: 40,
+    fontStyle: 'italic',
   },
-  nextDate: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-
-  // ====== Tab Bar ======
-  tabBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 64,
-    borderTopWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#fff',
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabLabel: {
-    marginTop: 2,
-    fontSize: 12,
-    color: '#666',
-  },
-  tabLabelActive: {
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  centeredContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fullFlex: {
-    flex: 1,
-  },
-  createButton: {
-  paddingHorizontal: 12,
-  paddingVertical: 6,
-},
-searchInfo: {
-  flex: 1,
-},
-toggleButton: {
-  marginTop: 8,
-  paddingVertical: 6,
-  paddingHorizontal: 12,
-  backgroundColor: '#E74C3C',
-  borderRadius: 6,
-},
-toggleText: {
-  color: '#fff',
-  fontWeight: '600',
-},
-adminButtons: {
-  alignItems: 'center',
-},
-iconButton: {
-  marginHorizontal: 8,
-  padding: 4,
-},
-rightPlaceholder: {
-  width: 48,
-},
-menuButtonPlaceholder: {
-  width: 48, 
-},
 });

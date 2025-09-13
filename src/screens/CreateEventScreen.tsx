@@ -1,7 +1,6 @@
-// src/screens/CreateEventScreen.tsxMore actions
-import React, { useState, useEffect } from 'react';
+// src/screens/CreateEventScreen.tsx
+import React, {useState} from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   View,
   Text,
@@ -10,16 +9,26 @@ import {
   StyleSheet,
   Platform,
   Image,
-  PermissionsAndroid,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { launchImageLibrary, Asset } from 'react-native-image-picker';
-import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+} from '@react-native-community/datetimepicker';
 import AwesomeAlert from 'react-native-awesome-alerts';
-import { baseUrl } from '../config/api';
+import {baseUrl} from '../config/api';
+import api from '../services/api';
+import {SafeLayout} from '../components/SafeLayout';
+import {Header} from '../components/Header';
+import {TabBar} from '../components/TabBar';
+import {useNavigation} from '@react-navigation/native';
 
-export default function CreateEventScreen({ navigation }: any) {
+export default function CreateEventScreen() {
+  const navigation = useNavigation();
+  const [isLogged] = useState(true);
+  const [userRole] = useState<'ADMIN' | 'USER' | null>('ADMIN');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -28,7 +37,8 @@ export default function CreateEventScreen({ navigation }: any) {
   const [showTime, setShowTime] = useState(false);
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
-  const [imageFile, setImageFile] = useState<Asset | null>(null);
+  const [imageFile, setImageFile] =
+    useState<ImagePicker.ImagePickerAsset | null>(null);
   const [loading, setLoading] = useState(false);
 
   // estados do AwesomeAlert
@@ -37,11 +47,28 @@ export default function CreateEventScreen({ navigation }: any) {
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
 
-  const showAlert = (title: string, message: string, success = true) => {
-    setAlertTitle(title);
+  const showAlert = (msgTitle: string, message: string, success = true) => {
+    setAlertTitle(msgTitle);
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
+  };
+
+  const handleTabPress = (tab: string) => {
+    switch (tab) {
+      case 'Home':
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Search':
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Tickets':
+        navigation.navigate('MyTickets' as never);
+        break;
+      case 'Profile':
+        navigation.navigate('ProfileEdit' as never);
+        break;
+    }
   };
 
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -93,83 +120,195 @@ export default function CreateEventScreen({ navigation }: any) {
     }
   };
 
-  async function requestGalleryPermission(): Promise<boolean> {
-    if (Platform.OS !== 'android') return true;
-        const perm = Platform.Version >= 33
-      ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-      : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
-    const granted = await PermissionsAndroid.request(perm, {
-      title: 'Permissão de galeria',
-      message: 'Precisamos acessar suas imagens para enviar o evento.',
-      buttonPositive: 'OK',
-      buttonNegative: 'Cancelar',
-    });
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
-  }
+  const pickImageFromCamera = async () => {
+    try {
+      const {status} = await ImagePicker.requestCameraPermissionsAsync();
 
-  const pickImage = async () => {
-    if (!(await requestGalleryPermission())) {
-      return showAlert('Permissão negada', 'Não foi possível acessar a galeria.', false);
+      if (status !== 'granted') {
+        return showAlert(
+          'Permissão negada',
+          'Precisamos de permissão para usar a câmera.',
+          false,
+        );
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: 'images' as any,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImageFile(result.assets[0]);
+      }
+    } catch (error) {
+      console.log('Erro ao usar câmera:', error);
+      showAlert('Erro', 'Não foi possível abrir a câmera.', false);
     }
-    launchImageLibrary({ mediaType: 'photo', quality: 0.8 }, resp => {
-      if (resp.didCancel) {return;}
-      if (resp.errorMessage) {return showAlert('Erro', resp.errorMessage, false);}
-      if (resp.assets?.[0]) {setImageFile(resp.assets[0]);}
-    });
   };
 
+  const showImageOptions = () => {
+    Alert.alert(
+      'Selecionar Imagem',
+      'Como você gostaria de adicionar a imagem do evento?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Câmera',
+          onPress: pickImageFromCamera,
+        },
+        {
+          text: 'Galeria',
+          onPress: pickImage,
+        },
+      ],
+      {cancelable: true},
+    );
+  };
+
+  const pickImage = async () => {
+    try {
+      // Verificar permissão primeiro
+      const {status} = await ImagePicker.getMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        const {status: newStatus} =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (newStatus !== 'granted') {
+          return showAlert(
+            'Permissão negada',
+            'Precisamos de permissão para acessar suas fotos.',
+            false,
+          );
+        }
+      }
+
+      // Opções mais flexíveis
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images' as any,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImageFile(result.assets[0]);
+      }
+    } catch (error) {
+      console.log('Erro ao selecionar imagem:', error);
+      showAlert('Erro', 'Não foi possível abrir a galeria.', false);
+    }
+  };
   const handleSubmit = async () => {
     const token = await AsyncStorage.getItem('accessToken');
     if (!token) {
       return showAlert('Sessão inválida', 'Faça login novamente.', false);
     }
     if (!title.trim() || !description.trim()) {
-      return showAlert('Atenção', 'Título e descrição são obrigatórios.', false);
+      return showAlert(
+        'Atenção',
+        'Título e descrição são obrigatórios.',
+        false,
+      );
     }
 
     const isoDate =
-      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-      `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-
-    const form = new FormData();
-    form.append('title', title);
-    form.append('description', description);
-    form.append('eventDate', isoDate);
-    form.append('quantity', quantity || '0');
-    form.append('price', price || '0');
-    if (imageFile) {
-      form.append('imageFile', {
-        uri: imageFile.uri,
-        type: imageFile.type || 'image/jpeg',
-        name: imageFile.fileName || 'file.jpg',
-      } as any);
-    }
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+        date.getDate(),
+      )}` +
+      `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+        date.getSeconds(),
+      )}`;
 
     try {
       setLoading(true);
-      const res = await fetch(`${baseUrl}/ticket`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
-      });
 
-      if (!res.ok) {
-        const errBody = await res.text();
-        return showAlert('Erro', `Status ${res.status}\n${errBody}`, false);
+      if (imageFile) {
+        // Para upload com imagem, usar FormData
+        const form = new FormData();
+        form.append('title', title);
+        form.append('description', description);
+        form.append('eventDate', isoDate);
+        form.append('quantity', quantity || '0');
+        form.append('price', price || '0');
+
+        // Estrutura correta para FormData com imagem no React Native
+        const imageUri = Platform.OS === 'ios'
+          ? imageFile.uri.replace('file://', '')
+          : imageFile.uri;
+
+        form.append('imageFile', {
+          uri: imageUri,
+          type: imageFile.mimeType || 'image/jpeg',
+          name: imageFile.fileName || `event_image_${Date.now()}.jpg`,
+        } as any);
+
+        // Usar fetch para FormData com imagem (melhor compatibilidade)
+        const response = await fetch(`${baseUrl}/ticket`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            // Não definir Content-Type para FormData - deixar o browser configurar
+          },
+          body: form,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Status ${response.status}: ${errorText}`);
+        }
+
+        await response.json();
+        showAlert('Sucesso', 'Evento criado!', true);
+      } else {
+        // Para dados sem imagem, usar JSON
+        await api.post('/ticket', {
+          title,
+          description,
+          eventDate: isoDate,
+          quantity: parseInt(quantity, 10) || 0,
+          price: parseFloat(price) || 0,
+        });
+
+        showAlert('Sucesso', 'Evento criado!', true);
       }
-
-    
-
-      showAlert('Sucesso', `Evento criado!`, true);
     } catch (e: any) {
-      showAlert('Erro Exceção', e.message, false);
+      console.error('Erro na requisição:', e);
+
+      if (e.response) {
+        // Erro da API
+        console.error('Erro da API:', {
+          status: e.response.status,
+          data: e.response.data,
+        });
+        showAlert('Erro', `Status ${e.response.status}: ${e.response.data?.message || 'Erro desconhecido'}`, false);
+      } else if (e.request) {
+        // Erro de rede
+        console.error('Erro de rede:', e.request);
+        showAlert('Erro de Rede', 'Verifique sua conexão e tente novamente.', false);
+      } else {
+        // Outro erro
+        showAlert('Erro Exceção', e.message, false);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeLayout showTabBar={true}>
+      <Header
+        title="Criar Evento"
+        isLogged={isLogged}
+        userRole={userRole}
+        navigation={navigation}
+      />
+
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.heading}>Criar Novo Evento</Text>
 
@@ -196,7 +335,13 @@ export default function CreateEventScreen({ navigation }: any) {
             <Text>📅 {date.toLocaleDateString()}</Text>
           </Pressable>
           <Pressable onPress={showTimePicker} style={styles.dateButton}>
-            <Text>🕒 {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+            <Text>
+              🕒{' '}
+              {date.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
           </Pressable>
         </View>
 
@@ -237,27 +382,26 @@ export default function CreateEventScreen({ navigation }: any) {
 
         <Text style={styles.label}>Imagem do evento</Text>
         <View style={styles.imagePickerContainer}>
-          <Pressable style={styles.imageButton} onPress={pickImage}>
+          <Pressable style={styles.imageButton} onPress={showImageOptions}>
             <Text style={styles.imageButtonText}>
               {imageFile ? 'Trocar Imagem' : 'Escolher Imagem'}
             </Text>
           </Pressable>
-          {imageFile && <Image source={{ uri: imageFile.uri }} style={styles.preview} />}
+          {imageFile && (
+            <Image source={{uri: imageFile.uri}} style={styles.preview} />
+          )}
         </View>
 
         <Pressable
           style={styles.submitButton}
           onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.submitText}>Criar Evento</Text>
-          }
+          disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.submitText}>Criar Evento</Text>
+          )}
         </Pressable>
-        <Pressable onPress={() => navigation.navigate('Dashboard')} style={({ pressed }) => [styles.buttonBack, pressed && styles.buttonBackPressed]}>
-            <Text style={styles.buttonBackText}>Voltar</Text>
-          </Pressable>
       </ScrollView>
 
       <AwesomeAlert
@@ -272,18 +416,31 @@ export default function CreateEventScreen({ navigation }: any) {
         confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
         onConfirmPressed={() => {
           setAlertVisible(false);
-          if (isSuccess) navigation.navigate('Dashboard');
+          if (isSuccess) {
+            navigation.navigate('Dashboard' as never);
+          }
         }}
       />
-    </SafeAreaView>
+
+      <TabBar
+        activeTab="Profile"
+        onTabPress={handleTabPress}
+        isLogged={isLogged}
+        userRole={userRole}
+      />
+    </SafeLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
-  container: { padding: 20 },
-  heading: { fontSize: 22, fontWeight: '700', marginBottom: 12, color: '#111827' },
-  label: { fontWeight: '600', marginTop: 16, color: '#374151' },
+  container: {padding: 20},
+  heading: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 12,
+    color: '#111827',
+  },
+  label: {fontWeight: '600', marginTop: 16, color: '#374151'},
   input: {
     backgroundColor: '#FFF',
     borderRadius: 10,
@@ -342,21 +499,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
-  },
-  buttonBack: {
-    marginTop: 16,
-    alignSelf: 'center',
-    backgroundColor: '#1976d2',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 24,
-  },
-  buttonBackPressed: {
-    backgroundColor: '#155a9c',
-  },
-  buttonBackText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

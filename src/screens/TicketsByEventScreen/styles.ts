@@ -5,10 +5,28 @@ export default StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f6f8fc',
-        padding: 0,
+    },
+    scrollViewStyle: {
+        flex: 1,
+        backgroundColor: '#f6f8fc',
+    },
+    scrollContent: {
+        flexGrow: 1,
         alignItems: 'center',
-        justifyContent: 'center', // Centraliza verticalmente
-        minHeight: '100%',
+        justifyContent: 'flex-start',
+        padding: 0,
+    },
+    centerContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: 400,
+    },
+    carouselContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 20,
     },
     carousel: {
         marginTop: 0,
@@ -121,18 +139,25 @@ export default StyleSheet.create({
         paddingInlineStart: 38,
     },
     buyerName: {
-        fontWeight: 'bold',
-        fontSize: 15,
-        color: '#222',
+        fontWeight: '700',
+        fontSize: 16,
+        color: '#2C3E50',
+        marginLeft: 12,
+        flex: 1,
     },
     buyerEmail: {
-        color: '#1976d2',
+        color: '#E74C3C',
         fontSize: 14,
-        textDecorationLine: 'underline',
+        fontWeight: '600',
+        marginLeft: 12,
+        flex: 1,
     },
     buyerPhone: {
-        color: '#222',
+        color: '#27AE60',
         fontSize: 14,
+        fontWeight: '600',
+        marginLeft: 12,
+        flex: 1,
     },
     boughtAt: {
         fontSize: 13,
@@ -140,9 +165,11 @@ export default StyleSheet.create({
         marginBottom: 2,
     },
     price: {
-        fontWeight: 'bold',
-        fontSize: 15,
-        color: '#1976d2',
+        fontWeight: '700',
+        fontSize: 18,
+        color: '#F39C12',
+        marginLeft: 10,
+        flex: 1,
     },
     qrCodeContainer: {
         marginVertical: 16,
@@ -159,8 +186,7 @@ export default StyleSheet.create({
         fontWeight: 'bold',
         color: '#1976d2',
         fontSize: 18,
-        alignSelf: 'flex-start',
-        marginLeft: 16,
+        alignSelf: 'center',
         marginTop: 14,
         marginBottom: 8,
         letterSpacing: 1,
@@ -179,6 +205,45 @@ export default StyleSheet.create({
         color: '#FFA500',
         fontWeight: 'bold',
         fontSize: 13,
+    },
+    usedTicketBadge: {
+        backgroundColor: '#D4EDDA',
+        borderColor: '#43a047',
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 8,
+        marginBottom: 8,
+        alignSelf: 'center',
+    },
+    usedTicketText: {
+        color: '#43a047',
+        fontWeight: 'bold',
+        fontSize: 14,
+        letterSpacing: 0.5,
+    },
+    ticketCardBoxUsed: {
+        backgroundColor: '#f0f0f0',
+        opacity: 0.7,
+    },
+    qrCodeImageUsed: {
+        opacity: 0.5,
+    },
+    qrCodeUsedOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 8,
+    },
+    qrCodeUsedText: {
+        color: '#e53935',
+        fontWeight: 'bold',
+        fontSize: 20,
+        letterSpacing: 2,
     },
     buttonToggleUsed: {
         backgroundColor: '#1976d2',
@@ -215,5 +280,34 @@ export default StyleSheet.create({
     },
     dotActive: {
         backgroundColor: '#007AFF',
+    },
+    // Novos estilos para layout vertical com ícones
+    ticketInfoVertical: {
+        width: '100%',
+        marginBottom: 10,
+    },
+    infoSection: {
+        marginBottom: 16,
+    },
+    infoItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        paddingHorizontal: 4,
+    },
+    infoTextContainer: {
+        marginLeft: 12,
+        flex: 1,
+    },
+    infoLabel: {
+        fontSize: 12,
+        color: '#7A7A7A',
+        fontWeight: '500',
+        marginBottom: 2,
+    },
+    infoValue: {
+        fontSize: 14,
+        color: '#2C3E50',
+        fontWeight: '600',
     },
 });

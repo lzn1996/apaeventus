@@ -1,75 +1,73 @@
 // src/screens/QrScannerScreen.tsx
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Button,
-  ActivityIndicator,
-  Pressable,
-  SafeAreaView,
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import React, {useState, useEffect} from 'react';
+import {View, Text, StyleSheet, Button} from 'react-native';
+import {CameraView, useCameraPermissions} from 'expo-camera';
 import AwesomeAlert from 'react-native-awesome-alerts';
-import { useNavigation } from '@react-navigation/native';
-
-let bearerToken = '';
-
-async function getNewToken() {
-  const oldAccess = await AsyncStorage.getItem('accessToken');
-  const refresh = await AsyncStorage.getItem('refreshToken');
-  if (!oldAccess || !refresh) {
-    throw new Error('Tokens não encontrados no armazenamento');
-  }
-  const response = await fetch(
-    'https://apaeventus.rafaelcostadev.com/auth/refresh-token',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${oldAccess}`,
-      },
-      body: JSON.stringify({ refreshToken: refresh }),
-    }
-  );
-  if (!response.ok) {
-    throw new Error(`Falha ao atualizar token: ${response.status}`);
-  }
-  const result = await response.json();
-  await AsyncStorage.setItem('accessToken', result.accessToken);
-  if (result.refreshToken) {
-    await AsyncStorage.setItem('refreshToken', result.refreshToken);
-  }
-  return result.accessToken;
-}
+import {useNavigation} from '@react-navigation/native';
+import {SafeLayout} from '../components/SafeLayout';
+import {Header} from '../components/Header';
+import {TabBar} from '../components/TabBar';
+import { baseUrl } from '../config/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authService } from '../services/authService';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 export default function QrScannerScreen() {
   const navigation = useNavigation();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [isLogged] = useState(true);
+  const [userRole] = useState<'ADMIN' | 'USER' | null>('ADMIN');
+  const isConnected = useNetworkStatus();
 
-  // estados do AwesomeAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
+
+  const handleOfflineAlert = () => {
+    // Função vazia, pois o QR scanner é uma tela específica de admin
+    // e não precisa de navegação quando offline
+  };
 
   function showAlert(title: string, message: string, success = true) {
     setAlertTitle(title);
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
+
+    setTimeout(() => {
+      setAlertVisible(false);
+      setScanned(false);
+      navigation.navigate('Dashboard' as never);
+    }, 10000);
   }
+
+  const handleTabPress = (tab: string) => {
+    switch (tab) {
+      case 'Home':
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Search':
+        navigation.navigate('Dashboard' as never);
+        break;
+      case 'Tickets':
+        navigation.navigate('MyTickets' as never);
+        break;
+      case 'Profile':
+        navigation.navigate('ProfileEdit' as never);
+        break;
+    }
+  };
 
   useEffect(() => {
     if (permission === null) {
       requestPermission();
     }
-  }, [permission]);
+  }, [permission, requestPermission]);
 
   const handleBarCodeScanned = async ({
-    type,
+    type: _type,
     data,
   }: {
     type: string;
@@ -78,59 +76,99 @@ export default function QrScannerScreen() {
     setScanned(true);
 
     try {
-      bearerToken = await getNewToken();
+      let bearerToken = await AsyncStorage.getItem('accessToken');
 
-      const url = 'https://apaeventus.rafaelcostadev.com/sale/set-used';
+      if (!bearerToken) {
+        throw new Error('Token não encontrado');
+      }
+
+      const url = `${baseUrl}/sale/set-used`;
       const headers = {
         Authorization: `Bearer ${bearerToken}`,
         'Content-Type': 'application/json',
       };
-      const body = JSON.stringify({ saleId: data });
+      const body = JSON.stringify({saleId: data});
 
-      const response = await fetch(url, { method: 'POST', headers, body });
-      const text = await response.text();
-      if (!response.ok) {
-        let msg = text;
-        try {
-          const err = JSON.parse(text);
-          msg = err.message || JSON.stringify(err);
-        } catch {}
-        throw new Error(`HTTP ${response.status}: ${msg}`);
+      let response = await fetch(url, {method: 'POST', headers, body});
+
+      if (response.status === 401) {
+        const newToken = await authService.refreshAccessToken();
+        if (!newToken) {
+          throw new Error('Não foi possível renovar o token');
+        }
+
+        const newHeaders = {
+          Authorization: `Bearer ${newToken}`,
+          'Content-Type': 'application/json',
+        };
+        response = await fetch(url, {method: 'POST', headers: newHeaders, body});
       }
 
-      showAlert('QR Code Válido', `Venda ${data} marcada como usada.`, true);
+      if (!response.ok) {
+        if (response.status === 400) {
+          throw new Error('Ingresso já foi utilizado ou é inválido.');
+        } else if (response.status === 404) {
+          throw new Error('Ingresso não encontrado no sistema.');
+        } else if (response.status >= 500) {
+          throw new Error('Erro no servidor. Tente novamente em alguns instantes.');
+        } else {
+          throw new Error('Erro ao validar o ingresso. Verifique o QR Code.');
+        }
+      }
+
+      showAlert('✅ Ingresso Válido', 'Ingresso validado com sucesso!', true);
     } catch (error: any) {
+      console.error('Erro completo:', error);
       showAlert(
-        'Erro ao validar QR Code','Ingresso já utilizado ou inválido.',
-        false
+        '❌ Erro na Validação',
+        error.message || 'Não foi possível validar o ingresso. Tente novamente.',
+        false,
       );
     }
   };
 
-  // Enquanto aguarda permissão
   if (permission === null || !permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.permissionText}>
-          Permissão da câmera não concedida.
-        </Text>
-        <Button title="Solicitar Permissão" onPress={requestPermission} />
-      </View>
+      <SafeLayout showTabBar={true}>
+        <Header
+          title="Scanner QR Code"
+          isLogged={isLogged}
+          userRole={userRole}
+          navigation={navigation}
+        />
+        <View style={styles.container}>
+          <Text style={styles.permissionText}>
+            Permissão da câmera não concedida.
+          </Text>
+          <Button title="Solicitar Permissão" onPress={requestPermission} />
+        </View>
+        <TabBar
+          activeTab="Profile"
+          onTabPress={handleTabPress}
+          isLogged={isLogged}
+          userRole={userRole}
+          isConnected={isConnected}
+          onOfflineAlert={handleOfflineAlert}
+        />
+      </SafeLayout>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Botão de voltar */}
-      <Pressable style={styles.backButton} onPress={() => navigation.navigate('Dashboard')}>
-        <Text style={styles.backButtonText}>← Voltar</Text>
-      </Pressable>
+    <SafeLayout showTabBar={true}>
+      <Header
+        title="Leitor de QR Code"
+        isLogged={isLogged}
+        userRole={userRole}
+        navigation={navigation}
+      />
 
-      <CameraView
-        style={styles.camera}
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-      >
-        <View style={styles.layerContainer}>
+      <View style={styles.cameraContainer}>
+        <CameraView
+          style={styles.camera}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        />
+        <View style={styles.overlay}>
           <View style={styles.layerTop} />
           <View style={styles.layerCenter}>
             <View style={styles.layerLeft} />
@@ -139,7 +177,7 @@ export default function QrScannerScreen() {
           </View>
           <View style={styles.layerBottom} />
         </View>
-      </CameraView>
+      </View>
 
       <AwesomeAlert
         show={alertVisible}
@@ -153,32 +191,29 @@ export default function QrScannerScreen() {
         confirmButtonColor={isSuccess ? '#4CAF50' : '#F44336'}
         onConfirmPressed={() => {
           setAlertVisible(false);
-          setScanned(false); // permitir nova leitura
+          setScanned(false);
+          navigation.navigate('Dashboard' as never);
+        }}
+        onDismiss={() => {
+          setAlertVisible(false);
+          setScanned(false);
+          navigation.navigate('Dashboard' as never);
         }}
       />
-    </SafeAreaView>
+
+      <TabBar
+        activeTab="Profile"
+        onTabPress={handleTabPress}
+        isLogged={isLogged}
+        userRole={userRole}
+        isConnected={isConnected}
+        onOfflineAlert={handleOfflineAlert}
+      />
+    </SafeLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#000', // para o preview da câmera
-  },
-  backButton: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -190,20 +225,30 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
+  cameraContainer: {
+    flex: 1,
+    position: 'relative',
+  },
   camera: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
-  layerContainer: { flex: 1 },
-  layerTop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
-  layerCenter: { flexDirection: 'row' },
-  layerLeft: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flex: 1,
+  },
+  layerTop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)'},
+  layerCenter: {flexDirection: 'row'},
+  layerLeft: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)'},
   focused: {
     width: 200,
     height: 200,
     borderWidth: 2,
     borderColor: '#00FF00',
   },
-  layerRight: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
-  layerBottom: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  layerRight: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)'},
+  layerBottom: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)'},
 });
