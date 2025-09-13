@@ -50,7 +50,8 @@
           "photosPermission": "O aplicativo acessa suas fotos para permitir o upload de imagens dos eventos."
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": false
