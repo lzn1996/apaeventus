@@ -12,7 +12,6 @@ export default StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: 100, // Espaço para o TabBar
         alignItems: 'center',
         justifyContent: 'flex-start',
         padding: 0,
@@ -140,18 +139,25 @@ export default StyleSheet.create({
         paddingInlineStart: 38,
     },
     buyerName: {
-        fontWeight: 'bold',
-        fontSize: 15,
-        color: '#222',
+        fontWeight: '700',
+        fontSize: 16,
+        color: '#2C3E50',
+        marginLeft: 12,
+        flex: 1,
     },
     buyerEmail: {
-        color: '#1976d2',
+        color: '#E74C3C',
         fontSize: 14,
-        textDecorationLine: 'underline',
+        fontWeight: '600',
+        marginLeft: 12,
+        flex: 1,
     },
     buyerPhone: {
-        color: '#222',
+        color: '#27AE60',
         fontSize: 14,
+        fontWeight: '600',
+        marginLeft: 12,
+        flex: 1,
     },
     boughtAt: {
         fontSize: 13,
@@ -159,9 +165,11 @@ export default StyleSheet.create({
         marginBottom: 2,
     },
     price: {
-        fontWeight: 'bold',
-        fontSize: 15,
-        color: '#1976d2',
+        fontWeight: '700',
+        fontSize: 18,
+        color: '#F39C12',
+        marginLeft: 10,
+        flex: 1,
     },
     qrCodeContainer: {
         marginVertical: 16,
@@ -272,5 +280,34 @@ export default StyleSheet.create({
     },
     dotActive: {
         backgroundColor: '#007AFF',
+    },
+    // Novos estilos para layout vertical com ícones
+    ticketInfoVertical: {
+        width: '100%',
+        marginBottom: 10,
+    },
+    infoSection: {
+        marginBottom: 16,
+    },
+    infoItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        paddingHorizontal: 4,
+    },
+    infoTextContainer: {
+        marginLeft: 12,
+        flex: 1,
+    },
+    infoLabel: {
+        fontSize: 12,
+        color: '#7A7A7A',
+        fontWeight: '500',
+        marginBottom: 2,
+    },
+    infoValue: {
+        fontSize: 14,
+        color: '#2C3E50',
+        fontWeight: '600',
     },
 });

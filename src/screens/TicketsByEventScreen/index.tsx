@@ -104,7 +104,7 @@ export default function TicketsByEventScreen({route}: any) {
   }
 
   const width = Dimensions.get('window').width;
-  const height = Math.min(Dimensions.get('window').height * 0.8, 720);
+  const height = Dimensions.get('window').height;
 
   return (
     <SafeLayout showTabBar={true}>
@@ -116,7 +116,7 @@ export default function TicketsByEventScreen({route}: any) {
         <View style={styles.carouselContainer}>
           <Carousel
             width={width * 0.95}
-            height={height}
+            height={height * 1.10}
             data={localTickets}
             renderItem={({item, index}: {item: any; index: number}) => (
               <TicketCard
