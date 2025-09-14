@@ -450,7 +450,7 @@ export default function DashboardScreen({ navigation }: any) {
   );
 }
 
-// Formata "2025-06-14T19:00:00.000Z" em "14 jun 2025, 19h"
+// Formata "2025-06-14T19:30:00.000Z" em "14 jun 2025, 19h30"
 function formatDateToLabel(eventDate: string): string {
   try {
     const data = new Date(eventDate);
@@ -458,7 +458,8 @@ function formatDateToLabel(eventDate: string): string {
     const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
     const ano = data.getFullYear();
     const hora = data.getHours().toString().padStart(2, '0');
-    return `${dia} ${mes} ${ano}, ${hora}h`;
+    const minutos = data.getMinutes().toString().padStart(2, '0');
+    return `${dia} ${mes} ${ano}, ${hora}h${minutos}`;
   } catch {
     return eventDate;
   }
