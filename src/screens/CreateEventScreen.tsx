@@ -32,7 +32,12 @@ export default function CreateEventScreen() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date());
+  // Inicializa com 1 dia à frente da data atual
+  const [date, setDate] = useState(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow;
+  });
   const [showDate, setShowDate] = useState(false);
   const [showTime, setShowTime] = useState(false);
   const [quantity, setQuantity] = useState('');
@@ -76,11 +81,28 @@ export default function CreateEventScreen() {
   const handleDateChange = (_: any, sel?: Date) => {
     setShowDate(false);
     if (sel) {
-      const updated = new Date(date);
-      updated.setFullYear(sel.getFullYear());
-      updated.setMonth(sel.getMonth());
-      updated.setDate(sel.getDate());
-      setDate(updated);
+      const minimumDate = new Date();
+      minimumDate.setDate(minimumDate.getDate() + 1);
+      minimumDate.setHours(0, 0, 0, 0); // Zera horas para comparar apenas a data
+
+      const selectedDate = new Date(sel);
+      selectedDate.setHours(0, 0, 0, 0);
+
+      // Só permite datas a partir de amanhã
+      if (selectedDate >= minimumDate) {
+        const updated = new Date(date);
+        updated.setFullYear(sel.getFullYear());
+        updated.setMonth(sel.getMonth());
+        updated.setDate(sel.getDate());
+        setDate(updated);
+      } else {
+        // Avisa o usuário que a data é inválida
+        showAlert(
+          'Data Inválida',
+          'O evento deve ser criado com pelo menos 1 dia de antecedência. Por favor, selecione uma data a partir de amanhã.',
+          false
+        );
+      }
     }
   };
 
@@ -90,17 +112,53 @@ export default function CreateEventScreen() {
       const updated = new Date(date);
       updated.setHours(sel.getHours());
       updated.setMinutes(sel.getMinutes());
-      setDate(updated);
+
+      const now = new Date();
+      const minimumDate = new Date();
+      minimumDate.setDate(minimumDate.getDate() + 1);
+
+      // Se a data selecionada é exatamente amanhã, valida o horário
+      const isNextDay = updated.toDateString() === minimumDate.toDateString();
+
+      if (isNextDay) {
+        // Se é o próximo dia, precisa ser pelo menos 24h a partir de agora
+        const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        if (updated >= twentyFourHoursFromNow) {
+          setDate(updated);
+        } else {
+          // Se o horário é muito cedo, ajusta para 24h + 5 minutos a partir de agora e avisa o usuário
+          const validTime = new Date(twentyFourHoursFromNow.getTime() + 5 * 60 * 1000); // Adiciona 5 minutos
+          const validTimeStr = validTime.toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+
+          showAlert(
+            'Horário Inválido',
+            `O evento deve ser criado com pelo menos 24 horas de antecedência. O horário foi ajustado automaticamente para ${validTimeStr}.`,
+            false
+          );
+
+          setDate(validTime);
+        }
+      } else {
+        // Se é mais de um dia no futuro, pode ser qualquer horário
+        setDate(updated);
+      }
     }
   };
 
   const showDatePicker = () => {
+    const minimumDate = new Date();
+    minimumDate.setDate(minimumDate.getDate() + 1);
+
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
         value: date,
         onChange: handleDateChange,
         mode: 'date',
         is24Hour: true,
+        minimumDate: minimumDate,
       });
     } else {
       setShowDate(true);
@@ -351,6 +409,11 @@ export default function CreateEventScreen() {
             mode="date"
             display="default"
             onChange={handleDateChange}
+            minimumDate={(() => {
+              const minimumDate = new Date();
+              minimumDate.setDate(minimumDate.getDate() + 1);
+              return minimumDate;
+            })()}
           />
         )}
         {showTime && (
