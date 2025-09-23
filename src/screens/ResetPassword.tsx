@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import AwesomeAlert from 'react-native-awesome-alerts';
+import { baseUrl } from '../config/api';
 
 export default function RecoverPasswordScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -30,7 +31,7 @@ export default function RecoverPasswordScreen({ navigation }: any) {
 
     try {
       setLoading(true);
-      const response = await fetch('https://apaeventus.rafaelcostadev.com/recover-password/generate', {
+      const response = await fetch(`${baseUrl}/recover-password/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
