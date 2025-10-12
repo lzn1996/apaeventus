@@ -9,14 +9,14 @@ import { authService } from './authService';
  * quando necessário.
  */
 
-export async function createSaleProtected(data: { ticketId: string; quantity: number }) {
+export async function createSaleProtected(data: { ticketId: string; quantity: number }): Promise<SaleResponse | undefined> {
     await authService.getAccessToken();
     try {
-        const response = await api.post('/sale', data);
+        const response = await api.post<SaleResponse>('/sale', data);
         return response.data;
     } catch (err) {
         console.error('[createSaleProtected] Erro ao criar venda:', err);
-        throw err;
+        return;
     }
 }
 
@@ -44,6 +44,11 @@ export interface Sale {
         createdAt: string;
         updatedAt: string;
     };
+}
+
+export interface SaleResponse {
+    sessionId: string;
+    url: string
 }
 
 export async function getUserSales(): Promise<Sale[]> {
