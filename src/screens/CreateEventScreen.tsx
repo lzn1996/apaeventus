@@ -1,5 +1,5 @@
 // src/screens/CreateEventScreen.tsx
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   ScrollView,
   View,
@@ -11,6 +11,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Keyboard,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,12 +24,25 @@ import api from '../services/api';
 import {SafeLayout} from '../components/SafeLayout';
 import {Header} from '../components/Header';
 import {TabBar} from '../components/TabBar';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 
 export default function CreateEventScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const titleRef = useRef<View>(null);
+  const descriptionRef = useRef<View>(null);
+  const quantityRef = useRef<View>(null);
+  const priceRef = useRef<View>(null);
   const [isLogged] = useState(true);
   const [userRole] = useState<'ADMIN' | 'USER' | null>('ADMIN');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Recebe os parâmetros do chatbot se existirem
+  const params = route.params as {
+    title?: string;
+    description?: string;
+  } | undefined;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -52,11 +66,49 @@ export default function CreateEventScreen() {
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
 
+  // Preenche os campos quando retorna do chatbot
+  useEffect(() => {
+    if (params?.title) {
+      setTitle(params.title);
+    }
+    if (params?.description) {
+      setDescription(params.description);
+    }
+  }, [params]);
+
+  // Gerenciamento do teclado
+  useEffect(() => {
+    const showListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+
+    const hideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showListener.remove();
+      hideListener.remove();
+    };
+  }, []);
+
   const showAlert = (msgTitle: string, message: string, success = true) => {
     setAlertTitle(msgTitle);
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
+  };
+
+  const scrollToInput = (ref: React.RefObject<View | null>) => {
+    setTimeout(() => {
+      ref.current?.measureLayout(
+        scrollViewRef.current as any,
+        (x, y) => {
+          scrollViewRef.current?.scrollTo({y: y - 100, animated: true});
+        },
+        () => {},
+      );
+    }, 300);
   };
 
   const handleTabPress = (tab: string) => {
@@ -74,6 +126,21 @@ export default function CreateEventScreen() {
         navigation.navigate('ProfileEdit' as never);
         break;
     }
+  };
+
+  const openChatbot = async () => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+
+      // Reseta a conversa antes de navegar
+      await api.post('/chatbot/reset-conversation', {}, {
+        headers: {Authorization: `Bearer ${token}`},
+      });
+    } catch (error) {
+      console.log('Erro ao resetar conversa:', error);
+      // Mesmo com erro, navega para o chatbot
+    }
+    (navigation as any).navigate('Chatbot');
   };
 
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -367,25 +434,43 @@ export default function CreateEventScreen() {
         navigation={navigation}
       />
 
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={[styles.container, {paddingBottom: keyboardHeight}]}
+      >
         <Text style={styles.heading}>Criar Novo Evento</Text>
 
         <Text style={styles.label}>Título</Text>
-        <TextInput
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Nome do evento"
-        />
+        <View ref={titleRef}>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Nome do evento"
+            onFocus={() => scrollToInput(titleRef)}
+          />
+        </View>
 
         <Text style={styles.label}>Descrição</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Detalhes do evento"
-          multiline
-        />
+        <View ref={descriptionRef}>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Detalhes do evento"
+            multiline
+            onFocus={() => scrollToInput(descriptionRef)}
+          />
+        </View>
+
+        {/* Botão para usar IA */}
+        <Pressable style={styles.aiButton} onPress={openChatbot}>
+          <Text style={styles.aiButtonIcon}>🤖</Text>
+          <View style={styles.aiButtonTextContainer}>
+            <Text style={styles.aiButtonText}>✨ Clique aqui para usar IA</Text>
+            <Text style={styles.aiButtonSubtext}>Preencha o título e descrição automaticamente com a inteligência artificial</Text>
+          </View>
+        </Pressable>
 
         <Text style={styles.label}>Data e hora</Text>
         <View style={styles.rowButtons}>
@@ -426,22 +511,28 @@ export default function CreateEventScreen() {
         )}
 
         <Text style={styles.label}>Quantidade de Ingressos</Text>
-        <TextInput
-          style={styles.input}
-          value={quantity}
-          onChangeText={setQuantity}
-          placeholder="0"
-          keyboardType="number-pad"
-        />
+        <View ref={quantityRef}>
+          <TextInput
+            style={styles.input}
+            value={quantity}
+            onChangeText={setQuantity}
+            placeholder="0"
+            keyboardType="number-pad"
+            onFocus={() => scrollToInput(quantityRef)}
+          />
+        </View>
 
         <Text style={styles.label}>Preço (R$)</Text>
-        <TextInput
-          style={styles.input}
-          value={price}
-          onChangeText={setPrice}
-          placeholder="0"
-          keyboardType="decimal-pad"
-        />
+        <View ref={priceRef}>
+          <TextInput
+            style={styles.input}
+            value={price}
+            onChangeText={setPrice}
+            placeholder="0"
+            keyboardType="decimal-pad"
+            onFocus={() => scrollToInput(priceRef)}
+          />
+        </View>
 
         <Text style={styles.label}>Imagem do evento</Text>
         <View style={styles.imagePickerContainer}>
@@ -562,5 +653,36 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
+  },
+  aiButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#8B5CF6',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+    marginBottom: 8,
+    shadowColor: '#8B5CF6',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  aiButtonIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  aiButtonTextContainer: {
+    flex: 1,
+  },
+  aiButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  aiButtonSubtext: {
+    color: '#E9D5FF',
+    fontSize: 12,
   },
 });

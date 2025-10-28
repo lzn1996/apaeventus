@@ -21,6 +21,7 @@ import { SafeLayout } from '../components/SafeLayout';
 import { Header } from '../components/Header';
 import { TabBar } from '../components/TabBar';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { authService } from '../services/authService';
 
 interface EventRaw {
   id: string;
@@ -129,13 +130,40 @@ export default function DashboardScreen({ navigation }: any) {
 
   /**
    * Lê o "userRole" do AsyncStorage e atualiza isLogged / userRole.
+   * Também tenta fazer refresh do token se o usuário estiver logado.
    */
   const loadUserRole = useCallback(async () => {
     try {
       const role = await AsyncStorage.getItem('userRole');
+      const accessToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+
       if (role === 'ADMIN' || role === 'USER') {
+        // Se tem role mas não tem tokens, limpa tudo
+        if (!accessToken || !refreshToken) {
+          console.log('Usuário logado mas sem tokens, limpando storage...');
+          await AsyncStorage.clear();
+          setUserRole(null);
+          setIsLogged(false);
+          return;
+        }
+
         setUserRole(role);
         setIsLogged(true);
+
+        // Tenta renovar o token proativamente
+        try {
+          console.log('Verificando token ao carregar Dashboard...');
+          await authService.refreshToken();
+          console.log('Token renovado com sucesso no Dashboard');
+        } catch (error) {
+          console.log('Erro ao renovar token no Dashboard:', error);
+          // Se falhar ao renovar, limpa o storage
+          console.log('Limpando storage devido a falha no refresh...');
+          await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userRole']);
+          setUserRole(null);
+          setIsLogged(false);
+        }
       } else {
         setUserRole(null);
         setIsLogged(false);

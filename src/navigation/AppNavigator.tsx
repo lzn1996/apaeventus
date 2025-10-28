@@ -15,6 +15,7 @@ import EditProfileScreen from '../screens/EditProfileScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
 import AdminEventsScreen from '../screens/AdminEventsScreen';
 import RecoverPasswordScreen from '../screens/ResetPassword';
+import ChatbotScreen from '../screens/ChatbotScreen';
 
 // import PrimeiroAcesso from '../screens/PrimeiroAcesso';
 // import CreateEventScreen from '../screens/CreateEventScreen';
@@ -46,6 +47,7 @@ export default function AppNavigator() {
   <Stack.Screen name="ProfileEdit" component={EditProfileScreen} options={{ headerShown: false }}/>
   <Stack.Screen name="AdminEvents" component={AdminEventsScreen} options={{ headerShown: false }}/>
   <Stack.Screen name="CreateEvent" component={CreateEventScreen}options={{ headerShown: false }} />
+  <Stack.Screen name="Chatbot" component={ChatbotScreen} options={{ headerShown: false }} />
    <Stack.Screen name="Reset" component={RecoverPasswordScreen} options={{ headerShown: false }} />
 </Stack.Navigator>
   );
