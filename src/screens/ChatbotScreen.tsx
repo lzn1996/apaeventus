@@ -286,6 +286,7 @@ export default function ChatbotScreen() {
               value={inputText}
               onChangeText={setInputText}
               placeholder="Digite sua resposta..."
+              placeholderTextColor="#9CA3AF"
               multiline
               maxLength={500}
               editable={!loading}
@@ -438,6 +439,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
     maxHeight: 100,
     fontSize: 15,
+    color: '#1F2937',
+    includeFontPadding: false,
   },
   sendButton: {
     width: 44,

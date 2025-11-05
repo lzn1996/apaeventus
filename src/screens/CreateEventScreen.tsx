@@ -447,6 +447,7 @@ export default function CreateEventScreen() {
             value={title}
             onChangeText={setTitle}
             placeholder="Nome do evento"
+            placeholderTextColor="#9CA3AF"
             onFocus={() => scrollToInput(titleRef)}
           />
         </View>
@@ -458,6 +459,7 @@ export default function CreateEventScreen() {
             value={description}
             onChangeText={setDescription}
             placeholder="Detalhes do evento"
+            placeholderTextColor="#9CA3AF"
             multiline
             onFocus={() => scrollToInput(descriptionRef)}
           />
@@ -517,6 +519,7 @@ export default function CreateEventScreen() {
             value={quantity}
             onChangeText={setQuantity}
             placeholder="0"
+            placeholderTextColor="#9CA3AF"
             keyboardType="number-pad"
             onFocus={() => scrollToInput(quantityRef)}
           />
@@ -529,6 +532,7 @@ export default function CreateEventScreen() {
             value={price}
             onChangeText={setPrice}
             placeholder="0"
+            placeholderTextColor="#9CA3AF"
             keyboardType="decimal-pad"
             onFocus={() => scrollToInput(priceRef)}
           />
@@ -602,6 +606,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
     fontSize: 16,
+    color: '#1F2937',
+    includeFontPadding: false,
   },
   textArea: {
     height: 100,
