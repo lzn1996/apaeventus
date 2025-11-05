@@ -31,6 +31,8 @@ ApaEventus é uma solução SaaS híbrida, acessada por dispositivos móveis, qu
 - RF10: Validação de entrada via QR Code
 - RF11: Busca de eventos por nome ou descrição
 - RF12: Criação de eventos apenas com data futura (mínimo 1 dia)
+- RF13: Api de pagamento
+- RF14: Chatbot para sugestão de título e descrição para os eventos
 
 ---
 
