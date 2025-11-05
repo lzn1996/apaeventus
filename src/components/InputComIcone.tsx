@@ -29,6 +29,7 @@ const InputComIcone: React.FC<InputComIconeProps> = ({
     showValue,
     onToggleShow,
     style,
+    placeholderTextColor = '#999',
     ...rest
 }) => {
     return (
@@ -42,7 +43,7 @@ const InputComIcone: React.FC<InputComIconeProps> = ({
             <TextInput
                 ref={inputRef}
                 style={styles.inputField}
-                placeholderTextColor="#999"
+                placeholderTextColor={placeholderTextColor}
                 {...rest}
             />
             {showToggle && (

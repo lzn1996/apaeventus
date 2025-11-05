@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   inputFocused: { borderColor: '#007AFF' },
   inputError: { borderColor: '#E74C3C' },
   icon: { marginRight: 8 },
-  input: { flex: 1, height: 48, fontSize: 16, color: '#333' },
+  input: { flex: 1, height: 48, fontSize: 16, color: '#333', includeFontPadding: false },
   button: {
     height: 50,
     borderRadius: 12,

@@ -99,6 +99,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#000',
         width: '100%',
+        includeFontPadding: false,
     },
 
     // ==================== Input Fields ====================
@@ -108,6 +109,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#000',
         width: '100%',
+        includeFontPadding: false,
     },
     inputWithIcon: {
         width: '100%',

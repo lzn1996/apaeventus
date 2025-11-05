@@ -215,6 +215,7 @@ export default function EditProfileScreen() {
           value={name}
           onChangeText={setName}
           placeholder="Nome completo"
+          placeholderTextColor="#9CA3AF"
         />
 
         <Text style={styles.label}>E-mail</Text>
@@ -223,6 +224,7 @@ export default function EditProfileScreen() {
           value={email}
           onChangeText={setEmail}
           placeholder="seu@email.com"
+          placeholderTextColor="#9CA3AF"
           keyboardType="email-address"
           autoCapitalize="none"
         />
@@ -233,6 +235,7 @@ export default function EditProfileScreen() {
           value={password}
           onChangeText={setPassword}
           placeholder="********"
+          placeholderTextColor="#9CA3AF"
           secureTextEntry
         />
 
@@ -242,6 +245,7 @@ export default function EditProfileScreen() {
           value={rg}
           onChangeText={setRg}
           placeholder="44444444-4"
+          placeholderTextColor="#9CA3AF"
           keyboardType="number-pad"
         />
 
@@ -251,6 +255,7 @@ export default function EditProfileScreen() {
           value={cellphone}
           onChangeText={setCellphone}
           placeholder="19987654321"
+          placeholderTextColor="#9CA3AF"
           keyboardType="phone-pad"
         />
 
@@ -297,6 +302,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#ddd',
+    color: '#1F2937',
+    includeFontPadding: false,
   },
   saveButton: {
     backgroundColor: '#007AFF',

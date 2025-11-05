@@ -270,12 +270,6 @@ export default function EventDetailScreen() {
           <Text style={styles.sectionTitle}>Descrição</Text>
           <Text style={styles.description}>{event.description}</Text>
         </View>
-
-        <Text style={styles.address}>
-          Rua Jacob Audi, 132{'\n'}
-          Penha do Rio do Peixe - Itapira - SP{'\n'}
-          (19) 3813-8899
-        </Text>
       </ScrollView>
 
       <TabBar
