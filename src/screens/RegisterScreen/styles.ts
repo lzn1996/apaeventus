@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
         fontSize: 17, // maior
         textDecorationLine: 'underline',
         marginTop: 10,
-        marginBottom: 10,
+        marginBottom: 80,
         fontWeight: '500',
     },
 

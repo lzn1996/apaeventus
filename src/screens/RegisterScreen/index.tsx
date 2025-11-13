@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import styles from './styles';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -19,7 +19,6 @@ import PasswordStrengthMeter from '../../components/PasswordStrengthMeter';
 import { formatRG, formatTelefone, formatCPF } from '../../utils/format';
 import useRegisterForm from '../../hooks/useRegisterForm';
 import { avaliarForcaSenha, validateCPF, validateEmail } from '../../utils/validation';
-import { scrollToInput } from '../../utils/scroll';
 
 export default function RegisterScreen({ navigation }: { navigation: any }) {
     const {
@@ -48,9 +47,38 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
         getDicaSenhaCor,
     } = useRegisterForm();
 
+    // Refs para os containers dos inputs
+    const nomeContainerRef = useRef<View>(null);
+    const emailContainerRef = useRef<View>(null);
+    const cpfContainerRef = useRef<View>(null);
+    const rgContainerRef = useRef<View>(null);
+    const telefoneContainerRef = useRef<View>(null);
+    const senhaContainerRef = useRef<View>(null);
+    const confirmarSenhaContainerRef = useRef<View>(null);
+    const [keyboardHeight, setKeyboardHeight] = React.useState(0);
+
+    // Função para scroll automático
+    const scrollToInput = (ref: React.RefObject<View | null>) => {
+        setTimeout(() => {
+            ref.current?.measureLayout(
+                scrollViewRef.current as any,
+                (x, y) => {
+                    scrollViewRef.current?.scrollTo({ y: y - 100, animated: true });
+                },
+                () => { },
+            );
+        }, 300);
+    };
+
     useEffect(() => {
-        const onKeyboardDidShow = () => setLogoVisivel(false);
-        const onKeyboardDidHide = () => setLogoVisivel(true);
+        const onKeyboardDidShow = (e: any) => {
+            setLogoVisivel(false);
+            setKeyboardHeight(e.endCoordinates.height);
+        };
+        const onKeyboardDidHide = () => {
+            setLogoVisivel(true);
+            setKeyboardHeight(0);
+        };
         const showListener = Keyboard.addListener('keyboardDidShow', onKeyboardDidShow);
         const hideListener = Keyboard.addListener('keyboardDidHide', onKeyboardDidHide);
         return () => {
@@ -68,7 +96,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <ScrollView
                     ref={scrollViewRef}
-                    contentContainerStyle={{ ...styles.scrollContainer, flexGrow: 1, paddingBottom: 32 }}
+                    contentContainerStyle={{ ...styles.scrollContainer, flexGrow: 1, paddingBottom: keyboardHeight + 32 }}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
@@ -93,6 +121,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                         </Text>
 
                         {/* Input de Nome com ícone */}
+                        <View ref={nomeContainerRef}>
                         <InputComIcone
                             iconName="person"
                             inputRef={nomeRef}
@@ -115,7 +144,10 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             autoFocus
                             returnKeyType="next"
                             onSubmitEditing={() => emailRef.current?.focus()}
-                            onFocus={() => handleAnyInputFocus('nome')}
+                            onFocus={() => {
+                                handleAnyInputFocus('nome');
+                                scrollToInput(nomeContainerRef);
+                            }}
                             onBlur={() => setCampoFocado(null)}
                             style={[
                                 campoFocado === 'nome' && styles.inputFocus,
@@ -130,8 +162,10 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             <Text style={styles.avisoNome}>O nome está muito curto</Text>
                         )}
                         {errors.nome && <Text style={styles.errorText}>{errors.nome}</Text>}
+                        </View>
 
                         {/* Input de Email com ícone */}
+                        <View ref={emailContainerRef}>
                         <InputComIcone
                             iconName="mail"
                             inputRef={emailRef}
@@ -150,7 +184,10 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             keyboardType="email-address"
                             autoCapitalize="none"
                             returnKeyType="next"
-                            onFocus={() => handleAnyInputFocus('email')}
+                            onFocus={() => {
+                                handleAnyInputFocus('email');
+                                scrollToInput(emailContainerRef);
+                            }}
                             onBlur={() => setCampoFocado(null)}
                             onSubmitEditing={() => cpfRef.current?.focus()}
                             style={[
@@ -168,8 +205,10 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             </Text>
                         )}
                         {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                        </View>
 
                         {/* Input de CPF */}
+                        <View ref={cpfContainerRef}>
                         <InputComIcone
                             iconName="card"
                             inputRef={cpfRef}
@@ -191,7 +230,10 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             keyboardType="numeric"
                             maxLength={14} // 000.000.000-00
                             returnKeyType="next"
-                            onFocus={() => handleAnyInputFocus('cpf')}
+                            onFocus={() => {
+                                handleAnyInputFocus('cpf');
+                                scrollToInput(cpfContainerRef);
+                            }}
                             onBlur={() => setCampoFocado(null)}
                             onSubmitEditing={() => rgRef.current?.focus()}
                             style={[
@@ -224,8 +266,10 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             </Text>
                         )}
                         {errors.cpf && <Text style={styles.errorText}>{errors.cpf}</Text>}
+                        </View>
 
                         {/* Input de RG */}
+                        <View ref={rgContainerRef}>
                         <InputComIcone
                             iconName="id-card"
                             inputRef={rgRef}
@@ -247,7 +291,10 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             keyboardType="numeric"
                             maxLength={10} // 00000000-0
                             returnKeyType="next"
-                            onFocus={() => handleAnyInputFocus('rg')}
+                            onFocus={() => {
+                                handleAnyInputFocus('rg');
+                                scrollToInput(rgContainerRef);
+                            }}
                             onBlur={() => setCampoFocado(null)}
                             onSubmitEditing={() => telefoneRef.current?.focus()}
                             style={[
@@ -264,8 +311,10 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                         {errors.rg && (
                             <Text style={styles.errorText}>{errors.rg}</Text>
                         )}
+                        </View>
 
                         {/* Input de Telefone */}
+                        <View ref={telefoneContainerRef}>
                         <InputComIcone
                             iconName="call"
                             inputRef={telefoneRef}
@@ -287,12 +336,12 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             keyboardType="phone-pad"
                             maxLength={15}
                             returnKeyType="next"
-                            onFocus={() => handleAnyInputFocus('telefone')}
-                            onBlur={() => setCampoFocado(null)}
-                            onSubmitEditing={() => {
-                                senhaRef.current?.focus();
-                                scrollToInput(senhaRef, scrollViewRef);
+                            onFocus={() => {
+                                handleAnyInputFocus('telefone');
+                                scrollToInput(telefoneContainerRef);
                             }}
+                            onBlur={() => setCampoFocado(null)}
+                            onSubmitEditing={() => senhaRef.current?.focus()}
                             style={[
                                 campoFocado === 'telefone' && styles.inputFocus,
                                 telefone.length >= 10 && !/^\d{10,11}$/.test(telefone)
@@ -305,7 +354,9 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             ]}
                         />
                         {errors.telefone && <Text style={styles.errorText}>{errors.telefone}</Text>}
+                        </View>
 
+                        <View ref={senhaContainerRef}>
                         <InputComIcone
                             iconName="key"
                             inputRef={senhaRef}
@@ -336,7 +387,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             onFocus={() => {
                                 handleAnyInputFocus('senha');
                                 handleInputFocus('senha');
-                                scrollToInput(senhaRef, scrollViewRef);
+                                scrollToInput(senhaContainerRef);
                             }}
                             onBlur={() => setCampoFocado(null)}
                             onSubmitEditing={() => confirmarSenhaRef.current?.focus()}
@@ -378,6 +429,9 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                                 senhaForca={senhaForca}
                             />
                         ) : null}
+                        </View>
+
+                        <View ref={confirmarSenhaContainerRef}>
                         <InputComIcone
                             iconName="key"
                             inputRef={confirmarSenhaRef}
@@ -399,6 +453,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                             onFocus={() => {
                                 handleAnyInputFocus('confirmarSenha');
                                 handleInputFocus('confirmarSenha');
+                                scrollToInput(confirmarSenhaContainerRef);
                             }}
                             onBlur={() => setCampoFocado(null)}
                             showToggle
@@ -412,8 +467,9 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
                         {errors.confirmarSenha && (
                             <Text style={styles.errorText}>{errors.confirmarSenha}</Text>
                         )}
+                        </View>
 
-                        <TouchableOpacity style={styles.button} onPress={handleCadastro} disabled={loading}>
+                        <TouchableOpacity style={styles.button} onPress={() => handleCadastro(navigation)} disabled={loading}>
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (

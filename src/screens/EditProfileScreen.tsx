@@ -1,5 +1,5 @@
 // src/screens/EditProfileScreen.tsx
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   ScrollView,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   View,
+  Keyboard,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {baseUrl} from '../config/api';
@@ -37,12 +38,50 @@ export default function EditProfileScreen() {
   const [alertMessage, setAlertMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(true);
 
+  // Refs para scroll automático
+  const scrollViewRef = useRef<ScrollView>(null);
+  const nameRef = useRef<View>(null);
+  const emailRef = useRef<View>(null);
+  const passwordRef = useRef<View>(null);
+  const rgRef = useRef<View>(null);
+  const cellphoneRef = useRef<View>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Função para scroll automático
+  const scrollToInput = (ref: React.RefObject<View | null>) => {
+    setTimeout(() => {
+      ref.current?.measureLayout(
+        scrollViewRef.current as any,
+        (x, y) => {
+          scrollViewRef.current?.scrollTo({y: y - 100, animated: true});
+        },
+        () => {},
+      );
+    }, 300);
+  };
+
   const showAlert = (title: string, message: string, success = true) => {
     setAlertTitle(title);
     setAlertMessage(message);
     setIsSuccess(success);
     setAlertVisible(true);
   };
+
+  // Gerenciamento do teclado
+  useEffect(() => {
+    const showListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+
+    const hideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showListener.remove();
+      hideListener.remove();
+    };
+  }, []);
 
   const handleOfflineAlert = () => {
     // Esta tela já requer login, então não precisa de lógica especial
@@ -208,56 +247,74 @@ export default function EditProfileScreen() {
   return (
     <SafeLayout showTabBar={true}>
       <Header title="Editar Perfil" />
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={[styles.container, {paddingBottom: keyboardHeight + 16}]}
+      >
         <Text style={styles.label}>Nome</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="Nome completo"
-          placeholderTextColor="#9CA3AF"
-        />
+        <View ref={nameRef}>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Nome completo"
+            placeholderTextColor="#9CA3AF"
+            onFocus={() => scrollToInput(nameRef)}
+          />
+        </View>
 
         <Text style={styles.label}>E-mail</Text>
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="seu@email.com"
-          placeholderTextColor="#9CA3AF"
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+        <View ref={emailRef}>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="seu@email.com"
+            placeholderTextColor="#9CA3AF"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            onFocus={() => scrollToInput(emailRef)}
+          />
+        </View>
 
         <Text style={styles.label}>Senha (opcional)</Text>
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="********"
-          placeholderTextColor="#9CA3AF"
-          secureTextEntry
-        />
+        <View ref={passwordRef}>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="********"
+            placeholderTextColor="#9CA3AF"
+            secureTextEntry
+            onFocus={() => scrollToInput(passwordRef)}
+          />
+        </View>
 
         <Text style={styles.label}>RG</Text>
-        <TextInput
-          style={styles.input}
-          value={rg}
-          onChangeText={setRg}
-          placeholder="44444444-4"
-          placeholderTextColor="#9CA3AF"
-          keyboardType="number-pad"
-        />
+        <View ref={rgRef}>
+          <TextInput
+            style={styles.input}
+            value={rg}
+            onChangeText={setRg}
+            placeholder="44444444-4"
+            placeholderTextColor="#9CA3AF"
+            keyboardType="number-pad"
+            onFocus={() => scrollToInput(rgRef)}
+          />
+        </View>
 
         <Text style={styles.label}>Celular</Text>
-        <TextInput
-          style={styles.input}
-          value={cellphone}
-          onChangeText={setCellphone}
-          placeholder="19987654321"
-          placeholderTextColor="#9CA3AF"
-          keyboardType="phone-pad"
-        />
+        <View ref={cellphoneRef}>
+          <TextInput
+            style={styles.input}
+            value={cellphone}
+            onChangeText={setCellphone}
+            placeholder="19987654321"
+            placeholderTextColor="#9CA3AF"
+            keyboardType="phone-pad"
+            onFocus={() => scrollToInput(cellphoneRef)}
+          />
+        </View>
 
         <Pressable style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveText}>Salvar Alterações</Text>
