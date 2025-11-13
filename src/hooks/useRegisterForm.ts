@@ -237,7 +237,7 @@ const useRegisterForm = () => {
 
 
     // --- Handler de Cadastro ---
-    const handleCadastro = async () => {
+    const handleCadastro = async (navigation?: any) => {
         if (!validateForm()) {
             // Foca no primeiro campo com erro
             if (errors.nome) { nomeRef.current?.focus(); }
@@ -288,6 +288,8 @@ const useRegisterForm = () => {
                 setSenhaMensagem('');
                 setErrors({ nome: '', email: '', senha: '', confirmarSenha: '', cpf: '', rg: '', telefone: '' });
                 setSenhaRequisitos({ tamanho: false, letra: false, numero: false, simbolo: false });
+
+                navigation?.navigate('Login' as never);
             } else {
                 let data = {};
                 try { data = await response.json(); } catch (e) { }
