@@ -15,8 +15,9 @@ Este diretório contém todos os testes automatizados do aplicativo APAEventus, 
 | **RF05** | Compra de Ingressos | `PurchaseScreen.test.tsx` | 13/13 | ✅ 100% |
 | **RF06** | Visualização de Ingressos | `MyTicketsScreen.test.tsx` | 20/20 | ✅ 100% |
 | **RF07** | Ingressos por Evento | `TicketsByEventScreen.test.tsx` | 25/25 | ✅ 100% |
+| **RF08** | Scanner QR Code | `QRCodeScannerScreen.test.tsx` | 15/15 | ✅ 100% |
 
-**Total: 119 testes passando com 100% de sucesso (15 skipped)**
+**Total: 134 testes passando com 100% de sucesso (15 skipped)**
 
 \* *Ver seção RF03 para detalhes sobre testes skipped*  
 
@@ -391,6 +392,69 @@ Isso permite que o componente monte completamente antes do callback executar, ev
 
 ---
 
+### RF08 - Scanner QR Code (QRCodeScannerScreen)
+
+**15 testes** - Valida a funcionalidade de leitura de QR Code para validação de ingressos por administradores.
+
+#### O que é Testado
+
+#### Permissões da Câmera (3 testes)
+
+- ✅ Exibe mensagem quando permissão não foi concedida
+- ✅ Exibe botão para solicitar permissão
+- ✅ Exibe câmera quando permissão é concedida
+
+#### Leitura de QR Code (4 testes)
+
+- ✅ Valida ingresso com sucesso (POST /sale/set-used)
+- ✅ Exibe erro quando ingresso já foi utilizado (400)
+- ✅ Exibe erro quando ingresso não é encontrado (404)
+- ✅ Exibe erro quando servidor retorna erro interno (500)
+
+#### Renovação de Token (2 testes)
+
+- ✅ Renova token automaticamente em erro 401 e tenta novamente
+- ✅ Exibe erro quando renovação de token falha
+
+#### Tratamento de Erros (2 testes)
+
+- ✅ Exibe erro quando token não está disponível
+- ✅ Trata erro de rede adequadamente
+
+#### Navegação (2 testes)
+
+- ✅ Exibe título "Leitor de QR Code"
+- ✅ Renderiza TabBar com abas: Home, Busca, Ingressos, Admin
+
+#### Estado do Scanner (2 testes)
+
+- ✅ Previne nova leitura até que alerta seja fechado
+- ✅ Permite fechar alerta após validação
+
+#### Desafios Técnicos
+
+- **Mock da Câmera**: `expo-camera` foi mockado com `useCameraPermissions` hook para simular permissões
+- **Mock do Fetch**: Global `fetch` foi mockado para simular requisições HTTP (POST /sale/set-used)
+- **Mock do AuthService**: `authService.refreshAccessToken` mockado para simular renovação de token
+- **Mock do AwesomeAlert**: Criado mock customizado com `testID` para verificar exibição de alertas
+- **Papel de Admin**: Screen é específica para administradores, testes verificam TabBar com "Admin" ao invés de "Perfil"
+
+#### Funcionalidades Implementadas
+
+1. **Permissões**: Gerenciamento de permissões da câmera com `useCameraPermissions`
+2. **Validação de Ingresso**: POST para `/sale/set-used` com `saleId` do QR Code
+3. **Renovação Automática**: Refresh de token em erro 401 com retry automático
+4. **Tratamento de Erros**: Mensagens específicas por código de erro (400, 404, 500+, rede)
+5. **Estado do Scanner**: Flag `scanned` previne leituras duplas até confirmação do usuário
+
+#### Cobertura de Testes
+
+- **15 testes ativos** verificam: permissões (3), leitura QR (4), token (2), erros (2), navegação (2), estado (2)
+- **100% de aprovação** nos testes ativos
+- **Mocks globais**: expo-camera, fetch, authService, react-native-awesome-alerts
+
+---
+
 ## 🚀 Como Executar os Testes
 
 ### Executar Todos os Testes
@@ -419,6 +483,9 @@ npm test -- MyTicketsScreen.test.tsx
 
 # RF07 - Ingressos por Evento
 npm test -- TicketsByEventScreen.test.tsx
+
+# RF08 - Scanner QR Code
+npm test -- QRCodeScannerScreen.test.tsx
 ```
 
 ### Executar Múltiplos RFs
