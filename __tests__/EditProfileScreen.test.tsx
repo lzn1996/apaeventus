@@ -34,10 +34,11 @@ jest.mock('../src/hooks/useNetworkStatus', () => ({
   useNetworkStatus: () => true,
 }));
 jest.mock('react-native-awesome-alerts', () => {
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const React = require('react');
   return (props: any) => {
     if (!props.show) {return null;}
-    return React.createElement('View', { testID: 'awesome-alert' }, 
+    return React.createElement('View', { testID: 'awesome-alert' },
       React.createElement('Text', null, props.title),
       React.createElement('Text', null, props.message),
       React.createElement('Pressable', { onPress: props.onConfirmPressed, testID: 'alert-confirm' }, 
