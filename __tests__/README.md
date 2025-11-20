@@ -607,13 +607,6 @@ jest.mock('../src/services/saleService');
 
 ## 🎯 Próximos Passos (RFs Pendentes)
 
-### RF08: QRCodeScannerScreen (~18 testes estimados)
-
-- Permissões de câmera
-- Leitura de QR Code
-- Validação via API
-- Tratamento de erros
-
 ### RF09: AdminEventsScreen (~20 testes estimados)
 
 - Listagem de eventos
@@ -628,13 +621,13 @@ jest.mock('../src/services/saleService');
 - Validação de data/hora
 - Integração com chatbot
 
-### RF12: ResetPassword (~8 testes estimados)  
+### RF11: ResetPassword (~8 testes estimados)  
 
 - Validação de email
 - Chamada à API
 - Tratamento de erros
 
-### RF13: EventDetailScreen (~18 testes estimados)  
+### RF12: EventDetailScreen (~18 testes estimados)  
 
 - Busca de evento
 - Seletor de quantidade
