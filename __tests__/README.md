@@ -11,15 +11,310 @@ Este diretório contém todos os testes automatizados do aplicativo APAEventus, 
 | **RF01** | Cadastro de Usuários | `RegisterScreen.test.tsx` | 15/15 | ✅ 100% |
 | **RF02** | Login de Usuários | `LoginScreen.test.tsx` | 25/25 | ✅ 100% |
 | **RF03** | Editar Perfil | `EditProfileScreen.test.tsx` | 4/4 | ✅ 100% (15 skipped)* |
-| **RF04** | Listagem de Eventos | `EventListScreen.test.tsx` | 17/17 | ✅ 100% |
+| **RF04** | Listagem de Eventos | `DashboardScreen.test.tsx` | 17/17 | ✅ 100% |
 | **RF05** | Compra de Ingressos | `PurchaseScreen.test.tsx` | 13/13 | ✅ 100% |
 | **RF06** | Visualização de Ingressos | `MyTicketsScreen.test.tsx` | 20/20 | ✅ 100% |
 | **RF07** | Ingressos por Evento | `TicketsByEventScreen.test.tsx` | 25/25 | ✅ 100% |
 | **RF08** | Scanner QR Code | `QRCodeScannerScreen.test.tsx` | 15/15 | ✅ 100% |
+| **RF13** | Assistente IA (Chatbot) | `ChatbotScreen.test.tsx` | 22/22 | ✅ 100% |
 
-**Total: 134 testes passando com 100% de sucesso (15 skipped)**
+**Total: 156 testes passando com 100% de sucesso (15 skipped)**
 
 \* *Ver seção RF03 para detalhes sobre testes skipped*  
+
+---
+
+## 🎓 Como Criar e Executar Testes (Guia para Novos Colaboradores)
+
+### 📦 1. Configuração Inicial (Após clonar o repositório)
+
+```bash
+# Clone o repositório
+git clone https://github.com/lzn1996/apaeventus.git
+cd apaeventus
+
+# Instale as dependências
+npm install
+
+# Execute todos os testes para verificar se tudo está funcionando
+npm test
+```
+
+### ✏️ 2. Metodologia para Criar Novos Testes
+
+#### **Passo 1: Analisar o Componente**
+
+Antes de criar testes, analise o componente a ser testado:
+
+```bash
+# Exemplo: Analisar o ChatbotScreen
+code src/screens/ChatbotScreen.tsx
+```
+
+**Perguntas a fazer:**
+- ✅ Quais elementos são renderizados na tela?
+- ✅ Quais interações o usuário pode fazer? (clicar botões, digitar texto, etc)
+- ✅ Quais chamadas de API o componente faz?
+- ✅ Quais estados o componente gerencia? (loading, erro, sucesso)
+- ✅ Para onde o componente navega?
+- ✅ Quais validações existem?
+
+#### **Passo 2: Criar o Arquivo de Teste**
+
+```bash
+# Os arquivos de teste ficam em __tests__/
+# Nomenclatura: NomeDoComponente.test.tsx
+code __tests__/ChatbotScreen.test.tsx
+```
+
+#### **Passo 3: Estrutura Básica do Teste**
+
+```typescript
+// __tests__/ChatbotScreen.test.tsx
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import ChatbotScreen from '../src/screens/ChatbotScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// 1. MOCKS - Simular dependências externas
+jest.mock('../src/services/api', () => ({
+  __esModule: true,
+  default: { post: jest.fn() }
+}));
+
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ navigate: jest.fn() })
+}));
+
+// 2. DESCRIBE - Agrupa os testes do componente
+describe('ChatbotScreen - RF13: Assistente IA', () => {
+  
+  // 3. BEFOREEACH - Configura estado inicial antes de cada teste
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('mock-token');
+  });
+
+  // 4. TESTES ORGANIZADOS POR CATEGORIA
+  describe('Renderização inicial', () => {
+    it('exibe mensagem de boas-vindas do bot', () => {
+      const { getByText } = render(<ChatbotScreen />);
+      expect(getByText(/Olá! Vou te ajudar/i)).toBeTruthy();
+    });
+  });
+
+  describe('Envio de mensagens', () => {
+    it('envia mensagem ao clicar no botão', async () => {
+      const { getByPlaceholderText, getByText } = render(<ChatbotScreen />);
+      
+      const input = getByPlaceholderText('Digite sua resposta...');
+      fireEvent.changeText(input, 'Teste');
+      fireEvent.press(getByText('➤'));
+      
+      await waitFor(() => {
+        expect(api.post).toHaveBeenCalled();
+      });
+    });
+  });
+});
+```
+
+#### **Passo 4: Categorias Comuns de Testes**
+
+Organize seus testes nestas categorias:
+
+1. **Renderização Inicial** - Elementos visíveis ao carregar
+2. **Interações** - Cliques, digitação, gestos
+3. **Validações** - Regras de negócio e validações de formulário
+4. **Chamadas de API** - Requisições HTTP e respostas
+5. **Navegação** - Mudanças de tela
+6. **Tratamento de Erros** - Cenários de erro e mensagens
+7. **Estados** - Loading, vazio, sucesso, erro
+
+### 🔧 3. Comandos Úteis Durante o Desenvolvimento
+
+```bash
+# Executar testes em modo watch (reexecuta ao salvar)
+npm test -- --watch
+
+# Executar apenas um arquivo específico
+npm test -- ChatbotScreen.test.tsx
+
+# Executar testes com cobertura
+npm test -- --coverage
+
+# Executar testes com mais detalhes
+npm test -- --verbose
+
+# Identificar problemas assíncronos
+npm test -- --detectOpenHandles
+```
+
+### 🎯 4. Ciclo de Desenvolvimento de Testes
+
+```
+1. Analisar componente
+   ↓
+2. Criar arquivo de teste
+   ↓
+3. Escrever mocks necessários
+   ↓
+4. Criar primeiro teste (renderização)
+   ↓
+5. Executar: npm test -- NomeDoArquivo.test.tsx
+   ↓
+6. Ver falhas/erros
+   ↓
+7. Ajustar mocks e testes
+   ↓
+8. Repetir até todos passarem
+   ↓
+9. Adicionar mais testes (interações, validações, erros)
+   ↓
+10. Documentar no README.md
+```
+
+### 📚 5. Exemplos Práticos de Testes
+
+#### **Exemplo 1: Testar Renderização**
+
+```typescript
+it('exibe título da tela', () => {
+  const { getByText } = render(<MinhaScreen />);
+  expect(getByText('Título Esperado')).toBeTruthy();
+});
+```
+
+#### **Exemplo 2: Testar Input de Texto**
+
+```typescript
+it('permite digitar no campo de email', () => {
+  const { getByPlaceholderText } = render(<LoginScreen />);
+  const emailInput = getByPlaceholderText('Digite seu email');
+  
+  fireEvent.changeText(emailInput, 'teste@email.com');
+  
+  expect(emailInput.props.value).toBe('teste@email.com');
+});
+```
+
+#### **Exemplo 3: Testar Clique em Botão**
+
+```typescript
+it('chama função ao clicar no botão', async () => {
+  const mockFn = jest.fn();
+  const { getByText } = render(<MeuComponente onPress={mockFn} />);
+  
+  fireEvent.press(getByText('Confirmar'));
+  
+  await waitFor(() => {
+    expect(mockFn).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+#### **Exemplo 4: Testar Chamada de API**
+
+```typescript
+it('busca dados da API ao carregar', async () => {
+  const mockData = { eventos: ['Evento 1', 'Evento 2'] };
+  (api.get as jest.Mock).mockResolvedValue({ data: mockData });
+  
+  const { findByText } = render(<EventosScreen />);
+  
+  const evento = await findByText('Evento 1');
+  expect(evento).toBeTruthy();
+  expect(api.get).toHaveBeenCalledWith('/events');
+});
+```
+
+#### **Exemplo 5: Testar Tratamento de Erro**
+
+```typescript
+it('exibe mensagem de erro quando API falha', async () => {
+  (api.post as jest.Mock).mockRejectedValue({
+    response: { status: 500, data: { message: 'Erro no servidor' } }
+  });
+  
+  const { getByText, findByText } = render(<FormScreen />);
+  
+  fireEvent.press(getByText('Enviar'));
+  
+  const errorMessage = await findByText('Erro no servidor');
+  expect(errorMessage).toBeTruthy();
+});
+```
+
+### 🐛 6. Problemas Comuns e Soluções
+
+#### **Problema: "Unable to find element"**
+```typescript
+// ❌ Errado: Não espera elemento aparecer
+const element = getByText('Texto Assíncrono');
+
+// ✅ Correto: Usa findBy para aguardar
+const element = await findByText('Texto Assíncrono');
+```
+
+#### **Problema: "Jest did not exit"**
+```typescript
+// Solução: Adicionar no beforeEach
+beforeEach(() => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+```
+
+#### **Problema: Mock não está funcionando**
+```typescript
+// ✅ Certifique-se de limpar mocks
+beforeEach(() => {
+  jest.clearAllMocks(); // Limpa contadores e valores mockados
+});
+```
+
+### 📊 7. Verificar Cobertura dos Testes
+
+```bash
+# Gerar relatório de cobertura
+npm test -- --coverage
+
+# Visualizar cobertura por arquivo
+npm test -- --coverage --collectCoverageFrom="src/screens/**/*.tsx"
+```
+
+### ✅ 8. Checklist para Criar um Teste Completo
+
+- [ ] Arquivo criado em `__tests__/` com nome `ComponentName.test.tsx`
+- [ ] Imports necessários (React, render, fireEvent, waitFor)
+- [ ] Mocks configurados (API, navegação, AsyncStorage)
+- [ ] `beforeEach` limpa mocks
+- [ ] Testes de renderização inicial (elementos visíveis)
+- [ ] Testes de interações (cliques, digitação)
+- [ ] Testes de validações (regras de negócio)
+- [ ] Testes de chamadas API (sucesso e erro)
+- [ ] Testes de navegação
+- [ ] Testes de estados (loading, erro, vazio)
+- [ ] Todos os testes passando: `npm test -- SeuArquivo.test.tsx`
+- [ ] README.md atualizado com novo RF
+
+### 📞 9. Precisa de Ajuda?
+
+Se encontrar dificuldades:
+
+1. **Veja exemplos existentes**: Analise testes que já estão funcionando (RF01-RF13)
+2. **Console.log**: Use `console.log` para ver o que está sendo renderizado
+3. **Debug**: Use `screen.debug()` da testing-library para ver o DOM
+4. **Documentação**: [React Native Testing Library](https://callstack.github.io/react-native-testing-library/)
+
+```typescript
+// Exemplo de debug
+const { debug } = render(<MeuComponente />);
+debug(); // Imprime todo o DOM renderizado
+```
 
 ---
 
@@ -201,26 +496,31 @@ Estes interceptors criam desafios em ambiente de teste:
 As seguintes funcionalidades estão **implementadas e funcionais em produção**, mas não são testáveis de forma confiável devido aos interceptors:
 
 ✅ **Validação de Campos**
+
 - Valida nome e email como obrigatórios
 - Exibe alerta quando campos estão vazios
 
 ✅ **Atualização de Dados**
+
 - Envia dados corretos via PATCH /user
 - Atualiza senha quando campo está preenchido
 - Não envia senha quando campo está vazio
 - Faz logout automático após atualização bem-sucedida
 
 ✅ **Tratamento de Erros**
+
 - Exibe erro quando servidor falha
 - Trata erro 401 e tenta refresh token automaticamente
 - Queue de requisições durante refresh
 
 ✅ **Fallback Offline**
+
 - Usa AsyncStorage quando backend não responde
 - Carrega dados do backend ao iniciar
 - Exibe alerta informativo em caso de erro
 
 ✅ **Edição de Campos**
+
 - Permite editar todos os campos (nome, email, RG, celular, senha)
 - Mantém valores preenchidos durante edição
 
@@ -455,6 +755,79 @@ Isso permite que o componente monte completamente antes do callback executar, ev
 
 ---
 
+### RF13 - Assistente IA (ChatbotScreen)
+
+**22 testes** - Valida a funcionalidade de assistente IA para criação de títulos e descrições de eventos.
+
+#### O que é Testado
+
+#### Renderização Inicial (3 testes)
+
+- ✅ Exibe mensagem de boas-vindas do bot
+- ✅ Exibe campo de input e botão de enviar
+- ✅ Renderiza título "Assistente IA"
+
+#### Envio de Mensagens (5 testes)
+
+- ✅ Envia mensagem do usuário e recebe resposta do bot
+- ✅ Não envia mensagem vazia
+- ✅ Limpa input após envio com sucesso
+- ✅ Exibe loading "IA está pensando..." durante envio
+- ✅ Desabilita input durante loading
+
+#### Sugestões de Eventos (3 testes)
+
+- ✅ Exibe modal com 3 sugestões quando conversa completa
+- ✅ Seleciona sugestão e navega para CreateEvent com dados preenchidos
+- ✅ Fecha modal de sugestões ao clicar em fechar
+
+#### Reiniciar Conversa (3 testes)
+
+- ✅ Exibe botão "🔄 Criar Novas Sugestões" quando conversa está completa
+- ✅ Reseta conversa e chama API `/chatbot/reset-conversation` ao clicar em reiniciar
+- ✅ Oculta campo de input quando conversa está completa
+
+#### Tratamento de Erros (6 testes)
+
+- ✅ Exibe erro quando token não está disponível (sessão expirada)
+- ✅ Exibe erro de rate limit (429) com mensagem específica
+- ✅ Não exibe erro para 401/403 (deixa interceptor tratar)
+- ✅ Exibe erro genérico para outros erros (500, etc)
+- ✅ Restaura mensagem do usuário no input em caso de erro
+- ✅ Exibe erro de rede quando não há resposta
+
+#### Navegação (2 testes)
+
+- ✅ Volta para CreateEvent ao clicar em voltar
+- ✅ Chama reset da conversa via API ao voltar
+
+#### Desafios Técnicos
+
+- **API Conversacional**: Mock de `api.post` para simular fluxo de conversa multiestágios
+- **Estado Dinâmico**: Gerenciamento de estados `conversationComplete`, `showSuggestions`, `loading`
+- **Modal de Sugestões**: Testa exibição e seleção de 3 sugestões geradas pela IA
+- **Tratamento de Rate Limit**: Valida mensagem específica para erro 429
+- **Restauração de Estado**: Verifica que mensagem do usuário é restaurada em caso de erro
+
+#### Funcionalidades Implementadas
+
+1. **Conversa Interativa**: Troca de mensagens com API `/chatbot/generate-event`
+2. **Geração de Sugestões**: Recebe 3 sugestões de título e descrição após conversa completa
+3. **Seleção de Sugestão**: Navega para CreateEvent com dados preenchidos
+4. **Reset de Conversa**: Reinicia conversa via API para criar novas sugestões
+5. **Rate Limiting**: Tratamento específico para erro 429 com mensagem amigável
+6. **Loading States**: Indicador "IA está pensando..." e desabilitação de input
+7. **Validação de Input**: Não permite enviar mensagens vazias
+
+#### Cobertura de Testes
+
+- **22 testes ativos** verificam: renderização (3), mensagens (5), sugestões (3), reset (3), erros (6), navegação (2)
+- **100% de aprovação** nos testes ativos
+- **Integração com CreateEvent**: Testa navegação com parâmetros (title, description)
+- **Mocks**: api.post (conversação e reset), AsyncStorage (token), navigation
+
+---
+
 ## 🚀 Como Executar os Testes
 
 ### Executar Todos os Testes
@@ -473,7 +846,7 @@ npm test -- RegisterScreen.test.tsx
 npm test -- LoginScreen.test.tsx
 
 # RF04 - Lista de Eventos
-npm test -- EventListScreen.test.tsx
+npm test -- DashboardScreen.test.tsx
 
 # RF05 - Compra
 npm test -- PurchaseScreen.test.tsx
@@ -486,12 +859,15 @@ npm test -- TicketsByEventScreen.test.tsx
 
 # RF08 - Scanner QR Code
 npm test -- QRCodeScannerScreen.test.tsx
+
+# RF13 - Assistente IA (Chatbot)
+npm test -- ChatbotScreen.test.tsx
 ```
 
 ### Executar Múltiplos RFs
 
 ```bash
-npm test -- --testPathPattern="(RegisterScreen|LoginScreen|EventListScreen)"
+npm test -- --testPathPattern="(RegisterScreen|LoginScreen|DashboardScreen)"
 ```
 
 ### Executar com Cobertura

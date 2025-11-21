@@ -7,36 +7,36 @@ import api from '../src/services/api';
 
 // Mock de dependências
 jest.mock('../src/services/api', () => ({
-  __esModule: true,
-  default: {
-    post: jest.fn(),
-  },
+    __esModule: true,
+    default: {
+        post: jest.fn(),
+    },
 }));
 
 jest.mock('../src/hooks/useNetworkStatus', () => ({
-  useNetworkStatus: () => true,
+    useNetworkStatus: () => true,
 }));
 
 jest.mock('react-native-awesome-alerts', () => {
-  const React = require('react');
-  return (props: any) => {
-    if (!props.show) return null;
-    return React.createElement('View', { testID: 'awesome-alert' },
-      React.createElement('Text', null, props.title),
-      React.createElement('Text', null, props.message),
-      React.createElement('Pressable', {
-        onPress: props.onConfirmPressed,
-        testID: 'alert-confirm',
-      }, React.createElement('Text', null, props.confirmText))
-    );
-  };
+    const React = require('react');
+    return (props: any) => {
+        if (!props.show) return null;
+        return React.createElement('View', { testID: 'awesome-alert' },
+        React.createElement('Text', null, props.title),
+        React.createElement('Text', null, props.message),
+        React.createElement('Pressable', {
+            onPress: props.onConfirmPressed,
+            testID: 'alert-confirm',
+        }, React.createElement('Text', null, props.confirmText))
+        );
+    };
 });
 
 const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({
-    navigate: mockNavigate,
-  }),
+    useNavigation: () => ({
+        navigate: mockNavigate,
+    }),
 }));
 
 describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => {
@@ -60,14 +60,14 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
   describe('Renderização inicial', () => {
     it('exibe mensagem de boas-vindas do bot', () => {
       const { getByText } = render(<ChatbotScreen />);
-      
+
       expect(getByText(/Olá! Vou te ajudar a criar/i)).toBeTruthy();
       expect(getByText(/que tipo de evento você quer criar/i)).toBeTruthy();
     });
 
     it('exibe campo de input e botão de enviar', () => {
       const { getByPlaceholderText, getByText } = render(<ChatbotScreen />);
-      
+
       expect(getByPlaceholderText('Digite sua resposta...')).toBeTruthy();
       expect(getByText('➤')).toBeTruthy();
     });
