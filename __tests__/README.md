@@ -425,46 +425,6 @@ Estes cenários não são testados diretamente devido à complexidade do hook cu
 
 ---
 
-## 📅 RF04: Listagem de Eventos
-
-**Arquivo:** `EventListScreen.test.tsx`  
-**Testes:** 17/17 ✅
-
-### O que é testado[:]
-
-#### Renderização Inicial
-
-- ✅ Renderiza título "Eventos"
-- ✅ Renderiza TabBar com aba "Eventos" ativa
-- ✅ Exibe loading durante carregamento
-
-#### Listagem de Eventos
-
-- ✅ Exibe lista de eventos disponíveis
-- ✅ Renderiza informações do evento (título, data, localização, preço)
-- ✅ Exibe mensagem quando não há eventos disponíveis
-
-#### Filtros e Busca
-
-- ✅ Permite buscar eventos por nome
-- ✅ Filtra eventos por data
-- ✅ Filtra eventos por categoria
-- ✅ Combina múltiplos filtros
-
-#### Interação
-
-- ✅ Navega para detalhes ao clicar em um evento
-- ✅ Permite limpar filtros
-
-#### Navegação por TabBar
-
-- ✅ Navega para Dashboard ao clicar em "Home"
-- ✅ Navega para MyTickets ao clicar em "Tickets"
-- ✅ Navega para ProfileEdit quando logado e clica em "Perfil"
-- ✅ Navega para Login quando não logado e clica em "Perfil"
-
----
-
 ## 👤 RF03: Editar Perfil
 
 **Arquivo:** `EditProfileScreen.test.tsx`  
@@ -473,6 +433,7 @@ Estes cenários não são testados diretamente devido à complexidade do hook cu
 ### O que é testado
 
 #### Renderização Inicial
+
 - ✅ Exibe loading enquanto carrega dados
 - ✅ Renderiza todos os campos do formulário (nome, email, senha, RG, celular)
 - ✅ Renderiza botão "Salvar Alterações"
@@ -487,6 +448,7 @@ Este RF apresenta complexidade adicional devido aos **interceptors do axios** em
 - **Refresh Token Queue**: Gerencia múltiplas requisições pendentes durante renovação de token
 
 Estes interceptors criam desafios em ambiente de teste:
+
 - Mocks do axios não capturam chamadas através dos interceptors de forma confiável
 - Estado assíncrono do componente (useEffect + API calls) é imprevisível em testes
 - `waitFor()` expira antes dos dados carregarem mesmo com timeout estendido
@@ -529,6 +491,46 @@ As seguintes funcionalidades estão **implementadas e funcionais em produção**
 - **Testes Ativos**: 4/4 (100%) - Renderização inicial
 - **Testes Skipped**: 15 - Validação, atualização, edição (complexidade de interceptors)
 - **Cobertura Real**: Funcionalidades testadas manualmente e funcionais em produção
+
+---
+
+## 📅 RF04: Listagem de Eventos
+
+**Arquivo:** `DashboardScreen.test.tsx`  
+**Testes:** 17/17 ✅
+
+### O que é testado[:]
+
+#### Renderização Inicial
+
+- ✅ Renderiza título "Eventos"
+- ✅ Renderiza TabBar com aba "Eventos" ativa
+- ✅ Exibe loading durante carregamento
+
+#### Listagem de Eventos
+
+- ✅ Exibe lista de eventos disponíveis
+- ✅ Renderiza informações do evento (título, data, localização, preço)
+- ✅ Exibe mensagem quando não há eventos disponíveis
+
+#### Filtros e Busca
+
+- ✅ Permite buscar eventos por nome
+- ✅ Filtra eventos por data
+- ✅ Filtra eventos por categoria
+- ✅ Combina múltiplos filtros
+
+#### Interação
+
+- ✅ Navega para detalhes ao clicar em um evento
+- ✅ Permite limpar filtros
+
+#### Navegação por TabBar
+
+- ✅ Navega para Dashboard ao clicar em "Home"
+- ✅ Navega para MyTickets ao clicar em "Tickets"
+- ✅ Navega para ProfileEdit quando logado e clica em "Perfil"
+- ✅ Navega para Login quando não logado e clica em "Perfil"
 
 ---
 
@@ -686,7 +688,7 @@ Isso permite que o componente monte completamente antes do callback executar, ev
 - ✅ Trata erro de rede
 - ✅ Exibe mensagem apropriada para cada erro
 
-#### Navegação  
+#### Navegação
 
 - ✅ Volta para tela anterior ao clicar no botão voltar
 
@@ -844,6 +846,9 @@ npm test -- RegisterScreen.test.tsx
 
 # RF02 - Login
 npm test -- LoginScreen.test.tsx
+
+# RF03 - Editar Perfil
+npm test -- EditProfileScreen.test.tsx
 
 # RF04 - Lista de Eventos
 npm test -- DashboardScreen.test.tsx
