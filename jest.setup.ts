@@ -19,6 +19,14 @@ console.error = (...args: any[]) => {
 // Mock react-native-reanimated (versão 4.x compatível Expo 54)
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 
+// Mock BackHandler para evitar erro de HwBackHandler.removeEventListener
+jest.mock('react-native/Libraries/Utilities/BackHandler', () => ({
+  addEventListener: jest.fn(() => ({
+    remove: jest.fn(),
+  })),
+  removeEventListener: jest.fn(),
+}));
+
 // Mock completo de Animated para evitar loops infinitos e acelerar testes
 const originalWarn = console.warn;
 beforeAll(() => {
