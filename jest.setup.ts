@@ -8,7 +8,7 @@ console.error = (...args: any[]) => {
   if (
     typeof args[0] === 'string' &&
     (args[0].includes('A component suspended inside an `act` scope') ||
-    args[0].includes('An update to') ||  // Suprime todos os warnings de updates não wrapped em act
+    args[0].includes('An update to') ||
     args[0].includes('was not wrapped in act'))
   ) {
     return;
@@ -97,14 +97,21 @@ jest.mock('expo-linear-gradient', () => {
   };
 });
 
-// Mock expo-asset para evitar chamadas a setCustomSourceTransformer
+// Mock expo-asset com setCustomSourceTransformer
 jest.mock('expo-asset', () => ({
   Asset: {
-    fromModule: () => ({
-      downloadAsync: async () => {},
+    fromModule: jest.fn(() => ({
+      downloadAsync: jest.fn(async () => {}),
       localUri: undefined,
-    }),
+    })),
   },
+}));
+
+// Mock @react-native/assets-registry/registry para corrigir setCustomSourceTransformer
+jest.mock('@react-native/assets-registry/registry', () => ({
+  getAssetByID: jest.fn(),
+  registerAsset: jest.fn(),
+  setCustomSourceTransformer: jest.fn(),
 }));
 
 // Mock expo-font simplificado
@@ -124,7 +131,6 @@ jest.mock('@expo/vector-icons', () => {
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
 // Mock de Navigation para evitar erros de contexto quando necessário
-// (Para testes que não envolvem navegação real, podemos mockar métodos básicos.)
 jest.mock('@react-navigation/native', () => {
   const actual = jest.requireActual('@react-navigation/native');
   return {
@@ -159,7 +165,3 @@ jest.mock('react-native-safe-area-context', () => {
     useSafeAreaFrame: () => ({ x: 0, y: 0, width: 390, height: 844 }),
   };
 });
-
-
-
-
