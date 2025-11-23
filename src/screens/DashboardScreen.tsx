@@ -15,7 +15,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import AwesomeAlert from 'react-native-awesome-alerts';
-import { Event } from '../types/Event';
 import { baseUrl } from '../config/api';
 import { SafeLayout } from '../components/SafeLayout';
 import { Header } from '../components/Header';
@@ -36,6 +35,15 @@ interface EventRaw {
   createdAt: string;
   updatedAt: string;
   sold: number;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  date: string;
+  imageUrl?: string;
+  available?: number; // tickets disponíveis
+  total?: number; // total de tickets
 }
 
 export default function DashboardScreen({ navigation }: any) {
@@ -205,11 +213,14 @@ export default function DashboardScreen({ navigation }: any) {
             ? e.imageUrl
             : `${baseUrl}/${e.imageUrl}`
           : undefined;
+        const available = e.quantity - e.sold;
         return {
           id: e.id,
           title: e.title,
           date: e.eventDate,
           imageUrl: fullImageUrl,
+          available,
+          total: e.quantity,
         };
       });
 
@@ -388,6 +399,18 @@ export default function DashboardScreen({ navigation }: any) {
                     <Text style={styles.searchDateText}>
                       {formatDateToLabel(event.date)}
                     </Text>
+                    {event.available !== undefined && (
+                      <Text style={[
+                        styles.availabilityTextSmall,
+                        event.available === 0 && styles.soldOutText,
+                        event.available > 0 && event.available < 10 && styles.lowStockText,
+                      ]}>
+                        {event.available === 0
+                          ? '🔴 Esgotado'
+                          : `✓ ${event.available} disponíveis`
+                        }
+                      </Text>
+                    )}
                   </View>
                 </Pressable>
               ))
@@ -425,6 +448,18 @@ export default function DashboardScreen({ navigation }: any) {
                   <View style={styles.cardTextContainer}>
                     <Text style={styles.featureTitle}>{event.title}</Text>
                     <Text style={styles.featureDate}>{formatDateToLabel(event.date)}</Text>
+                    {event.available !== undefined && (
+                      <Text style={[
+                        styles.availabilityText,
+                        event.available === 0 && styles.soldOutText,
+                        event.available > 0 && event.available < 10 && styles.lowStockText,
+                      ]}>
+                        {event.available === 0
+                          ? '🔴 Esgotado'
+                          : `✓ ${event.available} disponíveis`
+                        }
+                      </Text>
+                    )}
                   </View>
                 </Pressable>
               ))
@@ -456,6 +491,18 @@ export default function DashboardScreen({ navigation }: any) {
                   <View style={styles.cardTextContainer}>
                     <Text style={styles.nextTitle}>{event.title}</Text>
                     <Text style={styles.nextDate}>{formatDateToLabel(event.date)}</Text>
+                    {event.available !== undefined && (
+                      <Text style={[
+                        styles.availabilityTextSmall,
+                        event.available === 0 && styles.soldOutText,
+                        event.available > 0 && event.available < 10 && styles.lowStockText,
+                      ]}>
+                        {event.available === 0
+                          ? '🔴 Esgotado'
+                          : `✓ ${event.available} disponíveis`
+                        }
+                      </Text>
+                    )}
                   </View>
                 </Pressable>
               ))
@@ -650,5 +697,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 40,
     fontStyle: 'italic',
+  },
+  availabilityText: {
+    fontSize: 13,
+    color: '#34c759',
+    fontWeight: '600',
+    marginTop: 6,
+  },
+  availabilityTextSmall: {
+    fontSize: 11,
+    color: '#34c759',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  soldOutText: {
+    color: '#ff3b30',
+  },
+  lowStockText: {
+    color: '#ff9500',
   },
 });
