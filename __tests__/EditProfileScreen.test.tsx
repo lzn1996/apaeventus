@@ -41,7 +41,7 @@ jest.mock('react-native-awesome-alerts', () => {
     return React.createElement('View', { testID: 'awesome-alert' },
       React.createElement('Text', null, props.title),
       React.createElement('Text', null, props.message),
-      React.createElement('Pressable', { onPress: props.onConfirmPressed, testID: 'alert-confirm' }, 
+      React.createElement('Pressable', { onPress: props.onConfirmPressed, testID: 'alert-confirm' },
         React.createElement('Text', null, props.confirmText)
       )
     );
@@ -80,7 +80,7 @@ describe('EditProfileScreen - RF03: Atualização de dados do usuário', () => {
     (api.patch as jest.Mock).mockResolvedValue({
       data: { success: true },
     });
-    
+
     // authService
     (authService.refreshAccessToken as jest.Mock).mockResolvedValue('new-token');
   });
@@ -88,7 +88,7 @@ describe('EditProfileScreen - RF03: Atualização de dados do usuário', () => {
   beforeEach(() => {
     // Limpa apenas as contagens de chamadas, não as implementações
     jest.clearAllMocks();
-    
+
     // Re-aplica os mocks antes de cada teste para garantir que funcionem
     (api.get as jest.Mock).mockResolvedValue({
       data: {
@@ -105,7 +105,7 @@ describe('EditProfileScreen - RF03: Atualização de dados do usuário', () => {
 
     (authService.refreshAccessToken as jest.Mock).mockResolvedValue('new-token');
     (authService.getAccessToken as jest.Mock).mockResolvedValue('mock-token');
-    
+
     // Mock do AsyncStorage
     (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
     (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);

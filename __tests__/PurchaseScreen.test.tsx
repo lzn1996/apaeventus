@@ -79,7 +79,7 @@ describe('PurchaseScreen - RF05: Compra de ingressos por usuários autenticados'
 
     it('calcula o total corretamente baseado em preço e quantidade', () => {
       const { getByText } = render(<PurchaseScreen />);
-      
+
       // Preço: 50.00, Quantidade: 2, Total: 100.00
       expect(getByText('R$100.00')).toBeTruthy();
     });
@@ -116,7 +116,7 @@ describe('PurchaseScreen - RF05: Compra de ingressos por usuários autenticados'
 
       const checkboxText = getByText('Li e concordo com os termos acima');
       const checkboxContainer = checkboxText.parent;
-      
+
       if (checkboxContainer) {
         // Clica no checkbox
         fireEvent.press(checkboxContainer);
@@ -131,7 +131,7 @@ describe('PurchaseScreen - RF05: Compra de ingressos por usuários autenticados'
 
       const checkboxText = getByText('Li e concordo com os termos acima');
       const checkboxContainer = checkboxText.parent;
-      
+
       if (checkboxContainer) {
         // Marca
         fireEvent.press(checkboxContainer);
@@ -188,7 +188,7 @@ describe('PurchaseScreen - RF05: Compra de ingressos por usuários autenticados'
 
       if (checkboxContainer) {
         fireEvent.press(checkboxContainer);
-        
+
         const confirmButton = getByText('Confirmar Compra');
         fireEvent.press(confirmButton);
 

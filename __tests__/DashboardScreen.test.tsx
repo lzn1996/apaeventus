@@ -18,7 +18,7 @@ global.fetch = jest.fn();
 jest.mock('react-native-awesome-alerts', () => {
     const React = require('react');
     return (props: any) => {
-        if (!props.show) return null;
+        if (!props.show) {return null;}
         return React.createElement('View', { testID: 'awesome-alert' },
         React.createElement('Text', null, props.title),
         React.createElement('Text', null, props.message),
@@ -108,10 +108,10 @@ jest.mock('react-native-awesome-alerts', () => {
     describe('Carregamento de eventos', () => {
         it('exibe loading enquanto carrega eventos', async () => {
         // Mock que simula delay
-        (global.fetch as jest.Mock).mockImplementation(() => 
+        (global.fetch as jest.Mock).mockImplementation(() =>
             new Promise(resolve => setTimeout(() => resolve({
             ok: true,
-            json: async () => []
+            json: async () => [],
             }), 100))
         );
 
@@ -315,7 +315,7 @@ jest.mock('react-native-awesome-alerts', () => {
         // Verifica que a aba de perfil está disponível
         const profileTab = await findByText('Perfil');
         expect(profileTab).toBeTruthy();
-        
+
         // Verifica que o usuário não está logado (Header deve mostrar estado não logado)
         expect(getByText('Perfil')).toBeTruthy();
         });

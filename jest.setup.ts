@@ -8,8 +8,8 @@ console.error = (...args: any[]) => {
   if (
     typeof args[0] === 'string' &&
     (args[0].includes('A component suspended inside an `act` scope') ||
-     args[0].includes('An update to') ||  // Suprime todos os warnings de updates não wrapped em act
-     args[0].includes('was not wrapped in act'))
+    args[0].includes('An update to') ||  // Suprime todos os warnings de updates não wrapped em act
+    args[0].includes('was not wrapped in act'))
   ) {
     return;
   }
@@ -147,7 +147,7 @@ jest.mock('@react-native-community/netinfo', () => ({
 jest.mock('react-native-safe-area-context', () => {
   const React = require('react');
   const actualModule = jest.requireActual('react-native-safe-area-context');
-  
+
   return {
     ...actualModule,
     SafeAreaProvider: ({ children }: { children: React.ReactNode }) => {

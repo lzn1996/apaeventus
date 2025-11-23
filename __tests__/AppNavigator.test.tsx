@@ -19,7 +19,7 @@ describe('AppNavigator', () => {
         <AppNavigator />
       </NavigationContainer>
     );
-    
+
     // Verifica que o texto da splash está presente
     await waitFor(() => {
       expect(getByText(/Sistema de Gestão de Eventos/i)).toBeTruthy();

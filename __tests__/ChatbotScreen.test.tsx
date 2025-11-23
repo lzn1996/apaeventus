@@ -20,7 +20,7 @@ jest.mock('../src/hooks/useNetworkStatus', () => ({
 jest.mock('react-native-awesome-alerts', () => {
     const React = require('react');
     return (props: any) => {
-        if (!props.show) return null;
+        if (!props.show) {return null;}
         return React.createElement('View', { testID: 'awesome-alert' },
         React.createElement('Text', null, props.title),
         React.createElement('Text', null, props.message),
@@ -74,7 +74,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
 
     it('renderiza título "Assistente IA"', () => {
       const { getByText } = render(<ChatbotScreen />);
-      
+
       expect(getByText('Assistente IA')).toBeTruthy();
     });
   });
@@ -89,7 +89,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       const { getByPlaceholderText, getByText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       const sendButton = getByText('➤');
 
@@ -110,7 +110,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
 
     it('não envia mensagem vazia', () => {
       const { getByPlaceholderText, getByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       const sendButton = getByText('➤');
 
@@ -122,7 +122,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
 
     it('limpa input após envio com sucesso', async () => {
       const { getByPlaceholderText, getByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       const sendButton = getByText('➤');
 
@@ -141,7 +141,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       );
 
       const { getByPlaceholderText, getByText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       const sendButton = getByText('➤');
 
@@ -152,7 +152,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       expect(loading).toBeTruthy();
 
       resolvePost({
-        data: { message: 'Ok!', conversationComplete: false }
+        data: { message: 'Ok!', conversationComplete: false },
       });
     });
 
@@ -163,7 +163,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       );
 
       const { getByPlaceholderText, getByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       const sendButton = getByText('➤');
 
@@ -175,7 +175,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       resolvePost({
-        data: { message: 'Resposta', conversationComplete: false }
+        data: { message: 'Resposta', conversationComplete: false },
       });
     });
   });
@@ -195,7 +195,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       const { getByPlaceholderText, getByText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       const sendButton = getByText('➤');
 
@@ -224,7 +224,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       const { getByPlaceholderText, getByText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       const sendButton = getByText('➤');
 
@@ -254,7 +254,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       const { getByPlaceholderText, getByText, findByText, queryByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       const sendButton = getByText('➤');
 
@@ -284,7 +284,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       const { getByPlaceholderText, getByText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       fireEvent.changeText(input, 'Teste');
       fireEvent.press(getByText('➤'));
@@ -304,7 +304,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
         .mockResolvedValueOnce({ data: { success: true } });
 
       const { getByPlaceholderText, getByText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       fireEvent.changeText(input, 'Teste');
       fireEvent.press(getByText('➤'));
@@ -334,7 +334,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       const { getByPlaceholderText, getByText, queryByPlaceholderText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       fireEvent.changeText(input, 'Final');
       fireEvent.press(getByText('➤'));
@@ -352,14 +352,14 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null);
 
       const { getByPlaceholderText, getByText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       fireEvent.changeText(input, 'Mensagem');
       fireEvent.press(getByText('➤'));
 
       const errorTitle = await findByText('Sessão Expirada');
       const errorMessage = await findByText('Por favor, faça login novamente.');
-      
+
       expect(errorTitle).toBeTruthy();
       expect(errorMessage).toBeTruthy();
     });
@@ -373,7 +373,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       const { getByPlaceholderText, getByText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       fireEvent.changeText(input, 'Mensagem');
       fireEvent.press(getByText('➤'));
@@ -391,7 +391,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       const { getByPlaceholderText, getByText, queryByTestId } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       fireEvent.changeText(input, 'Mensagem');
       fireEvent.press(getByText('➤'));
@@ -413,7 +413,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       const { getByPlaceholderText, getByText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       fireEvent.changeText(input, 'Mensagem');
       fireEvent.press(getByText('➤'));
@@ -431,10 +431,10 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       });
 
       const { getByPlaceholderText, getByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       const testMessage = 'Minha mensagem importante';
-      
+
       fireEvent.changeText(input, testMessage);
       fireEvent.press(getByText('➤'));
 
@@ -447,7 +447,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       (api.post as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
       const { getByPlaceholderText, getByText, findByText } = render(<ChatbotScreen />);
-      
+
       const input = getByPlaceholderText('Digite sua resposta...');
       fireEvent.changeText(input, 'Teste');
       fireEvent.press(getByText('➤'));
@@ -462,7 +462,7 @@ describe('ChatbotScreen - RF13: Assistente IA para criação de eventos', () => 
       (api.post as jest.Mock).mockResolvedValueOnce({ data: { success: true } });
 
       const { getByText } = render(<ChatbotScreen />);
-      
+
       // Simula clique no botão voltar do Header
       // O Header tem onBackPress={handleGoBack}
       const header = getByText('Assistente IA');
