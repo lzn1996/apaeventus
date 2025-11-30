@@ -16,12 +16,9 @@ import AwesomeAlert from 'react-native-awesome-alerts';
 import styles from './styles';
 import {getTicketById} from '../../../services/eventService';
 import {authService} from '../../../services/authService';
-import eventBanner from '../../../assets/event-banner.png';
 import {SafeLayout} from '../../../components/SafeLayout';
 import {Header} from '../../../components/Header';
 import {TabBar} from '../../../components/TabBar';
-
-declare module '*.png';
 
 export default function EventDetailScreen() {
   const navigation =
@@ -226,21 +223,21 @@ export default function EventDetailScreen() {
       <Header title="Detalhes do Evento" />
 
       <ScrollView contentContainerStyle={styles.container} alwaysBounceVertical>
-        {/* Banner */}
-        <Image
-          source={
-            imageError || !event.imageUrl ? eventBanner : {uri: event.imageUrl}
-          }
-          style={[styles.banner, {aspectRatio}]}
-          resizeMode="contain"
-          onError={() => setImageError(true)}
-          onLoad={e => {
-            const {width, height} = e.nativeEvent.source || {};
-            if (width && height) {
-              setAspectRatio(width / height);
-            }
-          }}
-        />
+        {/* Banner - só exibe se houver imageUrl */}
+        {event.imageUrl && !imageError && (
+          <Image
+            source={{uri: event.imageUrl}}
+            style={[styles.banner, {aspectRatio}]}
+            resizeMode="contain"
+            onError={() => setImageError(true)}
+            onLoad={e => {
+              const {width, height} = e.nativeEvent.source || {};
+              if (width && height) {
+                setAspectRatio(width / height);
+              }
+            }}
+          />
+        )}
 
         <Text style={styles.title}>{event.title}</Text>
 
