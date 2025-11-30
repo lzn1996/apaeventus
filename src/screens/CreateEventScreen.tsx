@@ -353,14 +353,28 @@ export default function CreateEventScreen() {
     try {
       setLoading(true);
 
+      // Validação de quantity
+      const parsedQuantity = parseInt(quantity, 10);
+      if (!quantity || isNaN(parsedQuantity) || parsedQuantity < 1 || !Number.isInteger(parsedQuantity)) {
+        showAlert('Erro de Validação', 'A quantidade deve ser um número inteiro maior que 0', false);
+        return;
+      }
+
+      // Validação de price
+      const parsedPrice = parseFloat(price);
+      if (price === '' || isNaN(parsedPrice) || parsedPrice < 0 || !/^-?\d+(\.\d+)?$/.test(price.trim())) {
+        showAlert('Erro de Validação', 'O preço deve ser um número válido maior ou igual a 0', false);
+        return;
+      }
+
       if (imageFile) {
         // Para upload com imagem, usar FormData
         const form = new FormData();
         form.append('title', title);
         form.append('description', description);
         form.append('eventDate', isoDate);
-        form.append('quantity', quantity || '0');
-        form.append('price', price || '0');
+        form.append('quantity', parsedQuantity.toString());
+        form.append('price', parsedPrice.toString());
 
         // Estrutura correta para FormData com imagem no React Native
         const imageUri = Platform.OS === 'ios'
@@ -396,8 +410,8 @@ export default function CreateEventScreen() {
           title,
           description,
           eventDate: isoDate,
-          quantity: parseInt(quantity, 10) || 0,
-          price: parseFloat(price) || 0,
+          quantity: parsedQuantity,
+          price: parsedPrice,
         });
 
         showAlert('Sucesso', 'Evento criado!', true);

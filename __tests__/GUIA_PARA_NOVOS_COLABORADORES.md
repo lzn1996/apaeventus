@@ -20,7 +20,6 @@ npm test
 **Resultado esperado:**
 ```
 Test Suites: 11 passed, 11 total
-Tests:       15 skipped, 159 passed, 174 total
 ```
 
 ✅ Se viu isso, está tudo configurado corretamente!

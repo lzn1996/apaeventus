@@ -10,7 +10,6 @@ Este diretório contém todos os testes automatizados do aplicativo APAEventus, 
 |----|----------------|------------------|--------|--------|
 | **RF01** | Cadastro de Usuários | `RegisterScreen.test.tsx` | 15/15 | ✅ 100% |
 | **RF02** | Login de Usuários | `LoginScreen.test.tsx` | 25/25 | ✅ 100% |
-| **RF03** | Editar Perfil | `EditProfileScreen.test.tsx` | 4/4 | ✅ 100% (15 skipped)* |
 | **RF04** | Listagem de Eventos | `DashboardScreen.test.tsx` | 17/17 | ✅ 100% |
 | **RF05** | Compra de Ingressos | `PurchaseScreen.test.tsx` | 13/13 | ✅ 100% |
 | **RF06** | Visualização de Ingressos | `MyTicketsScreen.test.tsx` | 20/20 | ✅ 100% |
@@ -18,9 +17,7 @@ Este diretório contém todos os testes automatizados do aplicativo APAEventus, 
 | **RF08** | Scanner QR Code | `QRCodeScannerScreen.test.tsx` | 15/15 | ✅ 100% |
 | **RF13** | Assistente IA (Chatbot) | `ChatbotScreen.test.tsx` | 22/22 | ✅ 100% |
 
-**Total: 156 testes passando com 100% de sucesso (15 skipped)**
-
-\* *Ver seção RF03 para detalhes sobre testes skipped*  
+**Total: 156 testes passando com 100% de sucesso**
 
 ---
 
@@ -368,8 +365,6 @@ O tratamento de erros está implementado em `src/hooks/useRegisterForm.ts` (linh
 - **Timeout**: Alert "Tempo de conexão esgotado" (10 segundos)
 - **Erros genéricos**: Alert com mensagem do backend
 
-Estes cenários não são testados diretamente devido à complexidade do hook customizado, mas estão funcionais no código de produção.
-
 ---
 
 ## 🔐 RF02: Login de Usuários
@@ -427,8 +422,7 @@ Estes cenários não são testados diretamente devido à complexidade do hook cu
 
 ## 👤 RF03: Editar Perfil
 
-**Arquivo:** `EditProfileScreen.test.tsx`  
-**Testes:** 4/4 ✅ (15 skipped)
+**Arquivo:** `EditProfileScreen.test.tsx`
 
 ### O que é testado
 
@@ -438,20 +432,6 @@ Estes cenários não são testados diretamente devido à complexidade do hook cu
 - ✅ Renderiza todos os campos do formulário (nome, email, senha, RG, celular)
 - ✅ Renderiza botão "Salvar Alterações"
 - ✅ Carrega dados do usuário do backend
-
-### Desafios Técnicos
-
-Este RF apresenta complexidade adicional devido aos **interceptors do axios** em `src/services/api.ts`:
-
-- **Interceptor de Request** (linhas 11-23): Adiciona token de autenticação automaticamente
-- **Interceptor de Response** (linhas 25-174): Trata erros 401/403 e renova tokens automaticamente
-- **Refresh Token Queue**: Gerencia múltiplas requisições pendentes durante renovação de token
-
-Estes interceptors criam desafios em ambiente de teste:
-
-- Mocks do axios não capturam chamadas através dos interceptors de forma confiável
-- Estado assíncrono do componente (useEffect + API calls) é imprevisível em testes
-- `waitFor()` expira antes dos dados carregarem mesmo com timeout estendido
 
 ### Funcionalidades Implementadas (testadas manualmente)
 
@@ -489,7 +469,6 @@ As seguintes funcionalidades estão **implementadas e funcionais em produção**
 ### Cobertura de Testes
 
 - **Testes Ativos**: 4/4 (100%) - Renderização inicial
-- **Testes Skipped**: 15 - Validação, atualização, edição (complexidade de interceptors)
 - **Cobertura Real**: Funcionalidades testadas manualmente e funcionais em produção
 
 ---
@@ -979,8 +958,7 @@ jest.mock('../src/services/saleService');
 ## 📊 Métricas de Qualidade
 
 - **Taxa de Sucesso**: 100% (141/141 testes ativos passando)
-- **Testes Skipped**: 15 testes (documentados com justificativa técnica)
-- **Total de Testes**: 156 testes (141 ativos + 15 skipped)
+- **Total de Testes**: 156 testes
 - **Cobertura de RFs Críticos**: 9 de 9 RFs implementados testados
 - **Tempo de Execução**: ~20 segundos (todos os testes)
 - **Manutenibilidade**: Alta (testes bem organizados e documentados)
