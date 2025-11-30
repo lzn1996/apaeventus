@@ -40,6 +40,11 @@ export default function EventDetailScreen() {
   const [isLogged] = useState(true);
   const [userRole] = useState<'ADMIN' | 'USER' | null>('USER');
 
+  // Calcular tickets disponíveis e máximo permitido
+  const availableTickets = event ? event.quantity - (event.sold || 0) : 0;
+  const maxAllowed = Math.min(5, availableTickets);
+  const isSoldOut = availableTickets <= 0;
+
   // AwesomeAlert states
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
@@ -134,6 +139,25 @@ export default function EventDetailScreen() {
   }
 
   const handleBuy = async () => {
+    // Validar disponibilidade antes de prosseguir
+    if (isSoldOut) {
+      showAlert(
+        'Esgotado',
+        'Este evento está com ingressos esgotados.',
+        false,
+      );
+      return;
+    }
+
+    if (quantity > availableTickets) {
+      showAlert(
+        'Quantidade Inválida',
+        `Apenas ${availableTickets} ${availableTickets === 1 ? 'ingresso disponível' : 'ingressos disponíveis'}. Por favor, ajuste a quantidade.`,
+        false,
+      );
+      return;
+    }
+
     let userIsLogged = await authService.isLoggedIn();
     let token = await authService.getAccessToken();
 
@@ -175,7 +199,7 @@ export default function EventDetailScreen() {
       ticketId: event.id,
       eventTitle: event.title,
       price: event.price,
-      maxQuantity: 5,
+      maxQuantity: maxAllowed,
       quantity,
     });
   };
@@ -235,35 +259,45 @@ export default function EventDetailScreen() {
           <View style={styles.counter}>
             <TouchableOpacity
               onPress={() => setQuantity(q => Math.max(1, q - 1))}
-              disabled={quantity === 1}>
+              disabled={quantity === 1 || isSoldOut}>
               <Text
                 style={[
                   styles.counterButton,
-                  quantity === 1 && styles.counterButtonDisabled,
+                  (quantity === 1 || isSoldOut) && styles.counterButtonDisabled,
                 ]}>
                 –
               </Text>
             </TouchableOpacity>
             <Text style={styles.counterValue}>{quantity}</Text>
             <TouchableOpacity
-              onPress={() => setQuantity(q => Math.min(5, q + 1))}
-              disabled={quantity === 5}>
+              onPress={() => setQuantity(q => Math.min(maxAllowed, q + 1))}
+              disabled={quantity >= maxAllowed || isSoldOut}>
               <Text
                 style={[
                   styles.counterButton,
-                  quantity === 5 && styles.counterButtonDisabled,
+                  (quantity >= maxAllowed || isSoldOut) && styles.counterButtonDisabled,
                 ]}>
                 +
               </Text>
             </TouchableOpacity>
           </View>
+          {availableTickets > 0 && availableTickets < 5 && (
+            <Text style={styles.limitWarning}>
+              Apenas {availableTickets} {availableTickets === 1 ? 'ingresso disponível' : 'ingressos disponíveis'}
+            </Text>
+          )}
           <Text style={styles.total}>
             Total: R${(Number(event.price) * quantity).toFixed(2)}
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.buyButton} onPress={handleBuy}>
-          <Text style={styles.buyButtonText}>Comprar</Text>
+        <TouchableOpacity
+          style={[styles.buyButton, isSoldOut && styles.buyButtonDisabled]}
+          onPress={handleBuy}
+          disabled={isSoldOut}>
+          <Text style={styles.buyButtonText}>
+            {isSoldOut ? 'Esgotado' : 'Comprar'}
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.descriptionBox}>

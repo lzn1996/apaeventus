@@ -138,11 +138,24 @@ export default StyleSheet.create({
         shadowRadius: 4,
         elevation: 3,
     },
+    buyButtonDisabled: {
+        backgroundColor: '#b0bec5',
+        opacity: 0.7,
+    },
     buyButtonText: {
         color: '#fff',
         fontSize: 18,
         fontWeight: 'bold',
         letterSpacing: 0.5,
+    },
+
+    // Limit Warning
+    limitWarning: {
+        fontSize: 13,
+        color: '#ff6f00',
+        fontWeight: '600',
+        marginTop: 4,
+        textAlign: 'center',
     },
 
     // Description Box
